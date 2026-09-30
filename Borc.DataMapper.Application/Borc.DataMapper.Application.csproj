@@ -8,9 +8,15 @@
 
   <ItemGroup>
     <Folder Include="DTOs\" />
-    <Folder Include="Abstractions\" />
     <Folder Include="Features\" />
     <Folder Include="Validators\" />
+	  <Folder Include="Common\" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
   </ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\Borc.DataMapper.Domain\Borc.DataMapper.Domain.csproj" />
