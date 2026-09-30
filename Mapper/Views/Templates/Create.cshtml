@@ -1,0 +1,29 @@
+﻿@model Borc.DataMapper.Application.Templates.CreateTemplate.CreateTemplateCommand
+
+<form asp-action="Create" method="post">
+
+    <div asp-validation-summary="ModelOnly"></div>
+
+    <div>
+        <label asp-for="Code"></label>
+        <input asp-for="Code" />
+        <span asp-validation-for="Code"></span>
+    </div>
+
+    <div>
+        <label asp-for="Name"></label>
+        <input asp-for="Name" />
+        <span asp-validation-for="Name"></span>
+    </div>
+
+    <div>
+        <label asp-for="Description"></label>
+        <textarea asp-for="Description"></textarea>
+        <span asp-validation-for="Description"></span>
+    </div>
+
+    <button type="submit">
+        Create
+    </button>
+
+</form>
