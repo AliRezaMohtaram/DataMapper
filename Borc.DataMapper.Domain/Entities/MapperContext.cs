@@ -3,9 +3,8 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Borc.DataMapper.Domain.Entities;
 
-namespace Borc.DataMapper.Infrastructure;
+namespace Borc.DataMapper.Domain.Entities;
 
 public partial class MapperContext : DbContext
 {

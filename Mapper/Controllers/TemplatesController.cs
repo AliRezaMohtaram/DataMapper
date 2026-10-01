@@ -1,6 +1,5 @@
 ﻿using Borc.DataMapper.Application.Templates.CreateTemplate;
 using MediatR;
-using Microsoft.AspNetCore.DataProtection.KeyManagement.Internal;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Borc.DataMapper.Web.Controllers;
@@ -26,7 +25,7 @@ public sealed class TemplatesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(
+    public async Task<IActionResult> CreateAsync(
         CreateTemplateCommand command,
         CancellationToken cancellationToken)
     {
@@ -46,6 +45,6 @@ public sealed class TemplatesController : Controller
             return View(command);
         }
 
-        return RedirectToAction(nameof(Create));
+        return RedirectToAction(nameof(Index));
     }
 }
