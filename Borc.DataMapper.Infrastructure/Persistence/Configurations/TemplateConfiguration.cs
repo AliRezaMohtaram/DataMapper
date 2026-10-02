@@ -12,13 +12,11 @@ public sealed class TemplateConfiguration
     {
         builder.ToTable("Template");
 
-        builder.HasKey(x => x.Id);
-
-        builder.Property(x => x.Id)
-            .ValueGeneratedOnAdd();
+        builder.ConfigureEntityBase();
 
         builder.Property(x => x.Code)
             .HasMaxLength(50)
+            .IsUnicode(false)   // ستون در دیتابیس VARCHAR است
             .IsRequired();
 
         builder.Property(x => x.Name)
@@ -28,17 +26,16 @@ public sealed class TemplateConfiguration
         builder.Property(x => x.Description)
             .HasMaxLength(1000);
 
-        builder.Property(x => x.IsActive)
-            .IsRequired();
-
-        builder.Property(x => x.CreatedAt)
+        builder.Property(x => x.Status)
+            .HasConversion<short>()   // ستون SMALLINT است
             .IsRequired();
 
         builder.HasIndex(x => x.Code)
             .IsUnique()
-            .HasFilter("[IsDeleted] = 0");
+            .HasFilter("[IsDeleted] = 0")
+            .HasDatabaseName("UX_Template_Code");
 
-        builder.Property(x => x.IsDeleted)
-            .HasDefaultValue(false);
+        builder.HasIndex(x => x.Status)
+            .HasDatabaseName("IX_Template_Status");
     }
 }

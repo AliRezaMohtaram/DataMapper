@@ -5,10 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\" />
-  </ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\Borc.DataMapper.Application\Borc.DataMapper.Application.csproj" />
 		<ProjectReference Include="..\Borc.DataMapper.Domain\Borc.DataMapper.Domain.csproj" />

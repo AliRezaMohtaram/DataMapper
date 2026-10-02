@@ -1,15 +1,15 @@
-﻿using System;
+﻿using Borc.DataMapper.Application.Abstractions.Persistence;
+using Borc.DataMapper.Domain.Templates;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Borc.DataMapper.Domain.Templates;
-using Microsoft.EntityFrameworkCore;
-
 namespace Borc.DataMapper.Infrastructure.Persistence;
 
-public sealed class BorcDataMapperDbContext : DbContext
+public sealed class BorcDataMapperDbContext : DbContext, IAppDbContext
 {
     public BorcDataMapperDbContext(
         DbContextOptions<BorcDataMapperDbContext> options)

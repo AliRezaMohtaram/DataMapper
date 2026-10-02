@@ -1,340 +1,216 @@
-﻿@model IReadOnlyList<Borc.DataMapper.Web.Models.ViewModels.Templates.TemplateListItemViewModel>
+﻿@model Borc.DataMapper.Web.ViewModels.Templates.TemplateIndexViewModel
+@using System.Globalization
+@functions {
+    private static readonly PersianCalendar Pc = new();
 
-@{
-    ViewData["Title"] = "Templates";
+    private static string ToJalali(DateTime utc)
+    {
+        var d = DateTime.SpecifyKind(utc, DateTimeKind.Utc).ToLocalTime();
+        return $"{Pc.GetYear(d):0000}/{Pc.GetMonth(d):00}/{Pc.GetDayOfMonth(d):00} {d:HH:mm}";
+    }
 }
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+@{
+    ViewData["Title"] = "قالب‌ها";
 
-<div class="container-fluid py-4">
+    var result = Model.Result;
+    var filter = Model.Filter;
 
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    var errors = ViewData.ModelState.Values
+        .SelectMany(v => v.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(m => !string.IsNullOrWhiteSpace(m))
+        .ToList();
 
-        <div>
-            <h2 class="mb-1">Templates</h2>
-            <p class="text-muted mb-0">
-                Manage data collection templates
-            </p>
+    var from = result.TotalCount == 0 ? 0 : (result.Page - 1) * result.PageSize + 1;
+    var to = Math.Min(result.Page * result.PageSize, result.TotalCount);
+    var pageSizes = new[] { 10, 20, 50, 100 };
+}
+
+<!-- ================= فهرست قالب‌ها ================= -->
+
+<div class="panel card">
+    <div class="panel-header">
+        <h2>قالب‌های پایه</h2>
+
+        <div class="summary-stats">
+            <span>کل قالب‌ها: <b>@result.TotalCount</b></span>
+            @if (result.TotalCount > 0)
+            {
+                <span>نمایش: <b>@from</b> تا <b>@to</b></span>
+            }
         </div>
 
-        <a asp-controller="Templates"
-           asp-action="Create"
-           class="btn btn-primary">
-            <span class="me-1">+</span>
-            New Template
-        </a>
-
+        <a asp-action="Create" class="btn primary">+ قالب جدید</a>
     </div>
 
-    <!-- Toolbar -->
-    <div class="card shadow-sm mb-3">
+    @if (TempData["Success"] is string okMessage)
+    {
+        <div class="status success show">@okMessage</div>
+    }
 
-        <div class="card-body">
+    @if (TempData["Error"] is string errMessage)
+    {
+        <div class="status error show">@errMessage</div>
+    }
 
-            <div class="row g-3 align-items-end">
+    @if (errors.Count > 0)
+    {
+        <div class="status error show">@string.Join(" — ", errors)</div>
+    }
 
-                <div class="col-md-5">
-
-                    <label class="form-label">
-                        Search
-                    </label>
-
-                    <input type="text"
-                           id="templateSearch"
-                           class="form-control"
-                           placeholder="Search by code or name..." />
-
-                </div>
-
-                <div class="col-md-3">
-
-                    <label class="form-label">
-                        Status
-                    </label>
-
-                    <select id="templateStatus"
-                            class="form-select">
-
-                        <option value="">All</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-
-                    </select>
-
-                </div>
-
-                <div class="col-md-auto">
-
-                    <button type="button"
-                            id="clearFilters"
-                            class="btn btn-outline-secondary">
-                        Clear
-                    </button>
-
-                </div>
-
-            </div>
-
+    <form method="get" asp-action="Index">
+        <input type="hidden" name="pageSize" value="@result.PageSize" />
+        <div class="form-group">
+            <label for="templateSearch">جستجو در قالب‌ها (بر اساس کد یا نام):</label>
+            <input type="text" id="templateSearch" name="search" value="@filter.Search"
+                   placeholder="جستجوی سریع در قالب‌ها..." autocomplete="off">
         </div>
 
-    </div>
-
-    <!-- Table -->
-    <div class="card shadow-sm">
-
-        <div class="card-body p-0">
-
-            <div class="table-responsive">
-
-                <table class="table table-hover align-middle mb-0"
-                       id="templatesTable">
-
-                    <thead class="table-light">
-
-                        <tr>
-
-                            <th style="width: 100px;">
-                                ID
-                            </th>
-
-                            <th style="width: 180px;">
-                                Code
-                            </th>
-
-                            <th>
-                                Name
-                            </th>
-
-                            <th>
-                                Description
-                            </th>
-
-                            <th style="width: 120px;">
-                                Status
-                            </th>
-
-                            <th style="width: 160px;">
-                                Created
-                            </th>
-
-                            <th style="width: 170px;">
-                                Actions
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody>
-
-                        @if (Model is not null && Model.Count > 0)
-                        {
-                            foreach (var template in Model)
-                            {
-                                <tr data-status="@(template.IsActive ? "active" : "inactive")">
-
-                                    <td>
-                                        <span class="text-muted">
-                                            #@template.Id
-                                        </span>
-                                    </td>
-
-                                    <td>
-                                        <code>
-                                            @template.Code
-                                        </code>
-                                    </td>
-
-                                    <td>
-                                        <strong>
-                                            @template.Name
-                                        </strong>
-                                    </td>
-
-                                    <td>
-                                        @if (!string.IsNullOrWhiteSpace(template.Description))
-                                        {
-                                            <span>
-                                                @template.Description
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="text-muted">
-                                                —
-                                            </span>
-                                        }
-                                    </td>
-
-                                    <td>
-
-                                        @if (template.IsActive)
-                                        {
-                                            <span class="badge bg-success">
-                                                Active
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">
-                                                Inactive
-                                            </span>
-                                        }
-
-                                    </td>
-
-                                    <td>
-                                        @template.CreatedAt.ToLocalTime()
-                                        .ToString("yyyy/MM/dd HH:mm")
-                                    </td>
-
-                                    <td>
-
-                                        <div class="btn-group btn-group-sm">
-
-                                            <a asp-controller="Templates"
-                                               asp-action="Details"
-                                               asp-route-id="@template.Id"
-                                               class="btn btn-outline-secondary">
-                                                View
-                                            </a>
-
-                                            <a asp-controller="Templates"
-                                               asp-action="Edit"
-                                               asp-route-id="@template.Id"
-                                               class="btn btn-outline-primary">
-                                                Edit
-                                            </a>
-
-                                        </div>
-
-                                    </td>
-
-                                </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr id="emptyRow">
-
-                                <td colspan="7"
-                                    class="text-center py-5">
-
-                                    <div class="text-muted">
-
-                                        <div class="fs-4 mb-2">
-                                            No Templates
-                                        </div>
-
-                                        <div class="mb-3">
-                                            No template has been created yet.
-                                        </div>
-
-                                        <a asp-controller="Templates"
-                                           asp-action="Create"
-                                           class="btn btn-primary">
-                                            Create Template
-                                        </a>
-
-                                    </div>
-
-                                </td>
-
-                            </tr>
-                        }
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
+        <div class="form-group">
+            <label for="templateStatus">وضعیت:</label>
+            <select id="templateStatus" name="status">
+                <option value="">همه وضعیت‌ها</option>
+                @foreach (var st in Enum.GetValues<TemplateStatus>())
+                {
+                    <option value="@st" selected="@(filter.Status == st)">@st.ToString()</option>
+                }
+            </select>
         </div>
 
-    </div>
-
+        <div class="actions">
+            <button type="submit" class="btn primary">جستجو</button>
+            <a asp-action="Index" asp-route-pageSize="@result.PageSize" class="btn ghost">پاکسازی فیلتر</a>
+        </div>
+    </form>
 </div>
 
-@section Scripts
-{
-    <script>
+<div class="panel card">
+    <div class="tscroll results-table-container">
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>کد قالب</th>
+                    <th>نام قالب</th>
+                    <th>توضیحات</th>
+                    <th>وضعیت</th>
+                    <th>تاریخ ایجاد</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (result.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="7" class="entries-empty">
+                            @(string.IsNullOrWhiteSpace(filter.Search)
+                                                    ? "هنوز قالبی ثبت نشده است."
+                                                    : "قالبی با این مشخصات پیدا نشد.")
+                    </td>
+                </tr>
+                                }
+                else
+                {
+                    foreach (var t in result.Items)
+                    {
+                        <tr>
+                            <td>@t.Id</td>
+                            <td><code dir="ltr" style="font-family:var(--mono)">@t.Code</code></td>
+                            <td>@t.Name</td>
+                            <td style="white-space:normal;min-width:220px;text-align:right">@t.Description</td>
+                            <td><span class="mode-badge">@t.Status.ToLabel()</span></td>
+                            <td dir="ltr">@ToJalali(t.CreatedAt)</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a asp-action="Detail" asp-route-id="@t.Id" class="btn ghost low-padding"
+                                       title="جزئیات" aria-label="جزئیات">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                             fill="none" stroke="currentColor" stroke-width="2"
+                                             stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg>
+                                    </a>
 
-        (() => {
+                                    <a asp-action="Edit" asp-route-id="@t.Id" class="btn primary low-padding"
+                                       title="ویرایش" aria-label="ویرایش">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                             fill="none" stroke="currentColor" stroke-width="2"
+                                             stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 20h9" />
+                                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                                        </svg>
+                                    </a>
 
-            const searchInput =
-                document.getElementById('templateSearch');
-
-            const statusSelect =
-                document.getElementById('templateStatus');
-
-            const clearButton =
-                document.getElementById('clearFilters');
-
-            const rows =
-                document.querySelectorAll(
-                    '#templatesTable tbody tr[data-status]'
-                );
-
-            function filterRows() {
-
-                const search =
-                    searchInput.value
-                        .trim()
-                        .toLowerCase();
-
-                const status =
-                    statusSelect.value;
-
-                rows.forEach(row => {
-
-                    const text =
-                        row.textContent.toLowerCase();
-
-                    const rowStatus =
-                        row.dataset.status;
-
-                    const matchSearch =
-                        !search ||
-                        text.includes(search);
-
-                    const matchStatus =
-                        !status ||
-                        rowStatus === status;
-
-                    row.style.display =
-                        matchSearch && matchStatus
-                            ? ''
-                            : 'none';
-
-                });
-
-            }
-
-            searchInput?.addEventListener(
-                'input',
-                filterRows
-            );
-
-            statusSelect?.addEventListener(
-                'change',
-                filterRows
-            );
-
-            clearButton?.addEventListener(
-                'click',
-                () => {
-
-                    searchInput.value = '';
-                    statusSelect.value = '';
-
-                    filterRows();
-
+                                    <button type="button" class="btn danger low-padding"
+                                            title="حذف" aria-label="حذف"
+                                            data-delete-id="@t.Id" data-delete-name="@t.Name">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                             fill="none" stroke="currentColor" stroke-width="2"
+                                             stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6" />
+                                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                            <path d="M10 11v6" />
+                                            <path d="M14 11v6" />
+                                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
                 }
-            );
+            </tbody>
+        </table>
+    </div>
 
-        })();
+    <!-- صفحه‌بندی -->
+    <div class="pagination">
+        @if (result.HasPrevious)
+        {
+            <a class="btn ghost" asp-action="Index"
+               asp-route-search="@filter.Search" asp-route-status="@filter.Status"
+               asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)">قبلی</a>
+        }
+        else
+        {
+            <button type="button" class="btn ghost" disabled>قبلی</button>
+        }
 
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+        <span>صفحه @result.Page از @Math.Max(1, result.TotalPages)</span>
 
+        @if (result.HasNext)
+        {
+            <a class="btn ghost" asp-action="Index"
+               asp-route-search="@filter.Search" asp-route-status="@filter.Status"
+               asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)">بعدی</a>
+        }
+        else
+        {
+            <button type="button" class="btn ghost" disabled>بعدی</button>
+        }
+
+        <form method="get" asp-action="Index" style="display:inline">
+            <input type="hidden" name="search" value="@filter.Search" />
+            @if (filter.Status.HasValue)
+            {
+                <input type="hidden" name="status" value="@filter.Status" />
+            }
+            <label class="rpp-label">
+                ردیف در صفحه:
+                <select name="pageSize" onchange="this.form.submit()">
+                    @foreach (var size in pageSizes)
+                    {
+                        <option value="@size" selected="@(result.PageSize == size)">@size</option>
+                    }
+                </select>
+            </label>
+        </form>
+    </div>
+</div>
+
+<partial name="_DeleteModal" />
+
+@section Scripts {
+    <script src="~/js/confirm-delete.js" asp-append-version="true"></script>
 }

@@ -1,0 +1,14 @@
+﻿<div id="deleteOverlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
+    <div class="modal-box">
+        <h3 id="deleteTitle">تأیید حذف</h3>
+        <p id="deleteMessage"></p>
+
+        <form method="post" asp-action="Delete">
+            <input type="hidden" name="id" id="deleteId" />
+            <div class="modal-actions">
+                <button type="button" class="btn ghost" id="deleteCancelBtn">انصراف</button>
+                <button type="submit" class="btn danger">حذف</button>
+            </div>
+        </form>
+    </div>
+</div>

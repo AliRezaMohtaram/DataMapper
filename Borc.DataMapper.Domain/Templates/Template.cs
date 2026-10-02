@@ -1,9 +1,5 @@
 ﻿using Borc.DataMapper.Domain.Common;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Borc.DataMapper.Domain.Templates
 {
@@ -19,7 +15,7 @@ namespace Borc.DataMapper.Domain.Templates
 
         public string? Description { get; private set; }
 
-        public bool IsActive { get; private set; }
+        public TemplateStatus Status { get; private set; }
 
         public static Template Create(
             string code,
@@ -31,7 +27,7 @@ namespace Borc.DataMapper.Domain.Templates
                 Code = code.Trim(),
                 Name = name.Trim(),
                 Description = description?.Trim(),
-                IsActive = true,
+                Status = TemplateStatus.Draft,
                 CreatedAt = DateTime.UtcNow
             };
         }
@@ -44,5 +40,40 @@ namespace Borc.DataMapper.Domain.Templates
             Description = description?.Trim();
             UpdatedAt = DateTime.UtcNow;
         }
+
+        /// <summary>
+        /// گذارهای مجاز: Draft→Active/Archived، Active→Inactive/Archived، Inactive→Active/Archived.
+        /// Archived پایانی است.
+        /// </summary>
+        public bool CanChangeStatusTo(TemplateStatus target) => (Status, target) switch
+        {
+            (TemplateStatus.Draft, TemplateStatus.Active) => true,
+            (TemplateStatus.Draft, TemplateStatus.Archived) => true,
+            (TemplateStatus.Active, TemplateStatus.Inactive) => true,
+            (TemplateStatus.Active, TemplateStatus.Archived) => true,
+            (TemplateStatus.Inactive, TemplateStatus.Active) => true,
+            (TemplateStatus.Inactive, TemplateStatus.Archived) => true,
+            _ => false
+        };
+
+        public void ChangeStatus(TemplateStatus target)
+        {
+            if (!CanChangeStatusTo(target))
+                throw new InvalidOperationException(
+                    $"تغییر وضعیت از {Status} به {target} مجاز نیست.");
+
+            Status = target;
+            UpdatedAt = DateTime.UtcNow;
+        }
+    }
+
+
+
+    /// <summary>وضعیت همان نسخه. مقدارها در ستون SMALLINT ذخیره می‌شوند (پیش‌فرض دیتابیس = 1 = Draft).</summary>
+    public enum TemplateVersionStatus : short
+    {
+        Draft = 1,
+        Published = 2,
+        Archived = 3
     }
 }

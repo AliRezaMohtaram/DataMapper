@@ -1,34 +1,50 @@
 ﻿@model Borc.DataMapper.Application.Templates.CreateTemplate.CreateTemplateCommand
+@{
+    ViewData["Title"] = "قالب جدید";
 
+    var modelErrors = ViewData.ModelState
+        .Where(kv => string.IsNullOrEmpty(kv.Key))
+        .SelectMany(kv => kv.Value!.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(m => !string.IsNullOrWhiteSpace(m))
+        .ToList();
+}
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-
-<form asp-controller="Templates" asp-action="Create" method="post">
-
-    <div asp-validation-summary="ModelOnly"></div>
-
-    <div>
-        <label asp-for="Code"></label>
-        <input asp-for="Code" />
-        <span asp-validation-for="Code"></span>
+<div class="panel card">
+    <div class="panel-header">
+        <h2>قالب جدید</h2>
     </div>
 
-    <div>
-        <label asp-for="Name"></label>
-        <input asp-for="Name" />
-        <span asp-validation-for="Name"></span>
-    </div>
+    @if (modelErrors.Count > 0)
+    {
+        <div class="status error show">@string.Join(" — ", modelErrors)</div>
+    }
 
-    <div>
-        <label asp-for="Description"></label>
-        <textarea asp-for="Description"></textarea>
-        <span asp-validation-for="Description"></span>
-    </div>
+    <form asp-action="Create" method="post">
+        <div class="form-group">
+            <label asp-for="Code">کد قالب (انگلیسی):</label>
+            <input asp-for="Code" dir="ltr" autocomplete="off" placeholder="مثلاً SITE" />
+            <span asp-validation-for="Code" style="color:var(--danger);font-size:12px"></span>
+            <div class="hint">فقط حروف انگلیسی، عدد، _ و -. کد پس از ایجاد قابل تغییر نیست.</div>
+        </div>
 
-    <button type="submit">
-        Create
-    </button>
+        <div class="form-group">
+            <label asp-for="Name">نام قالب:</label>
+            <input asp-for="Name" autocomplete="off" placeholder="مثلاً اطلاعات پایه سایت" />
+            <span asp-validation-for="Name" style="color:var(--danger);font-size:12px"></span>
+        </div>
 
-</form>
+        <div class="form-group">
+            <label asp-for="Description">توضیحات (اختیاری):</label>
+            <textarea asp-for="Description" rows="3"></textarea>
+            <span asp-validation-for="Description" style="color:var(--danger);font-size:12px"></span>
+        </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+        <div class="hint">قالب جدید با وضعیت «پیش‌نویس» ساخته می‌شود.</div>
+
+        <div class="actions">
+            <button type="submit" class="btn primary">ذخیره قالب</button>
+            <a asp-action="Index" class="btn ghost">انصراف</a>
+        </div>
+    </form>
+</div>

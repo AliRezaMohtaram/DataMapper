@@ -15,7 +15,6 @@
     <Folder Include="Filters\" />
     <Folder Include="Middleware\" />
     <Folder Include="Extensions\" />
-    <Folder Include="wwwroot\" />
     <Folder Include="Areas\" />
   </ItemGroup>
 
