@@ -1,0 +1,52 @@
+﻿@model Borc.DataMapper.Application.TemplateFields.CreateTemplateField.CreateTemplateFieldCommand
+@using Borc.DataMapper.Application.TemplateVersions.GetTemplateVersion
+@{
+    var version = (TemplateVersionDetailDto)ViewData["Version"]!;
+    ViewData["Title"] = "فیلد جدید";
+
+    var modelErrors = ViewData.ModelState
+        .Where(kv => string.IsNullOrEmpty(kv.Key))
+        .SelectMany(kv => kv.Value!.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(m => !string.IsNullOrWhiteSpace(m))
+        .ToList();
+}
+
+<div class="panel card">
+    <div class="panel-header">
+        <h2>فیلد جدید — @version.TemplateName (نسخه @version.VersionNo)</h2>
+    </div>
+
+    @if (modelErrors.Count > 0)
+    {
+        <div class="status error show">@string.Join(" — ", modelErrors)</div>
+    }
+
+    <form asp-action="Create" method="post">
+        <input asp-for="TemplateVersionId" type="hidden" />
+
+        <div class="form-group">
+            <label asp-for="FieldKey">کلید فیلد (انگلیسی):</label>
+            <input asp-for="FieldKey" dir="ltr" autocomplete="off" placeholder="مثلاً Site Name" />
+            <span asp-validation-for="FieldKey" style="color:var(--danger);font-size:12px"></span>
+            <div class="hint">کلید در هر نسخه یکتاست و پس از ایجاد قابل تغییر نیست.</div>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="SortOrder">ترتیب نمایش (خالی = انتهای فهرست):</label>
+            <input asp-for="SortOrder" dir="ltr" min="0" />
+            <span asp-validation-for="SortOrder" style="color:var(--danger);font-size:12px"></span>
+        </div>
+
+        <partial name="_FieldFormFields" model="Model" />
+
+        <div class="actions">
+            <button type="submit" class="btn primary">ذخیره فیلد</button>
+            <a asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId" class="btn ghost">انصراف</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script src="~/js/field-form.js" asp-append-version="true"></script>
+}

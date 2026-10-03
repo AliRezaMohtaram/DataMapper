@@ -6,3 +6,4 @@ namespace Borc.DataMapper.Web.ViewModels.Templates;
 public sealed record TemplateIndexViewModel(
     ListTemplatesQuery Filter,
     PagedResult<TemplateListItemDto> Result);
+

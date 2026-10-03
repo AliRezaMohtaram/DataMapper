@@ -1,0 +1,143 @@
+﻿@model Borc.DataMapper.Application.Templates.GetTemplate.TemplateDetailDto
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="detail-layout">
+
+    @* ============ ناحیه اصلی (سمت راست در RTL) ============ *@
+    <main class="detail-main">
+        <div class="panel card">
+            <div class="panel-header">
+                <h2>@Model.Name <span class="mode-badge">@Model.Status.ToLabel()</span></h2>
+                <div class="summary-stats">
+                    <span>تعداد نسخه: <b>@Model.Versions.Count</b></span>
+                </div>
+
+                <form asp-controller="TemplateVersions" asp-action="Create" method="post">
+                    <input type="hidden" name="templateId" value="@Model.Id" />
+                    <button type="submit" class="btn primary">+ نسخه جدید</button>
+                </form>
+            </div>
+
+            <div class="tscroll results-table-container">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>نسخه</th>
+                            <th>وضعیت</th>
+                            <th>تعداد فیلد</th>
+                            <th>تاریخ ایجاد</th>
+                            <th>تاریخ انتشار</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Versions.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="5" class="entries-empty">
+                                    هنوز نسخه‌ای برای این قالب ثبت نشده است.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var v in Model.Versions)
+                            {
+                                <tr>
+                                    <td>
+                                        <a asp-controller="TemplateVersions"
+                                           asp-action="Detail"
+                                           asp-route-id="@v.Id">نسخه @v.VersionNo</a>
+                                    </td>
+                                    <td><span class="mode-badge">@v.Status.ToLabel()</span></td>
+                                    <td>@v.FieldCount</td>
+                                    <td dir="ltr">@v.CreatedAt.ToJalali()</td>
+                                    <td dir="ltr">@v.PublishedAt.ToJalali()</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    @* ============ Aside (سمت چپ) ============ *@
+    <aside class="detail-aside">
+
+        @* --- کارت عملیات --- *@
+        <div class="panel card aside-card">
+            <div class="panel-header">
+                <h3>عملیات</h3>
+            </div>
+
+            <div class="aside-actions">
+                <a asp-action="Index" class="btn ghost block">بازگشت به فهرست</a>
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn primary block">ویرایش</a>
+
+                @foreach (var target in Model.AllowedStatuses)
+                {
+                    var formId = $"statusForm_{target}";
+
+                    <form id="@formId" asp-action="ChangeStatus" method="post" style="display:none">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="status" value="@target" />
+                    </form>
+
+                    @if (target == TemplateStatus.Archived)
+                    {
+                        <button type="button" class="btn danger block"
+                                data-confirm-target="@formId"
+                                data-confirm-message="بایگانی قالب غیرقابل بازگشت است. ادامه می‌دهید؟">
+                            @target.ToActionLabel()
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="submit" form="@formId" class="btn secondary block">
+                            @target.ToActionLabel()
+                        </button>
+                    }
+                }
+
+                <button type="button" class="btn danger block"
+                        data-delete-id="@Model.Id" data-delete-name="@Model.Name">
+                    حذف
+                </button>
+            </div>
+        </div>
+
+        @* --- کارت اطلاعات قالب --- *@
+        <div class="panel card aside-card">
+            <div class="panel-header">
+                <h3>اطلاعات قالب</h3>
+            </div>
+
+            <dl class="aside-info">
+                <dt>کد قالب</dt>
+                <dd dir="ltr" style="text-align:right">
+                    <code style="font-family:var(--mono)">@Model.Code</code>
+                </dd>
+
+                <dt>توضیحات</dt>
+                <dd>@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</dd>
+
+                <dt>تاریخ ایجاد</dt>
+                <dd dir="ltr" style="text-align:right">@Model.CreatedAt.ToJalali()</dd>
+
+                <dt>آخرین ویرایش</dt>
+                <dd dir="ltr" style="text-align:right">@Model.UpdatedAt.ToJalali()</dd>
+            </dl>
+        </div>
+
+    </aside>
+</div>
+
+<partial name="_DeleteModal" />
+<partial name="_ConfirmModal" />
+
+@section Scripts {
+    <script src="~/js/confirm-delete.js" asp-append-version="true"></script>
+    <script src="~/js/confirm-action.js" asp-append-version="true"></script>
+}

@@ -4,6 +4,7 @@ using Borc.DataMapper.Domain.Mappings;
 using Borc.DataMapper.Domain.Records;
 using Borc.DataMapper.Domain.Templates;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Borc.DataMapper.Application.Abstractions.Persistence;
 
@@ -29,6 +30,7 @@ public interface IAppDbContext
     DbSet<ImportRow> ImportRows { get; }
 
     DbSet<DataRecord> DataRecords { get; }
+    DatabaseFacade Database { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

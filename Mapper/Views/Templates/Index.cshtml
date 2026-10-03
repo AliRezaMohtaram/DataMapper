@@ -1,14 +1,4 @@
 ﻿@model Borc.DataMapper.Web.ViewModels.Templates.TemplateIndexViewModel
-@using System.Globalization
-@functions {
-    private static readonly PersianCalendar Pc = new();
-
-    private static string ToJalali(DateTime utc)
-    {
-        var d = DateTime.SpecifyKind(utc, DateTimeKind.Utc).ToLocalTime();
-        return $"{Pc.GetYear(d):0000}/{Pc.GetMonth(d):00}/{Pc.GetDayOfMonth(d):00} {d:HH:mm}";
-    }
-}
 @{
     ViewData["Title"] = "قالب‌ها";
 
@@ -28,6 +18,42 @@
 
 <!-- ================= فهرست قالب‌ها ================= -->
 
+@* <div class="panel card"> *@
+    
+    
+   
+
+
+
+    @* <form method="get" asp-action="Index">
+        <input type="hidden" name="pageSize" value="@result.PageSize" />
+        <div class="form-group">
+            <label for="templateSearch">جستجو در قالب‌ها (بر اساس کد یا نام):</label>
+            <input type="text" id="templateSearch" name="search" value="@filter.Search"
+                   placeholder="جستجوی سریع در قالب‌ها..." autocomplete="off">
+        </div>
+
+        <div class="form-group">
+            <label for="templateStatus">وضعیت:</label>
+            <select id="templateStatus" name="status">
+                <option value="">همه وضعیت‌ها</option>
+                @foreach (var st in Enum.GetValues<TemplateStatus>())
+                {
+                    <option value="@st" selected="@(filter.Status == st)">@st.ToLabel()</option>
+                }
+            </select>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn primary">جستجو</button>
+            <a asp-action="Index" asp-route-pageSize="@result.PageSize" class="btn ghost">پاکسازی فیلتر</a>
+        </div>
+    </form> *@
+
+@* </div> *@
+
+
+
 <div class="panel card">
     <div class="panel-header">
         <h2>قالب‌های پایه</h2>
@@ -43,48 +69,11 @@
         <a asp-action="Create" class="btn primary">+ قالب جدید</a>
     </div>
 
-    @if (TempData["Success"] is string okMessage)
-    {
-        <div class="status success show">@okMessage</div>
-    }
-
-    @if (TempData["Error"] is string errMessage)
-    {
-        <div class="status error show">@errMessage</div>
-    }
-
     @if (errors.Count > 0)
     {
         <div class="status error show">@string.Join(" — ", errors)</div>
     }
 
-    <form method="get" asp-action="Index">
-        <input type="hidden" name="pageSize" value="@result.PageSize" />
-        <div class="form-group">
-            <label for="templateSearch">جستجو در قالب‌ها (بر اساس کد یا نام):</label>
-            <input type="text" id="templateSearch" name="search" value="@filter.Search"
-                   placeholder="جستجوی سریع در قالب‌ها..." autocomplete="off">
-        </div>
-
-        <div class="form-group">
-            <label for="templateStatus">وضعیت:</label>
-            <select id="templateStatus" name="status">
-                <option value="">همه وضعیت‌ها</option>
-                @foreach (var st in Enum.GetValues<TemplateStatus>())
-                {
-                    <option value="@st" selected="@(filter.Status == st)">@st.ToString()</option>
-                }
-            </select>
-        </div>
-
-        <div class="actions">
-            <button type="submit" class="btn primary">جستجو</button>
-            <a asp-action="Index" asp-route-pageSize="@result.PageSize" class="btn ghost">پاکسازی فیلتر</a>
-        </div>
-    </form>
-</div>
-
-<div class="panel card">
     <div class="tscroll results-table-container">
         <table class="results-table">
             <thead>
@@ -119,7 +108,7 @@
                             <td>@t.Name</td>
                             <td style="white-space:normal;min-width:220px;text-align:right">@t.Description</td>
                             <td><span class="mode-badge">@t.Status.ToLabel()</span></td>
-                            <td dir="ltr">@ToJalali(t.CreatedAt)</td>
+                            <td dir="ltr">@t.CreatedAt.ToJalali()</td>
                             <td>
                                 <div class="row-actions">
                                     <a asp-action="Detail" asp-route-id="@t.Id" class="btn ghost low-padding"
@@ -209,8 +198,9 @@
     </div>
 </div>
 
-<partial name="_DeleteModal" />
 
+
+<partial name="_DeleteModal" />
 @section Scripts {
     <script src="~/js/confirm-delete.js" asp-append-version="true"></script>
 }
