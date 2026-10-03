@@ -1,15 +1,34 @@
-﻿using Borc.DataMapper.Domain.Templates;
+﻿using Borc.DataMapper.Domain.DataSources;
+using Borc.DataMapper.Domain.Imports;
+using Borc.DataMapper.Domain.Mappings;
+using Borc.DataMapper.Domain.Records;
+using Borc.DataMapper.Domain.Templates;
 using Microsoft.EntityFrameworkCore;
 
 namespace Borc.DataMapper.Application.Abstractions.Persistence;
 
-/// <summary>
-/// دسترسی Handlerها به دیتابیس. با نوشته شدن هر Entity، DbSet آن اینجا اضافه می‌شود.
-/// پیاده‌سازی: BorcDataMapperDbContext.
-/// </summary>
+
+//IApp works like Repo , unitOfWork 
+
 public interface IAppDbContext
 {
-    DbSet<Template> Templates { get; }
+    DbSet<Domain.Templates.Template> Templates { get; }
+    DbSet<TemplateVersion> TemplateVersions { get; }
+    DbSet<TemplateField> TemplateFields { get; }
+    DbSet<TemplateFieldAlias> TemplateFieldAliases { get; }
+    DbSet<TemplateLayout> TemplateLayouts { get; }
+    DbSet<PredefinedRegex> PredefinedRegexes { get; }
+
+
+    DbSet<Domain.DataSources.DataSource> DataSources { get; }
+
+    DbSet<MappingProfile> MappingProfiles { get; }
+    DbSet<MappingRule> MappingRules { get; }
+
+    DbSet<ImportBatch> ImportBatches { get; }
+    DbSet<ImportRow> ImportRows { get; }
+
+    DbSet<DataRecord> DataRecords { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

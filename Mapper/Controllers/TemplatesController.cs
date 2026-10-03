@@ -1,6 +1,9 @@
-﻿using Borc.DataMapper.Application.Templates.CreateTemplate;
+﻿using Borc.DataMapper.Application.Templates.ChangeTemplateStatus;
+using Borc.DataMapper.Application.Templates.CreateTemplate;
 using Borc.DataMapper.Application.Templates.DeleteTemplate;
+using Borc.DataMapper.Application.Templates.GetTemplate;
 using Borc.DataMapper.Application.Templates.ListTemplates;
+using Borc.DataMapper.Application.Templates.UpdateTemplate;
 using Borc.DataMapper.Domain.Templates;
 using Borc.DataMapper.Web.ViewModels.Templates;
 using MediatR;
@@ -88,5 +91,85 @@ public sealed class TemplatesController : Controller
             result.Message ?? (result.Success ? "قالب حذف شد." : "حذف قالب انجام نشد.");
 
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Detail(
+        long id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new Application.Templates.GetTemplate.GetTemplateQuery(id), cancellationToken);
+
+        if (!result.Success || result.Data is null)
+        {
+            TempData["Error"] = result.Message ?? "قالب موردنظر پیدا نشد.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(result.Data);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Edit(
+        long id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new Application.Templates.GetTemplate.GetTemplateQuery(id), cancellationToken);
+
+        if (!result.Success || result.Data is null)
+        {
+            TempData["Error"] = result.Message ?? "قالب موردنظر پیدا نشد.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        ViewData["Code"] = result.Data.Code;
+
+        return View(new UpdateTemplateCommand(
+            result.Data.Id,
+            result.Data.Name,
+            result.Data.Description));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditAsync(
+        UpdateTemplateCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (ModelState.IsValid)
+        {
+            var result = await _sender.Send(command, cancellationToken);
+
+            if (result.Success)
+            {
+                TempData["Success"] = result.Message ?? "قالب ویرایش شد.";
+                return RedirectToAction(nameof(Detail), new { id = command.Id });
+            }
+
+            ModelState.AddModelError(string.Empty, result.Message ?? "ویرایش قالب انجام نشد.");
+        }
+
+        // نمایش مجدد فرم: کد قالب برای نمایش فقط‌خواندنی دوباره خوانده می‌شود
+        var current = await _sender.Send(new Application.Templates.GetTemplate.GetTemplateQuery(command.Id), cancellationToken);
+        ViewData["Code"] = current.Data?.Code ?? string.Empty;
+
+        return View(command);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangeStatus(
+        long id,
+        TemplateStatus status,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(
+            new ChangeTemplateStatusCommand(id, status),
+            cancellationToken);
+
+        TempData[result.Success ? "Success" : "Error"] =
+            result.Message ?? (result.Success ? "وضعیت قالب تغییر کرد." : "تغییر وضعیت انجام نشد.");
+
+        return RedirectToAction(nameof(Detail), new { id });
     }
 }
