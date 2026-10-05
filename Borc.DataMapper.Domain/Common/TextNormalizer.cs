@@ -59,4 +59,25 @@ public static class TextNormalizer
 
         return string.Join(' ', sb.ToString().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     }
+
+    /// <summary>ارقام فارسی و عربی را به لاتین تبدیل می‌کند (بدون تغییر بقیهٔ متن).</summary>
+    public static string NormalizeDigits(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return string.Empty;
+
+        var sb = new StringBuilder(value.Length);
+
+        foreach (var ch in value)
+        {
+            if (ch >= '\u06F0' && ch <= '\u06F9')
+                sb.Append((char)('0' + (ch - '\u06F0')));
+            else if (ch >= '\u0660' && ch <= '\u0669')
+                sb.Append((char)('0' + (ch - '\u0660')));
+            else
+                sb.Append(ch);
+        }
+
+        return sb.ToString();
+    }
 }

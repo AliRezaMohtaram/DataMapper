@@ -5,6 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.1" />
+  </ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\Borc.DataMapper.Application\Borc.DataMapper.Application.csproj" />
 		<ProjectReference Include="..\Borc.DataMapper.Domain\Borc.DataMapper.Domain.csproj" />

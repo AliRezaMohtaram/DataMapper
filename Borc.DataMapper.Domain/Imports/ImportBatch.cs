@@ -97,6 +97,26 @@ public sealed class ImportBatch : EntityBase
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void SetRowCount(int totalRows)
+    {
+        Require(Status == ImportBatchStatus.Uploaded, "تعداد سطرها فقط پیش از اعتبارسنجی قابل تنظیم است.");
+
+        TotalRows = totalRows;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>بازگشت از «اعتبارسنجی‌شده» به «آپلودشده» برای تغییر تطبیق ستون‌ها.</summary>
+    public void ReopenForMapping()
+    {
+        Require(Status == ImportBatchStatus.Validated, "فقط ایمپورت اعتبارسنجی‌شده را می‌توان دوباره تطبیق داد.");
+
+        Status = ImportBatchStatus.Uploaded;
+        ValidRows = 0;
+        InvalidRows = 0;
+        StartedAt = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     private static void Require(bool condition, string message)
     {
         if (!condition)

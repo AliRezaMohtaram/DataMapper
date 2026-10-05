@@ -1,15 +1,20 @@
 ﻿using Borc.DataMapper.Application;
+using Borc.DataMapper.Application.Abstractions.Files;
 using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Infrastructure;
+using Borc.DataMapper.Infrastructure.Files;
 using Borc.DataMapper.Infrastructure.Persistence;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 
 builder.Services
-    .AddApplication()
-    .AddInfrastructure(builder.Configuration);  
+    .AddApplication().AddScoped<IExcelReader, ClosedXmlExcelReader>()
+    .AddInfrastructure(builder.Configuration);
+
+
 
 // Infrastructure/DependencyInjection.cs
 

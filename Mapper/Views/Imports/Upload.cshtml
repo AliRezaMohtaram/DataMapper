@@ -1,0 +1,80 @@
+@using Borc.DataMapper.Application.Imports.GetImportLookups
+@{
+    ViewData["Title"] = "آپلود فایل Excel";
+
+    var lookups = ViewData["Lookups"] as ImportLookupsDto
+        ?? new ImportLookupsDto(Array.Empty<ImportVersionOption>(), Array.Empty<ImportProfileOption>());
+}
+
+<div class="panel card">
+    <div class="panel-header">
+        <h2>آپلود فایل Excel</h2>
+    </div>
+
+    @if (lookups.Versions.Count == 0)
+    {
+        <div class="status error show">هنوز نسخهٔ منتشرشده‌ای وجود ندارد. ایمپورت فقط برای نسخهٔ منتشرشده ممکن است.</div>
+    }
+
+    <form asp-action="Upload" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="templateVersionId">قالب و نسخه (فقط نسخه‌های منتشرشده):</label>
+            <select id="templateVersionId" name="templateVersionId" required>
+                <option value="">— انتخاب کنید —</option>
+                @foreach (var v in lookups.Versions)
+                {
+                    <option value="@v.Id">@v.Label</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="mappingProfileId">پروفایل نگاشت (اختیاری):</label>
+            <select id="mappingProfileId" name="mappingProfileId">
+                <option value="">— بدون پروفایل (تطبیق خودکار) —</option>
+                @foreach (var p in lookups.Profiles)
+                {
+                    <option value="@p.Id" data-version="@p.VersionId">@p.Name</option>
+                }
+            </select>
+            <div class="hint">با پروفایل، ستون‌ها مطابق نگاشت ذخیره‌شده تطبیق داده می‌شوند و ستون‌های جدید با aliasها و نام فیلدها حدس زده می‌شوند.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="file">فایل Excel (xlsx):</label>
+            <input type="file" id="file" name="file" accept=".xlsx" required />
+            <div class="hint">
+                سطر اول باید سرستون‌ها باشد؛ اولین برگهٔ قابل‌مشاهده خوانده می‌شود.
+                حداکثر 10 مگابایت، 20٬000 سطر و 100 ستون. سلول‌های تاریخ شمسی (مثلاً 1405/07/13) هم پذیرفته می‌شوند.
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn primary">آپلود و ادامه</button>
+            <a asp-action="Index" class="btn ghost">انصراف</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        // فقط پروفایل‌های همان نسخهٔ انتخاب‌شده نمایش داده شوند
+        (function () {
+            var version = document.getElementById("templateVersionId");
+            var profile = document.getElementById("mappingProfileId");
+
+            function sync() {
+                Array.prototype.forEach.call(profile.options, function (o) {
+                    if (!o.value) return;
+                    var show = o.dataset.version === version.value;
+                    o.hidden = !show;
+                    o.disabled = !show;
+                });
+                if (profile.selectedOptions[0] && profile.selectedOptions[0].disabled) profile.value = "";
+            }
+
+            version.addEventListener("change", sync);
+            sync();
+        })();
+    </script>
+}
