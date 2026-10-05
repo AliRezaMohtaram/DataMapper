@@ -4,24 +4,24 @@ using Borc.DataMapper.Domain.Mappings;
 using Borc.DataMapper.Domain.Records;
 using Borc.DataMapper.Domain.Templates;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace Borc.DataMapper.Application.Abstractions.Persistence;
 
-
-//IApp works like Repo , unitOfWork 
-
+/// <summary>
+/// دسترسی Handlerها به دیتابیس. پیاده‌سازی: BorcDataMapperDbContext.
+/// </summary>
 public interface IAppDbContext
 {
-    DbSet<Domain.Templates.Template> Templates { get; }
+    DbSet<Template> Templates { get; }
     DbSet<TemplateVersion> TemplateVersions { get; }
     DbSet<TemplateField> TemplateFields { get; }
     DbSet<TemplateFieldAlias> TemplateFieldAliases { get; }
     DbSet<TemplateLayout> TemplateLayouts { get; }
     DbSet<PredefinedRegex> PredefinedRegexes { get; }
 
-
-    DbSet<Domain.DataSources.DataSource> DataSources { get; }
+    DbSet<DataSource> DataSources { get; }
 
     DbSet<MappingProfile> MappingProfiles { get; }
     DbSet<MappingRule> MappingRules { get; }
@@ -30,7 +30,11 @@ public interface IAppDbContext
     DbSet<ImportRow> ImportRows { get; }
 
     DbSet<DataRecord> DataRecords { get; }
+
+    /// <summary>برای تراکنش‌های چندمرحله‌ای (مثلاً کپی نسخه).</summary>
     DatabaseFacade Database { get; }
+
+    ChangeTracker ChangeTracker { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

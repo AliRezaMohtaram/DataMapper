@@ -34,21 +34,22 @@ public sealed class DeleteImportBatchHandler
 
         var now = DateTime.UtcNow;
 
-        await using var tx = await _db.Database.BeginTransactionAsync(cancellationToken);
+        return await _db.InTransactionAsync(async () =>
+        {
+            var b = await _db.ImportBatches.FirstAsync(x => x.Id == batch.Id, cancellationToken);
 
-        // سطرها ممکن است ده‌ها هزار تا باشند؛ حذف منطقی با یک دستور SQL
-        await _db.ImportRows
-            .Where(r => r.ImportBatchId == batch.Id)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(r => r.IsDeleted, true)
-                .SetProperty(r => r.DeletedAt, (DateTime?)now),
-                cancellationToken);
+            // سطرها ممکن است ده‌ها هزار تا باشند؛ حذف منطقی با یک دستور SQL
+            await _db.ImportRows
+                .Where(r => r.ImportBatchId == b.Id)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(r => r.IsDeleted, true)
+                    .SetProperty(r => r.DeletedAt, (DateTime?)now),
+                    cancellationToken);
 
-        batch.MarkAsDeleted();
-        await _db.SaveChangesAsync(cancellationToken);
+            b.MarkAsDeleted();
+            await _db.SaveChangesAsync(cancellationToken);
 
-        await tx.CommitAsync(cancellationToken);
-
-        return Result.Ok("ایمپورت حذف شد.");
+            return Result.Ok("ایمپورت حذف شد.");
+        }, cancellationToken);
     }
 }

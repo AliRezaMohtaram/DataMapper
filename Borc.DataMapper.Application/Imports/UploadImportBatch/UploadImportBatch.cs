@@ -93,40 +93,39 @@ public sealed class UploadImportBatchHandler
 
         try
         {
-            await using var tx = await _db.Database.BeginTransactionAsync(cancellationToken);
-
-            var batch = ImportBatch.Create(
-                version.Id,
-                fileName,
-                hash,
-                request.Content.Length,
-                request.MappingProfileId);
-
-            batch.SetRowCount(sheet.Rows.Count);
-
-            _db.ImportBatches.Add(batch);
-            await _db.SaveChangesAsync(cancellationToken);
-
-            for (var offset = 0; offset < sheet.Rows.Count; offset += ImportLimits.ChunkSize)
+            return await _db.InTransactionAsync(async () =>
             {
-                var count = Math.Min(ImportLimits.ChunkSize, sheet.Rows.Count - offset);
+                var batch = ImportBatch.Create(
+                    version.Id,
+                    fileName,
+                    hash,
+                    request.Content.Length,
+                    request.MappingProfileId);
 
-                for (var i = 0; i < count; i++)
+                batch.SetRowCount(sheet.Rows.Count);
+
+                _db.ImportBatches.Add(batch);
+                await _db.SaveChangesAsync(cancellationToken);
+
+                for (var offset = 0; offset < sheet.Rows.Count; offset += ImportLimits.ChunkSize)
                 {
-                    var row = sheet.Rows[offset + i];
+                    var count = Math.Min(ImportLimits.ChunkSize, sheet.Rows.Count - offset);
 
-                    _db.ImportRows.Add(ImportRow.Create(
-                        batch.Id,
-                        row.RowNumber,
-                        ImportJson.BuildRaw(sheet.Headers, row.Values)));
+                    for (var i = 0; i < count; i++)
+                    {
+                        var row = sheet.Rows[offset + i];
+
+                        _db.ImportRows.Add(ImportRow.Create(
+                            batch.Id,
+                            row.RowNumber,
+                            ImportJson.BuildRaw(sheet.Headers, row.Values)));
+                    }
+
+                    await _db.SaveChangesAsync(cancellationToken);
                 }
 
-                await _db.SaveChangesAsync(cancellationToken);
-            }
-
-            await tx.CommitAsync(cancellationToken);
-
-            return Result<long>.Ok(batch.Id, $"فایل بارگذاری شد ({sheet.Rows.Count} سطر)؛ ستون‌ها را تطبیق دهید.");
+                return Result<long>.Ok(batch.Id, $"فایل بارگذاری شد ({sheet.Rows.Count} سطر)؛ ستون‌ها را تطبیق دهید.");
+            }, cancellationToken);
         }
         catch (DbUpdateException)
         {

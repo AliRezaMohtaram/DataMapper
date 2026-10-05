@@ -49,39 +49,44 @@ public sealed class CommitImportBatchHandler
 
         try
         {
-            await using var tx = await _db.Database.BeginTransactionAsync(cancellationToken);
-
-            while (true)
+            await _db.InTransactionAsync(async () =>
             {
-                var chunk = await _db.ImportRows
-                    .Where(r => r.ImportBatchId == batch.Id && r.Status == ImportRowStatus.Valid)
-                    .OrderBy(r => r.Id)
-                    .Take(ImportLimits.ChunkSize)
-                    .ToListAsync(cancellationToken);
+                imported = 0;
 
-                if (chunk.Count == 0)
-                    break;
+                var b = await _db.ImportBatches.FirstAsync(x => x.Id == batch.Id, cancellationToken);
 
-                foreach (var row in chunk)
+                while (true)
                 {
-                    _db.DataRecords.Add(DataRecord.CreateFromImport(
-                        version.TemplateId,
-                        version.Id,
-                        row.MappedDataJson!,
-                        batch.Id,
-                        row.Id));
+                    var chunk = await _db.ImportRows
+                        .Where(r => r.ImportBatchId == b.Id && r.Status == ImportRowStatus.Valid)
+                        .OrderBy(r => r.Id)
+                        .Take(ImportLimits.ChunkSize)
+                        .ToListAsync(cancellationToken);
 
-                    row.MarkImported();
-                    imported++;
+                    if (chunk.Count == 0)
+                        break;
+
+                    foreach (var row in chunk)
+                    {
+                        _db.DataRecords.Add(DataRecord.CreateFromImport(
+                            version.TemplateId,
+                            version.Id,
+                            row.MappedDataJson!,
+                            b.Id,
+                            row.Id));
+
+                        row.MarkImported();
+                        imported++;
+                    }
+
+                    await _db.SaveChangesAsync(cancellationToken);
                 }
 
+                b.MarkImported();
                 await _db.SaveChangesAsync(cancellationToken);
-            }
 
-            batch.MarkImported();
-            await _db.SaveChangesAsync(cancellationToken);
-
-            await tx.CommitAsync(cancellationToken);
+                return true;
+            }, cancellationToken);
         }
         catch (DbUpdateException)
         {

@@ -106,82 +106,85 @@ public sealed class ApplyImportMappingHandler
                 return Result.Failure("پروفایلی با این نام برای این نسخه وجود دارد.");
         }
 
+        var batchId = batch.Id;
+
         var headerOfField = headerToField.ToDictionary(kv => kv.Value.Key, kv => kv.Key, StringComparer.OrdinalIgnoreCase);
 
         try
         {
-            await using var tx = await _db.Database.BeginTransactionAsync(cancellationToken);
-
-            if (profileName is not null)
-                await SaveProfileAsync(batch, version.Id, profileName, headerToField, cancellationToken);
-
-            batch.StartValidation();
-            await _db.SaveChangesAsync(cancellationToken);
-
-            var valid = 0;
-            var invalid = 0;
-            long lastId = 0;
-
-            while (true)
+            return await _db.InTransactionAsync(async () =>
             {
-                var currentLastId = lastId;
+                var b = await _db.ImportBatches.FirstAsync(x => x.Id == batchId, cancellationToken);
 
-                var chunk = await _db.ImportRows
-                    .Where(r => r.ImportBatchId == batch.Id && r.Id > currentLastId)
-                    .OrderBy(r => r.Id)
-                    .Take(ImportLimits.ChunkSize)
-                    .ToListAsync(cancellationToken);
+                if (profileName is not null)
+                    await SaveProfileAsync(b, version.Id, profileName, headerToField, cancellationToken);
 
-                if (chunk.Count == 0)
-                    break;
+                b.StartValidation();
+                await _db.SaveChangesAsync(cancellationToken);
 
-                foreach (var row in chunk)
+                var valid = 0;
+                var invalid = 0;
+                long lastId = 0;
+
+                while (true)
                 {
-                    var raw = ImportJson.ParseRaw(row.RawDataJson)
-                        .ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
+                    var currentLastId = lastId;
 
-                    var values = new List<KeyValuePair<string, object?>>();
-                    var errors = new List<string>();
+                    var chunk = await _db.ImportRows
+                        .Where(r => r.ImportBatchId == b.Id && r.Id > currentLastId)
+                        .OrderBy(r => r.Id)
+                        .Take(ImportLimits.ChunkSize)
+                        .ToListAsync(cancellationToken);
 
-                    foreach (var field in fields)
+                    if (chunk.Count == 0)
+                        break;
+
+                    foreach (var row in chunk)
                     {
-                        string? rawValue = null;
+                        var raw = ImportJson.ParseRaw(row.RawDataJson)
+                            .ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
 
-                        if (headerOfField.TryGetValue(field.Key, out var header))
-                            raw.TryGetValue(header, out rawValue);
+                        var values = new List<KeyValuePair<string, object?>>();
+                        var errors = new List<string>();
 
-                        var result = ImportValueValidator.Validate(field, rawValue);
+                        foreach (var field in fields)
+                        {
+                            string? rawValue = null;
 
-                        values.Add(new KeyValuePair<string, object?>(field.Key, result.Value));
+                            if (headerOfField.TryGetValue(field.Key, out var header))
+                                raw.TryGetValue(header, out rawValue);
 
-                        if (result.Error is not null)
-                            errors.Add(result.Error);
+                            var result = ImportValueValidator.Validate(field, rawValue);
+
+                            values.Add(new KeyValuePair<string, object?>(field.Key, result.Value));
+
+                            if (result.Error is not null)
+                                errors.Add(result.Error);
+                        }
+
+                        row.SetMapped(ImportJson.BuildMapped(values));
+
+                        if (errors.Count == 0)
+                        {
+                            row.MarkValid();
+                            valid++;
+                        }
+                        else
+                        {
+                            row.MarkInvalid(errors.Count, ImportJson.BuildErrors(errors));
+                            invalid++;
+                        }
                     }
 
-                    row.SetMapped(ImportJson.BuildMapped(values));
-
-                    if (errors.Count == 0)
-                    {
-                        row.MarkValid();
-                        valid++;
-                    }
-                    else
-                    {
-                        row.MarkInvalid(errors.Count, ImportJson.BuildErrors(errors));
-                        invalid++;
-                    }
+                    await _db.SaveChangesAsync(cancellationToken);
+                    lastId = chunk[^1].Id;
                 }
 
+                b.CompleteValidation(valid + invalid, valid, invalid);
                 await _db.SaveChangesAsync(cancellationToken);
-                lastId = chunk[^1].Id;
-            }
 
-            batch.CompleteValidation(valid + invalid, valid, invalid);
-            await _db.SaveChangesAsync(cancellationToken);
-
-            await tx.CommitAsync(cancellationToken);
-
-            return Result.Ok($"اعتبارسنجی انجام شد: {valid} سطر معتبر و {invalid} سطر نامعتبر.");
+                return Result.Ok($"اعتبارسنجی انجام شد: {valid} سطر معتبر و {invalid} سطر نامعتبر.");
+            }, cancellationToken);
         }
         catch (DbUpdateException)
         {
