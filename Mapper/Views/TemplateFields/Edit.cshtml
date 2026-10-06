@@ -1,131 +1,16 @@
-﻿@model Borc.DataMapper.Application.TemplateFields.UpdateTemplateField.UpdateTemplateFieldCommand
+@model Borc.DataMapper.Application.TemplateFields.UpdateTemplateField.UpdateTemplateFieldCommand
 @using Borc.DataMapper.Application.TemplateFields.GetTemplateField
 @{
     var info = (TemplateFieldDetailDto)ViewData["Info"]!;
     ViewData["Title"] = $"ویرایش فیلد {info.FieldKey}";
-
-    var modelErrors = ViewData.ModelState
-        .Where(kv => string.IsNullOrEmpty(kv.Key))
-        .SelectMany(kv => kv.Value!.Errors)
-        .Select(e => e.ErrorMessage)
-        .Where(m => !string.IsNullOrWhiteSpace(m))
-        .ToList();
 }
-<aside class="detail-aside">
-<div class="panel card">
-    <div class="panel-header">
-        <h2>ویرایش فیلد — @info.TemplateName (نسخه @info.VersionNo)</h2>
-
-        <div class="row-actions">
-            <button type="button" class="btn danger"
-                    data-delete-id="@info.Id" data-delete-name="@info.FieldKey"
-                    data-delete-url="@Url.Action("Delete", "TemplateFields")">
-                حذف فیلد
-            </button>
-        </div>
-    </div>
-
-    @if (modelErrors.Count > 0)
-    {
-        <div class="status error show">@string.Join(" — ", modelErrors)</div>
-    }
-
-    <form asp-action="Edit" method="post">
-        <input asp-for="Id" type="hidden" />
-
-        <div class="form-group">
-            <label>کلید فیلد:</label>
-            <input type="text" dir="ltr" value="@info.FieldKey" disabled />
-            <div class="hint">کلید فیلد پس از ایجاد قابل تغییر نیست.</div>
-        </div>
-
-        <div class="form-group">
-            <label asp-for="SortOrder">ترتیب نمایش:</label>
-            <input asp-for="SortOrder" dir="ltr" min="0" />
-            <span asp-validation-for="SortOrder" style="color:var(--danger);font-size:12px"></span>
-        </div>
-
-        <partial name="_FieldFormFields" model="Model" />
-
-        <div class="actions">
-            <button type="submit" class="btn primary">ذخیره تغییرات</button>
-            <a asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@info.TemplateVersionId" class="btn ghost">انصراف</a>
-        </div>
-    </form>
-</div>
-
-</aside>
-
-
-<div class="detail-layout">
-
-@* ============ ناحیه اصلی (سمت راست در RTL) ============ *@
-    <main class="detail-main">
-
-<div class="panel card">
-    <div class="panel-header">
-        <h2>aliasها (نام‌های جایگزین سرستون)</h2>
-        <div class="summary-stats"><span>تعداد: <b>@info.Aliases.Count</b></span></div>
-    </div>
-
-    <div class="hint">
-        aliasها هنگام تطبیق خودکار سرستون‌های Excel با این فیلد استفاده می‌شوند.
-        تفاوت ی/ک عربی و فارسی، اعراب، نیم‌فاصله و ارقام فارسی هنگام تطبیق نادیده گرفته می‌شود.
-    </div>
-
-    <div class="tscroll results-table-container">
-        <table class="results-table">
-            <thead>
-                <tr>
-                    <th>alias</th>
-                    <th>عملیات</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (info.Aliases.Count == 0)
-                {
-                    <tr><td colspan="2" class="entries-empty">هنوز aliasی ثبت نشده است.</td></tr>
-                }
-                else
-                {
-                    foreach (var a in info.Aliases)
-                    {
-                        <tr>
-                            <td>@a.Alias</td>
-                            <td>
-                                <form asp-action="DeleteAlias" method="post" style="display:inline">
-                                    <input type="hidden" name="id" value="@a.Id" />
-                                    <input type="hidden" name="fieldId" value="@info.Id" />
-                                    <button type="submit" class="btn danger low-padding">حذف</button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                }
-            </tbody>
-        </table>
-    </div>
-
-    <form asp-action="AddAlias" method="post">
-        <input type="hidden" name="templateFieldId" value="@info.Id" />
-
-        <div class="form-group">
-            <label for="newAlias">alias جدید:</label>
-            <input type="text" id="newAlias" name="alias" maxlength="250" autocomplete="off"
-                   placeholder="مثلاً نام سایت" />
-        </div>
-
-        <div class="actions">
-            <button type="submit" class="btn primary">+ افزودن alias</button>
-        </div>
-    </form>
-</div>
-</main>
+@* معمولاً این فرم از صفحهٔ نسخه در مودال باز می‌شود (data-modal)؛ این صفحه برای لینک مستقیم و حالت بدون JavaScript است. *@
+<div class="modal-page">
+    <partial name="_FieldForm" model="Model" />
 </div>
 
 <partial name="_DeleteModal" />
 
 @section Scripts {
     <script src="~/js/confirm-delete.js" asp-append-version="true"></script>
-    <script src="~/js/field-form.js" asp-append-version="true"></script>
 }

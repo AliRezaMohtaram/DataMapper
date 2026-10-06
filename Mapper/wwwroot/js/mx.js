@@ -554,6 +554,9 @@
             host.setAttribute("aria-labelledby", title.id);
         }
         await initComponents(host);
+        // The partial can carry a message for the action that produced it (e.g. "alias added")
+        const flash = $("[data-mx-toast]", host);
+        if (flash?.dataset.mxToast) toast(flash.dataset.mxToast, flash.dataset.mxToastTone || "success");
         const first = $("[autofocus]", host) ||
             $(".field-invalid :is(input, select, textarea)", host) ||
             visibleFocusables($(".modal-body", host) || host)[0];
@@ -579,6 +582,7 @@
     async function submitRemote(form, submitter) {
         const host = form.closest(".modal-overlay");
         const buttons = $$('button[type="submit"], button:not([type])', form);
+        if (submitter && !buttons.includes(submitter)) buttons.push(submitter);   // button outside the form (form="…")
         buttons.forEach(b => { b.disabled = true; });
         submitter?.setAttribute("aria-busy", "true");
 

@@ -1,52 +1,8 @@
-﻿@using Borc.DataMapper.Application.Templates.ChangeTemplateStatus
-@using Borc.DataMapper.Application.Templates.CreateTemplate
-@model CreateTemplateCommand
+@model Borc.DataMapper.Web.ViewModels.Templates.TemplateFormViewModel
 @{
     ViewData["Title"] = "قالب جدید";
-
-    var modelErrors = ViewData.ModelState
-        .Where(kv => string.IsNullOrEmpty(kv.Key))
-        .SelectMany(kv => kv.Value!.Errors)
-        .Select(e => e.ErrorMessage)
-        .Where(m => !string.IsNullOrWhiteSpace(m))
-        .ToList();
 }
-
-<div class="panel card">
-    <div class="panel-header">
-        <h2>قالب جدید</h2>
-    </div>
-
-    @if (modelErrors.Count > 0)
-    {
-        <div class="status error show">@string.Join(" — ", modelErrors)</div>
-    }
-
-    <form asp-action="Create" method="post">
-        <div class="form-group">
-            <label asp-for="Code">کد قالب (انگلیسی):</label>
-            <input asp-for="Code" dir="ltr" autocomplete="off" placeholder="مثلاً SITE" />
-            <span asp-validation-for="Code" style="color:var(--danger);font-size:12px"></span>
-            <div class="hint">فقط حروف انگلیسی، عدد، _ و -. کد پس از ایجاد قابل تغییر نیست.</div>
-        </div>
-
-        <div class="form-group">
-            <label asp-for="Name">نام قالب:</label>
-            <input asp-for="Name" autocomplete="off" placeholder="مثلاً اطلاعات پایه سایت" />
-            <span asp-validation-for="Name" style="color:var(--danger);font-size:12px"></span>
-        </div>
-
-        <div class="form-group">
-            <label asp-for="Description">توضیحات (اختیاری):</label>
-            <textarea asp-for="Description" rows="3"></textarea>
-            <span asp-validation-for="Description" style="color:var(--danger);font-size:12px"></span>
-        </div>
-
-        <div class="hint">قالب جدید با وضعیت «پیش‌نویس» ساخته می‌شود.</div>
-
-        <div class="actions">
-            <button type="submit" class="btn primary">ذخیره قالب</button>
-            <a asp-action="Index" class="btn ghost">انصراف</a>
-        </div>
-    </form>
+@* معمولاً این فرم در مودال باز می‌شود (data-modal)؛ این صفحه برای لینک مستقیم و حالت بدون JavaScript است. *@
+<div class="modal-page">
+    <partial name="_TemplateForm" model="Model" />
 </div>

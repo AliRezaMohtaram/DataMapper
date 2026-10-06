@@ -1,128 +1,146 @@
-﻿@model Borc.DataMapper.Application.Templates.GetTemplate.TemplateDetailDto
+@model Borc.DataMapper.Application.Templates.GetTemplate.TemplateDetailDto
+@using Borc.DataMapper.Web.ViewModels.Dashboard
 @{
     ViewData["Title"] = Model.Name;
+    ViewData["Subtitle"] = $"قالب {Model.Code} · {Model.Versions.Count.ToPersianNumber()} نسخه";
+
+    var published = Model.Versions.FirstOrDefault(v => v.Status == TemplateVersionStatus.Published);
+    var draft = Model.Versions.FirstOrDefault(v => v.Status == TemplateVersionStatus.Draft);
+    var here = Context.Request.Path.ToString();
 }
 
-<div class="page-grid">
+@section TopbarActions {
+    <a class="btn btn-ghost" asp-action="Index"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">همه قالب‌ها</span></a>
+}
 
-    <!-- ===== محتوای اصلی (سمت راست) ===== -->
-    <section class="page-main">
-        <div class="panel card">
-            <div class="panel-header">
-                <h2>نسخه‌ها</h2>
-                <div class="summary-stats"><span>تعداد: <b>@Model.Versions.Count</b></span></div>
+@if (published is null)
+{
+    <div class="callout tone-warning" style="margin-bottom:1rem">
+        <svg class="ico"><use href="#i-alert" /></svg>
+        <div>
+            این قالب هنوز <b>نسخهٔ منتشرشده</b> ندارد؛ ایمپورت فایل و ثبت رکورد فقط روی نسخهٔ منتشرشده ممکن است.
+            @if (draft is not null)
+            {
+                <text>فیلدهای <a class="link-btn" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@draft.Id">نسخهٔ @draft.VersionNo.ToPersianNumber() (پیش‌نویس)</a> را کامل و منتشر کنید.</text>
+            }
+            else
+            {
+                <text>یک نسخهٔ جدید بسازید و فیلدهایش را تعریف کنید.</text>
+            }
+        </div>
+    </div>
+}
 
-                <form asp-controller="TemplateVersions" asp-action="Create" method="post">
-                    <input type="hidden" name="templateId" value="@Model.Id" />
-                    <button type="submit" class="btn primary">+ نسخه جدید</button>
-                </form>
+<div class="split">
+
+    <article class="card rise">
+        <header class="card-head">
+            <div class="card-title">
+                <span class="card-ico"><svg class="ico"><use href="#i-layout" /></svg></span>
+                <div>نسخه‌ها<div class="card-sub">هر تغییر در فیلدها در یک نسخهٔ پیش‌نویس انجام و سپس منتشر می‌شود.</div></div>
             </div>
+            <form asp-controller="TemplateVersions" asp-action="Create" method="post">
+                <input type="hidden" name="templateId" value="@Model.Id" />
+                <button type="submit" class="btn btn-soft btn-sm"><svg class="ico"><use href="#i-plus" /></svg>نسخهٔ جدید</button>
+            </form>
+        </header>
 
-            <div class="tscroll results-table-container">
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th>نسخه</th>
-                            <th>وضعیت</th>
-                            <th>تعداد فیلد</th>
-                            <th>Layout</th>
-                            <th>تاریخ ایجاد</th>
-                            <th>تاریخ انتشار</th>
-                        </tr>
-                    </thead>
+        @if (Model.Versions.Count == 0)
+        {
+            <div class="empty">هنوز نسخه‌ای برای این قالب ساخته نشده است.</div>
+        }
+        else
+        {
+            <div class="tbl-wrap">
+                <table class="tbl">
+                    <thead><tr><th>نسخه</th><th>وضعیت</th><th>فیلدها</th><th>چیدمان فرم</th><th>ایجاد</th><th>انتشار</th><th></th></tr></thead>
                     <tbody>
-                        @if (Model.Versions.Count == 0)
+                        @foreach (var v in Model.Versions)
                         {
-                            <tr><td colspan="6" class="entries-empty">هنوز نسخه‌ای برای این قالب ثبت نشده است.</td></tr>
-                        }
-                        else
-                        {
-                            foreach (var v in Model.Versions)
-                            {
-                                <tr>
-                                    <td><a asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@v.Id">نسخه @v.VersionNo</a></td>
-                                    <td><span class="mode-badge">@v.Status.ToLabel()</span></td>
-                                    <td>@v.FieldCount</td>
-                                    <td>
-                                        <a asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@v.Id">
-                                            @* @(v.Status == TemplateVersionStatus.Draft ? "طراحی" : "مشاهده") *@
-                                            مشاهده
-
-                                        </a>
-                                        <span class="mode-badge">@(v.HasLayout ? "دارد" : "ندارد")</span>
-                                    </td>
-                                    <td dir="ltr">@v.CreatedAt.ToJalali()</td>
-                                    <td dir="ltr">@v.PublishedAt.ToJalali()</td>
-                                </tr>
-                            }
+                            <tr>
+                                <td><a class="cell-main" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@v.Id">نسخهٔ @v.VersionNo.ToPersianNumber()</a></td>
+                                <td><span class="badge @v.Status.BadgeClass()">@v.Status.ToLabel()</span></td>
+                                <td class="nums">@v.FieldCount.ToPersianNumber()</td>
+                                <td>
+                                    @if (v.HasLayout)
+                                    {
+                                        <span class="tag tone-success">طراحی‌شده</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="tag" style="--tone:var(--line-rgb)">فرم خودکار</span>
+                                    }
+                                </td>
+                                <td class="cell-sub nums">@v.CreatedAt.ToJalali().ToPersianDigits()</td>
+                                <td class="cell-sub nums">@(v.PublishedAt.HasValue ? v.PublishedAt.ToJalali().ToPersianDigits() : "—")</td>
+                                <td>
+                                    <div class="row-actions">
+                                        <a class="icon-btn sm primary" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@v.Id" title="فیلدهای نسخه" aria-label="فیلدهای نسخهٔ @v.VersionNo"><svg class="ico"><use href="#i-eye" /></svg></a>
+                                        <a class="icon-btn sm" asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@v.Id" title="طراح چیدمان فرم" aria-label="طراح چیدمان نسخهٔ @v.VersionNo"><svg class="ico"><use href="#i-layout" /></svg></a>
+                                    </div>
+                                </td>
+                            </tr>
                         }
                     </tbody>
                 </table>
             </div>
-        </div>
-    </section>
+        }
+    </article>
 
-    <!-- ===== اطلاعات کلی (aside سمت چپ) ===== -->
-    <aside class="page-aside">
-        <div class="panel card">
-            <div class="aside-title">@Model.Name</div>
-            <span class="mode-badge">@Model.Status.ToLabel()</span>
-
-            <dl class="info-list">
-                <div>
-                    <dt>کد قالب</dt>
-                    <dd dir="ltr" style="text-align:right"><code style="font-family:var(--mono)">@Model.Code</code></dd>
+    <aside class="split-side">
+        <article class="card rise" style="--i:1">
+            <div class="card-body">
+                <div class="row" style="justify-content:space-between;align-items:flex-start">
+                    <div class="hero-title">@Model.Name</div>
+                    <span class="badge @Model.Status.BadgeClass()">@Model.Status.ToLabel()</span>
                 </div>
-                <div>
-                    <dt>توضیحات</dt>
-                    <dd>@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</dd>
-                </div>
-                <div>
-                    <dt>تاریخ ایجاد</dt>
-                    <dd dir="ltr" style="text-align:right">@Model.CreatedAt.ToJalali()</dd>
-                </div>
-                <div>
-                    <dt>آخرین ویرایش</dt>
-                    <dd dir="ltr" style="text-align:right">@Model.UpdatedAt.ToJalali()</dd>
-                </div>
-            </dl>
-
-            <div class="aside-actions">
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn primary block">ویرایش</a>
-
-                @foreach (var target in Model.AllowedStatuses)
+                <div class="code" style="margin-top:.2rem">@Model.Code</div>
+                @if (!string.IsNullOrWhiteSpace(Model.Description))
                 {
-                    var formId = $"statusForm_{target}";
-
-                    <form id="@formId" asp-action="ChangeStatus" method="post" style="display:none">
-                        <input type="hidden" name="id" value="@Model.Id" />
-                        <input type="hidden" name="status" value="@target" />
-                    </form>
-
-                    @if (target == TemplateStatus.Archived)
-                    {
-                        <button type="button" class="btn danger block"
-                                data-confirm-target="@formId"
-                                data-confirm-message="بایگانی قالب غیرقابل بازگشت است. ادامه می‌دهید؟">
-                            @target.ToActionLabel()
-                        </button>
-                    }
-                    else
-                    {
-                        <button type="submit" form="@formId" class="btn secondary block">@target.ToActionLabel()</button>
-                    }
+                    <p class="hero-desc">@Model.Description</p>
                 }
 
-                <a asp-action="Index" class="btn ghost block">بازگشت به فهرست</a>
-
-                <button type="button" class="btn danger block"
-                        data-delete-id="@Model.Id" data-delete-name="@Model.Name">
-                    حذف قالب
-                </button>
+                <dl class="dl stacked" style="margin-top:1rem">
+                    <div><dt>نسخهٔ منتشرشده</dt><dd>@(published is null ? "—" : $"نسخهٔ {published.VersionNo.ToPersianNumber()} · {published.FieldCount.ToPersianNumber()} فیلد")</dd></div>
+                    <div><dt>تاریخ ایجاد</dt><dd class="nums">@Model.CreatedAt.ToJalali().ToPersianDigits()</dd></div>
+                    <div><dt>آخرین ویرایش</dt><dd class="nums">@Model.UpdatedAt.ToJalali().ToPersianDigits()</dd></div>
+                </dl>
             </div>
-        </div>
-    </aside>
 
+            <div class="card-foot" style="display:block">
+                <div class="action-stack">
+                    <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Id" asp-route-returnUrl="@here" data-modal><svg class="ico"><use href="#i-edit" /></svg>ویرایش مشخصات</a>
+
+                    @foreach (var target in Model.AllowedStatuses)
+                    {
+                        var formId = $"statusForm_{target}";
+                        <form id="@formId" asp-action="ChangeStatus" method="post" hidden>
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <input type="hidden" name="status" value="@target" />
+                        </form>
+
+                        @if (target == TemplateStatus.Archived)
+                        {
+                            <button type="button" class="btn btn-ghost" data-confirm-target="@formId"
+                                    data-confirm-title="بایگانی قالب"
+                                    data-confirm-message="بایگانی قالب غیرقابل بازگشت است. ادامه می‌دهید؟">
+                                <svg class="ico"><use href="#i-download" /></svg>@target.ToActionLabel()
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="submit" form="@formId" class="btn btn-ghost"><svg class="ico"><use href="#i-refresh" /></svg>@target.ToActionLabel()</button>
+                        }
+                    }
+
+                    <div class="dd-sep"></div>
+                    <button type="button" class="btn btn-danger-soft" data-delete-id="@Model.Id" data-delete-name="@Model.Name">
+                        <svg class="ico"><use href="#i-trash" /></svg>حذف قالب
+                    </button>
+                </div>
+            </div>
+        </article>
+    </aside>
 </div>
 
 <partial name="_DeleteModal" />

@@ -1,5 +1,5 @@
 /* مودال تأیید حذف — با هر عنصری که data-delete-id داشته باشد کار می‌کند.
-   <button type="button" data-delete-id="5" data-delete-name="نام رکورد">
+   <button type="button" data-delete-id="5" data-delete-name="نام رکورد" [data-delete-url="/Controller/Delete"]>
    باز/بسته شدن، Esc، کلیک بیرون و نگه‌داشتن فوکوس را mx.js انجام می‌دهد. */
 (() => {
     "use strict";
@@ -9,6 +9,10 @@
 
     const message = document.getElementById("deleteMessage");
     const idInput = document.getElementById("deleteId");
+    const form = idInput.form;
+    // اکشن پیش‌فرض = Delete همان Controller صفحه؛ data-delete-url آن را برای همان دکمه عوض می‌کند
+    // (مثلاً حذف فیلد از صفحهٔ نسخه)
+    const defaultAction = form.getAttribute("action");
 
     document.addEventListener("click", (e) => {
         const trigger = e.target.closest("[data-delete-id]");
@@ -16,6 +20,7 @@
 
         const name = trigger.dataset.deleteName;
         idInput.value = trigger.dataset.deleteId;
+        form.setAttribute("action", trigger.dataset.deleteUrl || defaultAction);
         message.textContent = name
             ? `آیا از حذف «${name}» مطمئن هستید؟\nاین عملیات قابل بازگشت نیست.`
             : "آیا از حذف این مورد مطمئن هستید؟";

@@ -95,6 +95,14 @@ public static class DashboardUi
         _ => ""
     };
 
+    public static string BadgeClass(this TemplateVersionStatus status) => status switch
+    {
+        TemplateVersionStatus.Draft => "st-draft",
+        TemplateVersionStatus.Published => "st-active",
+        TemplateVersionStatus.Archived => "st-archived",
+        _ => ""
+    };
+
     public static string Icon(DataSourceType type) => type switch
     {
         DataSourceType.StaticList => "i-list",

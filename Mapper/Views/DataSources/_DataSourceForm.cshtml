@@ -1,4 +1,5 @@
 @model Borc.DataMapper.Web.ViewModels.DataSources.DataSourceFormViewModel
+@inject Microsoft.AspNetCore.Mvc.ViewFeatures.IFileVersionProvider FileVersions
 @using Borc.DataMapper.Domain.DataSources
 @using Borc.DataMapper.Web.ViewModels.Dashboard
 @using Borc.DataMapper.Web.ViewModels.DataSources
@@ -26,7 +27,7 @@
 }
 
 <form class="modal modal-lg" method="post" asp-action="@(isEdit ? "Edit" : "Create")"
-      data-mx-ajax data-mx-init="ds-form" data-mx-src="@Url.Content("~/js/datasource-form.js")"
+      data-mx-ajax data-mx-init="ds-form" data-mx-src="@FileVersions.AddFileVersionToPath(Context.Request.PathBase, "/js/datasource-form.js")"
       data-ds-current="@Model.SourceType" novalidate>
 
     <div class="modal-head">

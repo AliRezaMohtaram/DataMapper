@@ -669,6 +669,39 @@ tr:hover .row-actions, .row-actions:focus-within { opacity:1; }
 .src-name { font-size:.85rem; font-weight:700; color:var(--text-strong); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .src-meta { font-size:.72rem; color:var(--faint); display:flex; gap:.5rem; flex-wrap:wrap; }
 
+/* ── List pages: toolbar, link pager ─────────── */
+.toolbar { display:flex; align-items:center; gap:.55rem; flex-wrap:wrap; padding:.75rem 1.15rem; border-bottom:1px solid var(--line); }
+.toolbar form { display:contents; }
+.toolbar .input-wrap { flex:1 1 16rem; }
+.toolbar .select { width:auto; min-width:10.5rem; }
+.toolbar .input, .toolbar .select { height:2.3rem; }
+.pager a, .pager span {
+  min-width:1.9rem; height:1.9rem; padding:0 .5rem;
+  display:inline-grid; place-items:center;
+  border:1px solid var(--line); border-radius:var(--radius-xs);
+  color:var(--muted); font-size:.78rem;
+}
+.pager a:hover { background:var(--surface-2); color:var(--text-strong); }
+.pager [aria-disabled="true"] { opacity:.4; }
+.pager .pager-now { border-color:transparent; color:var(--text); }
+.page-size { display:inline-flex; align-items:center; gap:.45rem; font-size:.78rem; color:var(--muted); }
+.page-size .select { width:auto; height:1.95rem; font-size:.78rem; padding-block:0; }
+
+/* ── Detail pages: main + side column ───────── */
+.split { display:grid; grid-template-columns:minmax(0, 1fr) 21rem; gap:1rem; align-items:start; }
+.split-side { display:grid; gap:1rem; position:sticky; top:calc(var(--topbar-h) + 1rem); }
+.hero-title { font-size:1.1rem; font-weight:800; color:var(--text-strong); line-height:1.5; }
+.hero-desc { font-size:.84rem; color:var(--muted); margin-top:.35rem; line-height:1.8; }
+.dl.stacked { grid-template-columns:minmax(0, 1fr); gap:.75rem; }
+.action-stack { display:grid; gap:.5rem; }
+.action-stack .btn, .action-stack form .btn { width:100%; }
+.action-stack form { margin:0; }
+.action-stack .dd-sep { margin:.25rem 0; }
+@media (max-width: 1100px) {
+  .split { grid-template-columns:minmax(0, 1fr); }
+  .split-side { position:static; order:-1; }
+}
+
 /* ================================================================
    13. FORMS
    ================================================================ */
@@ -710,6 +743,35 @@ tr:hover .row-actions, .row-actions:focus-within { opacity:1; }
 }
 .fieldset-title::after { content:""; flex:1; height:1px; background:var(--line); }
 .fieldset-title:first-child { margin-top:0; }
+
+/* Collapsible advanced section */
+details.adv { margin-top:1.2rem; border:1px solid var(--line); border-radius:var(--radius); }
+details.adv > summary {
+  display:flex; align-items:center; gap:.5rem; padding:.65rem .9rem;
+  font-size:.8rem; font-weight:700; color:var(--muted); cursor:pointer; list-style:none;
+}
+details.adv > summary::-webkit-details-marker { display:none; }
+details.adv > summary::after { content:""; margin-inline-start:auto; width:.45rem; height:.45rem; border:solid currentColor; border-width:0 0 1.5px 1.5px; transform:rotate(-45deg); transition:transform .2s; }
+details.adv[open] > summary { color:var(--text-strong); border-bottom:1px solid var(--line); }
+details.adv[open] > summary::after { transform:rotate(135deg); }
+details.adv > .adv-body { padding:.9rem; }
+
+/* Alias chips (field form) */
+.alias-list { display:flex; flex-wrap:wrap; gap:.45rem; }
+.alias-chip {
+  display:inline-flex; align-items:center; gap:.35rem; margin:0;
+  padding:.22rem .3rem .22rem .75rem; border-radius:99px;
+  border:1px solid var(--line-strong); background:var(--surface-2);
+  font-size:.83rem; color:var(--text-strong);
+}
+.alias-remove {
+  width:1.4rem; height:1.4rem; display:grid; place-items:center; border:0; border-radius:50%;
+  background:transparent; color:var(--muted);
+}
+.alias-remove:hover { background:var(--danger-soft); color:var(--danger); }
+.alias-remove .ico { width:.85rem; height:.85rem; }
+.alias-remove[aria-busy="true"] { opacity:.4; }
+.alias-add { display:flex; gap:.5rem; margin-top:1rem; }
 
 /* Option cards (radio / checkbox) */
 .opt-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(11rem, 1fr)); gap:.6rem; }
