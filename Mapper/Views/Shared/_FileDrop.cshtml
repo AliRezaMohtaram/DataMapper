@@ -1,0 +1,40 @@
+@model Borc.DataMapper.Web.ViewModels.FileDropModel
+@using Borc.DataMapper.Web.ViewModels
+@*
+    ناحیهٔ انتخاب فایل با کشیدن و رها کردن (کامپوننت «file-drop» در mx.js).
+    خود input[type=file] در فرم می‌ماند؛ بدون JavaScript هم کلیک روی ناحیه پنجرهٔ انتخاب فایل را باز می‌کند.
+*@
+@{
+    var formats = string.Join("، ", Model.Accept.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+        .Select(e => e.TrimStart('.').ToUpperInvariant()));
+    var maxMb = (Model.MaxBytes / (1024 * 1024)).ToString().ToPersianDigits();
+}
+<div class="file-drop" data-mx-init="file-drop" data-max-bytes="@Model.MaxBytes">
+    <input class="file-drop-input" type="file" id="@Model.Name" name="@Model.Name" accept="@Model.Accept"
+           required="@Model.Required" aria-describedby="@(Model.Name)Hint @(Model.Name)Error" />
+
+    <label class="dropzone" for="@Model.Name">
+        <span class="dropzone-ico"><svg class="ico"><use href="#i-upload" /></svg></span>
+        <b>فایل را اینجا رها کنید یا کلیک کنید</b>
+        <p id="@(Model.Name)Hint">@formats — حداکثر @maxMb مگابایت</p>
+    </label>
+
+    <div class="filecard" data-file-card hidden>
+        <span class="file-ico" data-file-kind>FILE</span>
+        <div class="filecard-main">
+            <div class="cell-main" data-file-name></div>
+            <div class="cell-sub" data-file-meta></div>
+        </div>
+        <span class="badge st-imported">آماده ارسال</span>
+        <button class="icon-btn sm danger" type="button" data-file-remove title="برداشتن فایل" aria-label="برداشتن فایل">
+            <svg class="ico"><use href="#i-trash" /></svg>
+        </button>
+    </div>
+
+    <div class="upload-progress" data-file-progress hidden>
+        <div class="upload-progress-head"><span class="spinner"></span><span>در حال بارگذاری و خواندن فایل…</span></div>
+        <div class="upload-progress-bar"><i></i></div>
+    </div>
+
+    <span class="field-error" id="@(Model.Name)Error" data-file-error role="alert"></span>
+</div>

@@ -1,59 +1,8 @@
 @model Borc.DataMapper.Application.MappingProfiles.CreateMappingProfile.CreateMappingProfileCommand
-@using Borc.DataMapper.Application.MappingProfiles.GetMappingProfileLookups
 @{
     ViewData["Title"] = "پروفایل نگاشت جدید";
-
-    var versions = ViewData["Versions"] as IReadOnlyList<ProfileVersionOption>
-        ?? Array.Empty<ProfileVersionOption>();
-
-    var modelErrors = ViewData.ModelState
-        .Where(kv => string.IsNullOrEmpty(kv.Key))
-        .SelectMany(kv => kv.Value!.Errors)
-        .Select(e => e.ErrorMessage)
-        .Where(m => !string.IsNullOrWhiteSpace(m))
-        .ToList();
 }
-
-<div class="panel card">
-    <div class="panel-header">
-        <h2>پروفایل نگاشت جدید</h2>
-    </div>
-
-    @if (modelErrors.Count > 0)
-    {
-        <div class="status error show">@string.Join(" — ", modelErrors)</div>
-    }
-
-    <form asp-action="Create" method="post">
-        <div class="form-group">
-            <label asp-for="Name">نام پروفایل:</label>
-            <input asp-for="Name" autocomplete="off" placeholder="مثلاً فایل ماهانهٔ پیمانکار الف" />
-            <span asp-validation-for="Name" style="color:var(--danger);font-size:12px"></span>
-        </div>
-
-        <div class="form-group">
-            <label asp-for="TemplateVersionId">قالب و نسخه:</label>
-            <select asp-for="TemplateVersionId">
-                <option value="0">— انتخاب کنید —</option>
-                @foreach (var v in versions)
-                {
-                    <option value="@v.Id" selected="@(Model.TemplateVersionId == v.Id)">@v.Label</option>
-                }
-            </select>
-            <span asp-validation-for="TemplateVersionId" style="color:var(--danger);font-size:12px"></span>
-            <div class="hint">نسخه پس از ساخت پروفایل قابل تغییر نیست؛ ایمپورت فقط با نسخهٔ منتشرشده انجام می‌شود.</div>
-        </div>
-
-        <div class="form-group">
-            <label asp-for="SourceType">نوع فایل مبدأ:</label>
-            <select asp-for="SourceType">
-                <option value="@Borc.DataMapper.Domain.Mappings.ImportSourceType.Excel" selected>Excel (xlsx)</option>
-            </select>
-        </div>
-
-        <div class="actions">
-            <button type="submit" class="btn primary">ذخیره و افزودن قاعده</button>
-            <a asp-action="Index" class="btn ghost">انصراف</a>
-        </div>
-    </form>
+@* معمولاً این فرم در مودال باز می‌شود (data-modal)؛ این صفحه برای لینک مستقیم و حالت بدون JavaScript است. *@
+<div class="modal-page">
+    <partial name="_ProfileForm" model="Model" />
 </div>

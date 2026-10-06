@@ -1,169 +1,180 @@
 @model Borc.DataMapper.Application.TemplateVersions.GetTemplateVersion.TemplateVersionDetailDto
+@using Borc.DataMapper.Web.ViewModels.Dashboard
 @{
-    ViewData["Title"] = $"{Model.TemplateName} - نسخه {Model.VersionNo}";
+    ViewData["Title"] = $"{Model.TemplateName} — نسخهٔ {Model.VersionNo.ToPersianNumber()}";
+    ViewData["Subtitle"] = $"قالب {Model.TemplateCode} · {Model.Fields.Count.ToPersianNumber()} فیلد";
 
     var isDraft = Model.Status == TemplateVersionStatus.Draft;
     var isArchived = Model.Status == TemplateVersionStatus.Archived;
-    var canEditLayout = !isArchived; // پیش‌نویس یا منتشرشده
+    var deleteFieldUrl = Url.Action("Delete", "TemplateFields");
+    var required = Model.Fields.Count(f => f.IsRequired);
+    var withAlias = Model.Fields.Count(f => f.AliasCount > 0);
 }
 
+@section TopbarActions {
+    <a class="btn btn-ghost" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">بازگشت به قالب</span></a>
+}
 
+@if (!isDraft)
+{
+    <div class="callout @(isArchived ? "tone-violet" : "tone-info")" style="margin-bottom:1rem">
+        <svg class="ico"><use href="#i-info" /></svg>
+        <div>
+            این نسخه @(isArchived ? "بایگانی شده" : "منتشر شده") و فیلدهایش قابل تغییر نیست.
+            برای تغییر ساختار، از صفحهٔ قالب یک <b>نسخهٔ جدید</b> بسازید؛ فیلدها، نام‌های مستعار و چیدمان آخرین نسخه در آن کپی می‌شوند.
+        </div>
+    </div>
+}
 
- 
-<div class="page-grid">
+<div class="split">
 
-    <!-- ===== محتوای اصلی (سمت راست) ===== -->
-    <section class="page-main">
-        <div class="panel card">
-            <div class="panel-header">
-                <h2>فیلدها</h2>
-                <div class="summary-stats"><span>تعداد: <b>@Model.Fields.Count</b></span></div>
+    <article class="card rise">
+        <header class="card-head">
+            <div class="card-title">
+                <span class="card-ico"><svg class="ico"><use href="#i-list" /></svg></span>
+                <div>فیلدها<div class="card-sub">@Model.Fields.Count.ToPersianNumber() فیلد · @required.ToPersianNumber() الزامی · @withAlias.ToPersianNumber() دارای نام مستعار</div></div>
+            </div>
+            @if (isDraft)
+            {
+                <a class="btn btn-primary btn-sm" asp-controller="TemplateFields" asp-action="Create" asp-route-templateVersionId="@Model.Id" data-modal>
+                    <svg class="ico"><use href="#i-plus" /></svg>فیلد جدید
+                </a>
+            }
+        </header>
 
+        @if (Model.Fields.Count == 0)
+        {
+            <div class="empty">
+                <p>این نسخه هنوز فیلدی ندارد.</p>
                 @if (isDraft)
                 {
-                    <a asp-controller="TemplateFields" asp-action="Create"
-                       asp-route-templateVersionId="@Model.Id" class="btn primary">+ فیلد جدید</a>
+                    <a class="btn btn-soft btn-sm" style="margin-top:.8rem" asp-controller="TemplateFields" asp-action="Create" asp-route-templateVersionId="@Model.Id" data-modal><svg class="ico"><use href="#i-plus" /></svg>اولین فیلد</a>
                 }
             </div>
-
-            <div class="tscroll results-table-container">
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th>ترتیب</th>
-                            <th>کلید فیلد</th>
-                            <th>برچسب</th>
-                            <th>نوع داده</th>
-                            <th>نوع در مقصد</th>
-                            <th>الزامی</th>
-                            <th>تعداد alias</th>
-                            <th>عملیات</th>
-                        </tr>
-                    </thead>
+        }
+        else
+        {
+            <div class="tbl-wrap">
+                <table class="tbl">
+                    <thead><tr><th>#</th><th>فیلد</th><th>نوع داده</th><th>الزامی</th><th>نام مستعار</th><th></th></tr></thead>
                     <tbody>
-                        @if (Model.Fields.Count == 0)
+                        @foreach (var f in Model.Fields)
                         {
-                            <tr><td colspan="8" class="entries-empty">این نسخه هنوز فیلدی ندارد.</td></tr>
-                        }
-                        else
-                        {
-                            foreach (var f in Model.Fields)
-                            {
-                                <tr>
-                                    <td>@f.SortOrder</td>
-                                    <td dir="ltr"><code style="font-family:var(--mono)">@f.FieldKey</code></td>
-                                    <td>@f.Label</td>
-                                    <td>@f.DataType.ToLabel()</td>
-                                    <td dir="ltr">@f.DbType</td>
-                                    <td>@(f.IsRequired ? "بله" : "—")</td>
-                                    <td>@f.AliasCount</td>
-                                    <td>
-                                        @if (isDraft)
-                                        {
-                                            <div class="row-actions">
-                                                <a asp-controller="TemplateFields" asp-action="Edit" asp-route-id="@f.Id"
-                                                   class="btn primary low-padding" title="ویرایش" aria-label="ویرایش">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                                         fill="none" stroke="currentColor" stroke-width="2"
-                                                         stroke-linecap="round" stroke-linejoin="round">
-                                                        <path d="M12 20h9" />
-                                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                                                    </svg>
-                                                </a>
-
-                                                <button type="button" class="btn danger low-padding" title="حذف" aria-label="حذف"
-                                                        data-delete-id="@f.Id" data-delete-name="@f.FieldKey"
-                                                        data-delete-url="@Url.Action("Delete", "TemplateFields")">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                                         fill="none" stroke="currentColor" stroke-width="2"
-                                                         stroke-linecap="round" stroke-linejoin="round">
-                                                        <polyline points="3 6 5 6 21 6" />
-                                                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                                                        <path d="M10 11v6" />
-                                                        <path d="M14 11v6" />
-                                                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <text>—</text>
-                                        }
-                                    </td>
-                                </tr>
-                            }
+                            <tr>
+                                <td class="cell-sub nums">@f.SortOrder.ToPersianNumber()</td>
+                                <td>
+                                    @if (isDraft)
+                                    {
+                                        <a class="cell-main" asp-controller="TemplateFields" asp-action="Edit" asp-route-id="@f.Id" data-modal>@f.Label</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="cell-main">@f.Label</span>
+                                    }
+                                    <div class="code">@f.FieldKey</div>
+                                </td>
+                                <td><div>@f.DataType.ToLabel()</div><div class="cell-sub mono">@f.DbType</div></td>
+                                <td>
+                                    @if (f.IsRequired)
+                                    {
+                                        <span class="badge st-validating">الزامی</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="cell-sub">اختیاری</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (f.AliasCount > 0)
+                                    {
+                                        <span class="tag tg-alias">@f.AliasCount.ToPersianNumber() نام</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="cell-sub">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (isDraft)
+                                    {
+                                        <div class="row-actions">
+                                            <a class="icon-btn sm" asp-controller="TemplateFields" asp-action="Edit" asp-route-id="@f.Id" data-modal title="ویرایش" aria-label="ویرایش @f.FieldKey"><svg class="ico"><use href="#i-edit" /></svg></a>
+                                            <button class="icon-btn sm danger" type="button" title="حذف" aria-label="حذف @f.FieldKey"
+                                                    data-delete-id="@f.Id" data-delete-name="فیلد @f.FieldKey" data-delete-url="@deleteFieldUrl">
+                                                <svg class="ico"><use href="#i-trash" /></svg>
+                                            </button>
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
                         }
                     </tbody>
                 </table>
             </div>
-        </div>
+        }
+    </article>
 
+    <aside class="split-side">
+        <article class="card rise" style="--i:1">
+            <div class="card-body">
+                <div class="row" style="justify-content:space-between;align-items:flex-start">
+                    <div>
+                        <div class="hero-title">نسخهٔ @Model.VersionNo.ToPersianNumber()</div>
+                        <a class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a>
+                    </div>
+                    <span class="badge @Model.Status.BadgeClass()">@Model.Status.ToLabel()</span>
+                </div>
 
-</section>
+                <dl class="dl stacked" style="margin-top:1rem">
+                    <div><dt>کد قالب</dt><dd><span class="code">@Model.TemplateCode</span></dd></div>
+                    <div><dt>تاریخ ایجاد</dt><dd class="nums">@Model.CreatedAt.ToJalali().ToPersianDigits()</dd></div>
+                    <div><dt>آخرین ویرایش</dt><dd class="nums">@Model.UpdatedAt.ToJalali().ToPersianDigits()</dd></div>
+                    <div><dt>تاریخ انتشار</dt><dd class="nums">@(Model.PublishedAt.HasValue ? Model.PublishedAt.ToJalali().ToPersianDigits() : "—")</dd></div>
+                </dl>
+            </div>
 
-
-    <aside class="page-aside">
-
-
-        <div class="panel card">
-            <div class="panel-header">
-                <h2>
-                    @Model.TemplateName — نسخه @Model.VersionNo
-                    <span class="mode-badge">@Model.Status.ToLabel()</span>
-                </h2>
-
-                <div class="row-actions aside-actions">
-                    <a asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId" class="btn ghost">بازگشت به قالب</a>
-
+            <div class="card-foot" style="display:block">
+                <div class="action-stack">
                     @if (isDraft)
                     {
-                        <form id="publishForm" asp-action="Publish" method="post" style="display:none">
+                        <form id="publishForm" asp-action="Publish" method="post" hidden>
                             <input type="hidden" name="id" value="@Model.Id" />
                         </form>
-                        <button type="button" class="btn primary"
-                                data-confirm-target="publishForm"
-                                data-confirm-message="با انتشار، نسخه تغییرناپذیر می‌شود و نسخه منتشرشده قبلی این قالب بایگانی می‌شود. ادامه می‌دهید؟">
-                            انتشار
+                        <button type="button" class="btn btn-primary" @(Model.Fields.Count == 0 ? "disabled" : null)
+                                title="@(Model.Fields.Count == 0 ? "نسخهٔ بدون فیلد قابل انتشار نیست" : null)"
+                                data-confirm-target="publishForm" data-confirm-title="انتشار نسخه"
+                                data-confirm-message="با انتشار، نسخه تغییرناپذیر می‌شود و نسخهٔ منتشرشدهٔ قبلی این قالب بایگانی می‌شود. ادامه می‌دهید؟">
+                            <svg class="ico"><use href="#i-check" /></svg>انتشار نسخه
                         </button>
                     }
 
                     @if (!isArchived)
                     {
-                        <form id="archiveForm" asp-action="Archive" method="post" style="display:none">
+                        <a class="btn btn-ghost" asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@Model.Id"><svg class="ico"><use href="#i-layout" /></svg>طراح چیدمان فرم</a>
+                    }
+
+                    @if (!isArchived)
+                    {
+                        <form id="archiveForm" asp-action="Archive" method="post" hidden>
                             <input type="hidden" name="id" value="@Model.Id" />
                         </form>
-                        <button type="button" class="btn secondary"
-                                data-confirm-target="archiveForm"
+                        <button type="button" class="btn btn-ghost" data-confirm-target="archiveForm" data-confirm-title="بایگانی نسخه"
                                 data-confirm-message="بایگانی نسخه غیرقابل بازگشت است. ادامه می‌دهید؟">
-                            بایگانی
+                            <svg class="ico"><use href="#i-download" /></svg>بایگانی
                         </button>
                     }
 
                     @if (isDraft)
                     {
-                        <button type="button" class="btn danger"
-                                data-delete-id="@Model.Id" data-delete-name="نسخه @Model.VersionNo">
-                            حذف
+                        <div class="dd-sep"></div>
+                        <button type="button" class="btn btn-danger-soft" data-delete-id="@Model.Id" data-delete-name="نسخهٔ @Model.VersionNo.ToPersianNumber()">
+                            <svg class="ico"><use href="#i-trash" /></svg>حذف نسخه
                         </button>
                     }
                 </div>
             </div>
-
-            <div class="form-group">
-                <label>کد قالب:</label>
-                <div dir="ltr" style="text-align:right"><code style="font-family:var(--mono)">@Model.TemplateCode</code></div>
-            </div>
-
-            <div class="summary-stats">
-                <span>تاریخ ایجاد: <b dir="ltr">@Model.CreatedAt.ToJalali()</b></span>
-                <span>آخرین ویرایش: <b dir="ltr">@Model.UpdatedAt.ToJalali()</b></span>
-                <span>تاریخ انتشار: <b dir="ltr">@Model.PublishedAt.ToJalali()</b></span>
-            </div>
-        </div>
-
-
-</aside>
+        </article>
+    </aside>
 </div>
 
 <partial name="_DeleteModal" />

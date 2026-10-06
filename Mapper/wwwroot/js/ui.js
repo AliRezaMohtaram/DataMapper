@@ -1,14 +1,20 @@
 /* ui.js — ابزارهای مشترک رابط کاربری (برگرفته از script.js نمونه)
    توابع سراسری: $, escapeHtml, showToast, showConfirm, showAlertModal
    نیازمند partial «_ConfirmModal» برای مودال تأیید. */
-const $ = id => document.getElementById(id);
+const $byId = id => document.getElementById(id);
 
 function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[ch]));
 }
 
 function showToast(message, type = "info", duration = 3800) {
-    let container = $("toastContainer");
+    // MX toast (mx.js) when the new layout is present
+    if (window.MX) {
+        const tone = { error: "danger", danger: "danger", success: "success", warning: "warning" }[type] || "info";
+        MX.toast(message, tone);
+        return;
+    }
+    let container = $byId("toastContainer");
     if (!container) {
         container = document.createElement("div");
         container.id = "toastContainer";
@@ -27,40 +33,33 @@ function showToast(message, type = "info", duration = 3800) {
     }, duration);
 }
 
+/* مودال تأیید/اطلاع روی partial «_ConfirmModal». Promise<boolean> برمی‌گرداند؛
+   بستن با Esc، کلیک بیرون یا انصراف = false. */
 function showModal({ title = "", message = "", okText = "تأیید", cancelText = "انصراف", danger = false }) {
+    const overlay = $byId("confirmOverlay");
+    if (!overlay || !window.MX) return Promise.resolve(window.confirm(message));
+
     return new Promise(resolve => {
-        const overlay = $("confirmOverlay");
-        const okBtn = $("confirmOkBtn");
-        const cancelBtn = $("confirmCancelBtn");
+        const okBtn = $byId("confirmOkBtn");
+        const cancelBtn = $byId("confirmCancelBtn");
 
-        $("confirmTitle").textContent = title;
-        $("confirmMessage").textContent = message;
+        $byId("confirmTitle").textContent = title;
+        $byId("confirmMessage").textContent = message;
         okBtn.textContent = okText;
-        okBtn.className = "btn " + (danger ? "danger" : "primary");
-        if (cancelText) { cancelBtn.style.display = ""; cancelBtn.textContent = cancelText; }
-        else { cancelBtn.style.display = "none"; }
+        okBtn.className = "btn " + (danger ? "btn-danger" : "btn-primary");
+        if (cancelText) { cancelBtn.hidden = false; cancelBtn.textContent = cancelText; }
+        else { cancelBtn.hidden = true; }
 
-        overlay.classList.remove("hidden");
-        requestAnimationFrame(() => overlay.classList.add("in"));
-
-        function cleanup(result) {
-            overlay.classList.remove("in");
-            setTimeout(() => overlay.classList.add("hidden"), 180);
-            okBtn.removeEventListener("click", onOk);
-            cancelBtn.removeEventListener("click", onCancel);
-            overlay.removeEventListener("click", onOverlay);
-            document.removeEventListener("keydown", onKey);
-            resolve(result);
-        }
-        function onOk() { cleanup(true); }
-        function onCancel() { cleanup(false); }
-        function onOverlay(e) { if (e.target === overlay) cleanup(false); }
-        function onKey(e) { if (e.key === "Escape") cleanup(false); }
-
+        let result = false;
+        const onOk = () => { result = true; MX.close(overlay); };
         okBtn.addEventListener("click", onOk);
-        cancelBtn.addEventListener("click", onCancel);
-        overlay.addEventListener("click", onOverlay);
-        document.addEventListener("keydown", onKey);
+        overlay.addEventListener("mx:close", () => {
+            okBtn.removeEventListener("click", onOk);
+            cancelBtn.hidden = false;
+            resolve(result);
+        }, { once: true });
+
+        MX.open(overlay);
     });
 }
 

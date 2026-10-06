@@ -18,172 +18,164 @@
     var pageSizes = new[] { 10, 20, 50, 100 };
     var hasFilter = !string.IsNullOrWhiteSpace(filter.Search) || filter.TemplateVersionId.HasValue
                     || filter.Source.HasValue || filter.ImportBatchId.HasValue;
+
+    ViewData["Subtitle"] = $"{result.TotalCount.ToPersianNumber()} رکورد" + (hasFilter ? " با فیلتر فعلی" : "");
 }
 
-<div class="panel card">
-    <div class="panel-header">
-        <h2>داده‌های ثبت‌شده</h2>
-
-        <div class="summary-stats">
-            <span>کل: <b>@result.TotalCount</b></span>
-            @if (result.TotalCount > 0)
-            {
-                <span>نمایش: <b>@from</b> تا <b>@to</b></span>
-            }
-        </div>
-
-        <a asp-action="Create" asp-route-versionId="@filter.TemplateVersionId" class="btn primary">+ ورود دستی داده</a>
-    </div>
-
-    @if (errors.Count > 0)
+@section TopbarActions {
+    @if (filter.TemplateVersionId.HasValue)
     {
-        <div class="status error show">@string.Join(" — ", errors)</div>
+        <a class="btn btn-soft" asp-action="Create" asp-route-versionId="@filter.TemplateVersionId"><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>
     }
+    else
+    {
+        <a class="btn btn-soft" asp-action="Create" data-modal><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>
+    }
+}
 
-    <form method="get" asp-action="Index">
-        <input type="hidden" name="pageSize" value="@result.PageSize" />
-        <input type="hidden" name="importBatchId" value="@filter.ImportBatchId" />
+@if (errors.Count > 0)
+{
+    <div class="callout tone-danger" role="alert" style="margin-bottom:1rem">
+        <svg class="ico"><use href="#i-alert" /></svg><div>@string.Join(" — ", errors)</div>
+    </div>
+}
 
-        <div class="form-group">
-            <label for="drSearch">جستجو در مقدارها:</label>
-            <input type="text" id="drSearch" name="search" value="@filter.Search"
-                   placeholder="بخشی از یکی از مقدارهای رکورد..." autocomplete="off">
+<article class="card rise">
+    <header class="card-head">
+        <div class="card-title">
+            <span class="card-ico"><svg class="ico"><use href="#i-rows" /></svg></span>
+            <div>داده‌های ثبت‌شده<div class="card-sub">رکوردهای حاصل از ایمپورت یا ورود دستی</div></div>
         </div>
+        @if (filter.ImportBatchId.HasValue)
+        {
+            <span class="fchip active">
+                فقط ایمپورت <a class="code" asp-controller="Imports" asp-action="Detail" asp-route-id="@filter.ImportBatchId">IMP-@filter.ImportBatchId.Value.ToString("0000")</a>
+                <a asp-action="Index" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-search="@filter.Search" aria-label="حذف فیلتر ایمپورت"><svg class="ico" style="width:.85rem;height:.85rem"><use href="#i-x" /></svg></a>
+            </span>
+        }
+    </header>
 
-        <div class="form-group">
-            <label for="drVersion">قالب و نسخه:</label>
-            <select id="drVersion" name="templateVersionId">
-                <option value="">همه</option>
+    <div class="toolbar">
+        <form method="get" asp-action="Index" role="search">
+            <input type="hidden" name="pageSize" value="@result.PageSize" />
+            <input type="hidden" name="importBatchId" value="@filter.ImportBatchId" />
+            <div class="input-wrap">
+                <svg class="ico"><use href="#i-search" /></svg>
+                <input class="input" type="search" name="search" value="@filter.Search" placeholder="جستجو در مقدارهای رکورد…" aria-label="جستجو در رکوردها" autocomplete="off" />
+            </div>
+            <select class="select" name="templateVersionId" aria-label="قالب و نسخه" onchange="this.form.requestSubmit()">
+                <option value="">همهٔ قالب‌ها</option>
                 @foreach (var v in Model.Versions)
                 {
                     <option value="@v.Id" selected="@(filter.TemplateVersionId == v.Id)">@v.Label</option>
                 }
             </select>
-        </div>
-
-        <div class="form-group">
-            <label for="drSource">منبع:</label>
-            <select id="drSource" name="source">
-                <option value="">همه</option>
+            <select class="select" name="source" aria-label="منبع" onchange="this.form.requestSubmit()">
+                <option value="">همهٔ منابع</option>
                 <option value="@RecordSource.Manual" selected="@(filter.Source == RecordSource.Manual)">ورود دستی</option>
                 <option value="@RecordSource.Import" selected="@(filter.Source == RecordSource.Import)">ایمپورت</option>
             </select>
-        </div>
-
-        @if (filter.ImportBatchId.HasValue)
-        {
-            <div class="hint">فقط رکوردهای ایمپورت شمارهٔ @filter.ImportBatchId نمایش داده می‌شود.</div>
-        }
-
-        <div class="actions">
-            <button type="submit" class="btn primary">اعمال فیلتر</button>
-            <a asp-action="Index" asp-route-pageSize="@result.PageSize" class="btn ghost">پاکسازی فیلتر</a>
-        </div>
-    </form>
-</div>
-
-<div class="panel card">
-    <div class="tscroll results-table-container">
-        <table class="results-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>قالب</th>
-                    <th>نسخه</th>
-                    <th>منبع</th>
-                    <th>خلاصهٔ داده</th>
-                    <th>تاریخ ثبت</th>
-                    <th>عملیات</th>
-                </tr>
-            </thead>
-            <tbody>
-            @if (result.Items.Count == 0)
+            <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#i-search" /></svg>جستجو</button>
+            @if (hasFilter)
             {
-                <tr>
-                    <td colspan="7" class="entries-empty">
-                        @(hasFilter ? "رکوردی با این مشخصات پیدا نشد." : "هنوز دیتایی ثبت نشده است.")
-                    </td>
-                </tr>
+                <a class="btn btn-quiet" asp-action="Index" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
             }
-            else
-            {
-                foreach (var r in result.Items)
-                {
-                    <tr>
-                        <td><a asp-action="Detail" asp-route-id="@r.Id">@r.Id</a></td>
-                        <td>@r.TemplateName</td>
-                        <td>نسخه @r.VersionNo</td>
-                        <td>
-                            <span class="mode-badge">@r.Source.ToLabel()</span>
-                            @if (r.ImportBatchId.HasValue)
-                            {
-                                <a asp-controller="Imports" asp-action="Detail" asp-route-id="@r.ImportBatchId">#@r.ImportBatchId</a>
-                            }
-                        </td>
-                        <td style="max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@r.Preview">@r.Preview</td>
-                        <td dir="ltr">@r.CreatedAt.ToJalali()</td>
-                        <td>
-                            <div class="row-actions">
-                                <a asp-action="Detail" asp-route-id="@r.Id" class="btn secondary low-padding"
-                                   title="مشاهده" aria-label="مشاهده"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg></a>
-
-                                <a asp-action="Edit" asp-route-id="@r.Id" class="btn primary low-padding"
-                                   title="ویرایش" aria-label="ویرایش"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" /></svg></a>
-
-                                <button type="button" class="btn danger low-padding" title="حذف" aria-label="حذف"
-                                        data-delete-id="@r.Id" data-delete-name="رکورد @r.Id"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg></button>
-                            </div>
-                        </td>
-                    </tr>
-                }
-            }
-            </tbody>
-        </table>
-    </div>
-
-    <div class="pagination">
-        @if (result.HasPrevious)
-        {
-            <a class="btn ghost" asp-action="Index" asp-route-search="@filter.Search"
-               asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source"
-               asp-route-importBatchId="@filter.ImportBatchId"
-               asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)">قبلی</a>
-        }
-        else
-        {
-            <button type="button" class="btn ghost" disabled>قبلی</button>
-        }
-
-        <span>صفحه @result.Page از @Math.Max(1, result.TotalPages)</span>
-
-        @if (result.HasNext)
-        {
-            <a class="btn ghost" asp-action="Index" asp-route-search="@filter.Search"
-               asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source"
-               asp-route-importBatchId="@filter.ImportBatchId"
-               asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)">بعدی</a>
-        }
-        else
-        {
-            <button type="button" class="btn ghost" disabled>بعدی</button>
-        }
-
-        <form method="get" asp-action="Index" style="display:inline">
-            <input type="hidden" name="search" value="@filter.Search" />
-            <input type="hidden" name="templateVersionId" value="@filter.TemplateVersionId" />
-            <input type="hidden" name="source" value="@filter.Source" />
-            <input type="hidden" name="importBatchId" value="@filter.ImportBatchId" />
-            <label class="rpp-label">ردیف در صفحه:
-                <select name="pageSize" onchange="this.form.submit()">
-                    @foreach (var size in pageSizes)
-                    {
-                        <option value="@size" selected="@(result.PageSize == size)">@size</option>
-                    }
-                </select>
-            </label>
         </form>
     </div>
-</div>
+
+    @if (result.Items.Count == 0)
+    {
+        <div class="empty">
+            <p>@(hasFilter ? "رکوردی با این مشخصات پیدا نشد." : "هنوز داده‌ای ثبت نشده است.")</p>
+            @if (!hasFilter)
+            {
+                <div class="row" style="justify-content:center;margin-top:.8rem">
+                    <a class="btn btn-primary btn-sm" asp-controller="Imports" asp-action="Upload" data-modal><svg class="ico"><use href="#i-upload" /></svg>ایمپورت فایل</a>
+                    <a class="btn btn-ghost btn-sm" asp-action="Create" data-modal><svg class="ico"><use href="#i-pen" /></svg>ورود دستی</a>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="tbl-wrap">
+            <table class="tbl">
+                <thead><tr><th>#</th><th>قالب</th><th>منبع</th><th>خلاصهٔ داده</th><th>ثبت</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var r in result.Items)
+                    {
+                        <tr>
+                            <td><a class="code" asp-action="Detail" asp-route-id="@r.Id">@r.Id</a></td>
+                            <td><div class="cell-main">@r.TemplateName</div><div class="cell-sub">نسخهٔ @r.VersionNo.ToPersianNumber()</div></td>
+                            <td>
+                                @if (r.Source == RecordSource.Import)
+                                {
+                                    <span class="badge st-uploaded">ایمپورت</span>
+                                    @if (r.ImportBatchId.HasValue)
+                                    {
+                                        <div class="cell-sub"><a class="code" asp-controller="Imports" asp-action="Detail" asp-route-id="@r.ImportBatchId">IMP-@r.ImportBatchId.Value.ToString("0000")</a></div>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="badge st-validated">ورود دستی</span>
+                                }
+                            </td>
+                            <td class="cell-sub" style="max-width:26rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@r.Preview">@r.Preview</td>
+                            <td class="cell-sub">@((r.UpdatedAt ?? r.CreatedAt).ToRelative())</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="icon-btn sm primary" asp-action="Detail" asp-route-id="@r.Id" title="مشاهده" aria-label="مشاهدهٔ رکورد @r.Id"><svg class="ico"><use href="#i-eye" /></svg></a>
+                                    <a class="icon-btn sm" asp-action="Edit" asp-route-id="@r.Id" title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
+                                    <button class="icon-btn sm danger" type="button" data-delete-id="@r.Id" data-delete-name="رکورد @r.Id" title="حذف" aria-label="حذف رکورد @r.Id"><svg class="ico"><use href="#i-trash" /></svg></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @if (result.TotalCount > 0)
+    {
+        <footer class="card-foot">
+            <span>@from.ToPersianNumber() تا @to.ToPersianNumber() از @result.TotalCount.ToPersianNumber()</span>
+            <nav class="pager" aria-label="صفحه‌بندی">
+                @if (result.HasPrevious)
+                {
+                    <a asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
+                }
+                else
+                {
+                    <span aria-disabled="true"><svg class="ico"><use href="#i-chev-right" /></svg></span>
+                }
+                <span class="pager-now" aria-current="page">صفحه @result.Page.ToPersianNumber() از @Math.Max(1, result.TotalPages).ToPersianNumber()</span>
+                @if (result.HasNext)
+                {
+                    <a asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
+                }
+                else
+                {
+                    <span aria-disabled="true"><svg class="ico"><use href="#i-chev-left" /></svg></span>
+                }
+            </nav>
+            <form method="get" asp-action="Index" class="page-size">
+                <input type="hidden" name="search" value="@filter.Search" />
+                <input type="hidden" name="templateVersionId" value="@filter.TemplateVersionId" />
+                <input type="hidden" name="source" value="@filter.Source" />
+                <input type="hidden" name="importBatchId" value="@filter.ImportBatchId" />
+                <label for="pageSize">ردیف در صفحه</label>
+                <select class="select" id="pageSize" name="pageSize" onchange="this.form.submit()">
+                    @foreach (var size in pageSizes)
+                    {
+                        <option value="@size" selected="@(result.PageSize == size)">@size.ToPersianNumber()</option>
+                    }
+                </select>
+            </form>
+        </footer>
+    }
+</article>
 
 <partial name="_DeleteModal" />
 

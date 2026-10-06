@@ -1,0 +1,93 @@
+@model Borc.DataMapper.Web.ViewModels.Imports.ImportUploadViewModel
+@inject Microsoft.AspNetCore.Mvc.ViewFeatures.IFileVersionProvider FileVersions
+@using Borc.DataMapper.Application.Imports.Common
+@using Borc.DataMapper.Web.ViewModels
+@*
+    فرم آپلود فایل ایمپورت — ریشهٔ آن یک .modal است:
+    از دکمهٔ «ایمپورت جدید» (هر صفحه) در مودال باز می‌شود؛ Upload.cshtml همین را به‌صورت صفحهٔ کامل نشان می‌دهد.
+*@
+@{
+    var versions = Model.Lookups.Versions;
+    var profiles = Model.Lookups.Profiles;
+    var formErrors = ViewData.ModelState.Where(kv => string.IsNullOrEmpty(kv.Key))
+        .SelectMany(kv => kv.Value!.Errors).Select(e => e.ErrorMessage).Where(m => !string.IsNullOrWhiteSpace(m)).ToList();
+}
+
+<form class="modal modal-lg" method="post" asp-controller="Imports" asp-action="Upload" enctype="multipart/form-data"
+      data-mx-ajax data-mx-init="import-upload" data-mx-src="@FileVersions.AddFileVersionToPath(Context.Request.PathBase, "/js/import-upload.js")" novalidate>
+
+    <div class="modal-head">
+        <span class="modal-head-ico"><svg class="ico"><use href="#i-upload" /></svg></span>
+        <div>
+            <div class="modal-title">ایمپورت فایل Excel</div>
+            <div class="modal-sub">فایل بارگذاری می‌شود، ستون‌هایش را با فیلدهای قالب تطبیق می‌دهید و بعد اعتبارسنجی و ثبت می‌شود.</div>
+        </div>
+        <a class="icon-btn plain close" asp-controller="Imports" asp-action="Index" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+    </div>
+
+    <div class="steps" aria-label="مراحل ایمپورت">
+        <span class="step active" aria-current="step"><span class="step-num"><span class="n">۱</span></span>قالب و فایل</span><span class="step-line"></span>
+        <span class="step"><span class="step-num"><span class="n">۲</span></span>تطبیق ستون‌ها</span><span class="step-line"></span>
+        <span class="step"><span class="step-num"><span class="n">۳</span></span>بررسی سطرها</span><span class="step-line"></span>
+        <span class="step"><span class="step-num"><span class="n">۴</span></span>ثبت نهایی</span>
+    </div>
+
+    <div class="modal-body">
+        @if (formErrors.Count > 0)
+        {
+            <div class="callout tone-danger" role="alert" style="margin-bottom:1rem">
+                <svg class="ico"><use href="#i-alert" /></svg><div>@string.Join(" — ", formErrors)</div>
+            </div>
+        }
+
+        @if (versions.Count == 0)
+        {
+            <div class="callout tone-warning" style="margin-bottom:1rem">
+                <svg class="ico"><use href="#i-alert" /></svg>
+                <div>هنوز هیچ قالبی <b>نسخهٔ منتشرشده</b> ندارد؛ ایمپورت فقط روی نسخهٔ منتشرشده ممکن است.
+                    <a class="link-btn" asp-controller="Templates" asp-action="Index">رفتن به قالب‌ها</a></div>
+            </div>
+        }
+
+        <div class="form-grid">
+            <div class="field">
+                <label class="label" for="templateVersionId">قالب و نسخهٔ مقصد<span class="req">*</span></label>
+                <select class="select" id="templateVersionId" name="templateVersionId" required data-import-version autofocus>
+                    <option value="">— انتخاب کنید —</option>
+                    @foreach (var v in versions)
+                    {
+                        <option value="@v.Id" selected="@(Model.TemplateVersionId == v.Id)">@v.Label</option>
+                    }
+                </select>
+                <span class="hint">فقط نسخه‌های منتشرشده.</span>
+            </div>
+            <div class="field">
+                <label class="label" for="mappingProfileId">پروفایل نگاشت</label>
+                <select class="select" id="mappingProfileId" name="mappingProfileId" data-import-profile>
+                    <option value="">— بدون پروفایل (تطبیق خودکار) —</option>
+                    @foreach (var p in profiles)
+                    {
+                        <option value="@p.Id" data-version="@p.VersionId" selected="@(Model.MappingProfileId == p.Id)">@p.Name</option>
+                    }
+                </select>
+                <span class="hint" data-profile-hint>ستون‌ها مطابق نگاشت ذخیره‌شده تطبیق داده می‌شوند.</span>
+            </div>
+        </div>
+
+        <div class="fieldset-title">فایل</div>
+        <partial name="_FileDrop" model='new FileDropModel("file", ".xlsx", ImportLimits.MaxFileBytes)' />
+
+        <div class="req-list" style="margin-top:1rem">
+            <span class="tag tone-primary">سطر اول = سرستون‌ها</span>
+            <span class="tag tone-info">اولین برگهٔ قابل‌مشاهده خوانده می‌شود</span>
+            <span class="tag tone-info">حداکثر @ImportLimits.MaxRows.ToPersianNumber() سطر و @ImportLimits.MaxColumns.ToPersianNumber() ستون</span>
+            <span class="tag tone-violet">تاریخ شمسی مثل 1405/07/13 پذیرفته می‌شود</span>
+        </div>
+    </div>
+
+    <div class="modal-foot">
+        <span class="spacer"></span>
+        <a class="btn btn-quiet" asp-controller="Imports" asp-action="Index" data-close>انصراف</a>
+        <button type="submit" class="btn btn-primary" @(versions.Count == 0 ? "disabled" : null)><svg class="ico"><use href="#i-upload" /></svg>بارگذاری و تطبیق ستون‌ها</button>
+    </div>
+</form>

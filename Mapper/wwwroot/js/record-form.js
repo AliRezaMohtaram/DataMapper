@@ -23,7 +23,11 @@
         precision: f.precision,
         scale: f.scale,
         regex: f.regex,
-        dataOptions: f.options && f.options.length ? f.options : null
+        // منبع کوچک: گزینه‌ها همراه فرم (لیست کشویی)؛ منبع بزرگ/API/قالب: Combobox با جستجوی سمت سرور
+        dataOptions: Array.isArray(f.options) ? f.options : null,
+        dataSource: f.dataSourceId
+            ? { id: f.dataSourceId, url: (PAGE.urls || {}).options, labels: (PAGE.labels || {})[f.key] ? { [PAGE.values[f.key]]: PAGE.labels[f.key] } : {} }
+            : null
     }));
 
     const hasBlocks = l => !!(l && Array.isArray(l.blocks) && l.blocks.length);

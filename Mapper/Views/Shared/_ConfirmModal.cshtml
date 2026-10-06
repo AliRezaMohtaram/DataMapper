@@ -1,11 +1,18 @@
-@* مودال تأیید عمومی: دکمه‌ای با data-confirm-target (شناسه یک فرم) و data-confirm-message. *@
-<div id="confirmOverlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
-    <div class="modal-box">
-        <h3 id="confirmTitle">تأیید عملیات</h3>
-        <p id="confirmMessage"></p>
-        <div class="modal-actions">
-            <button type="button" class="btn ghost" id="confirmCancelBtn">انصراف</button>
-            <button type="button" class="btn danger" id="confirmOkBtn">تأیید</button>
+@* مودال تأیید عمومی: دکمه‌ای با data-confirm-target (شناسه یک فرم) و data-confirm-message (js/confirm-action.js)،
+   یا از JS با showConfirm / showAlertModal (js/ui.js). *@
+<div id="confirmOverlay" class="modal-overlay" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-describedby="confirmMessage">
+    <div class="modal modal-sm">
+        <div class="modal-head">
+            <span class="modal-head-ico tone-warning"><svg class="ico"><use href="#i-alert" /></svg></span>
+            <div class="modal-title" id="confirmTitle">تأیید عملیات</div>
+        </div>
+        <div class="modal-body">
+            <p class="muted" id="confirmMessage" style="font-size:.88rem;white-space:pre-line;line-height:1.8"></p>
+        </div>
+        <div class="modal-foot">
+            <span class="spacer"></span>
+            <button type="button" class="btn btn-ghost" id="confirmCancelBtn" data-close autofocus>انصراف</button>
+            <button type="button" class="btn btn-danger" id="confirmOkBtn">تأیید</button>
         </div>
     </div>
 </div>

@@ -91,7 +91,7 @@ function validateFieldValue(field, value) {
 
     function buildControl(field, block) {
         /* ۰) فیلد متصل به منبع دادهٔ «لیست ثابت» → لیست کشویی (field.dataOptions = [{value, label}]) */
-        if (Array.isArray(field.dataOptions) && field.dataOptions.length && block.widget !== "radio") {
+        if (Array.isArray(field.dataOptions) && block.widget !== "radio") {
             const sel = el("select", "lf-control", `<option value="">— انتخاب کنید —</option>` +
                 field.dataOptions.map(o => `<option value="${esc(o.value)}">${esc(o.label || o.value)}</option>`).join(""));
             sel.dataset.key = field.key;
@@ -101,7 +101,7 @@ function validateFieldValue(field, value) {
 
         /* ۱) فیلد دارای منبع دادهٔ داینامیک → Combobox جستجوپذیر
               (اولویت بالاتر از widget — چون ممکن است widget پیش‌فرض input باشد) */
-        if (field.dataSource && field.dataSource.templateId && typeof buildCombobox === "function") {
+        if (field.dataSource && field.dataSource.id && typeof buildCombobox === "function") {
             return buildCombobox(field, {
                 required: block.required,
                 placeholder: block.placeholder
@@ -427,7 +427,7 @@ function validateFieldValue(field, value) {
     function renderAll() { renderTopbar(); renderPalette(); renderStage(); renderProps(); }
 
     function renderTopbar() {
-        const has = !!dTpl, a = $("ldActions"), badge = $("ldStatus");
+        const has = !!dTpl, a = $byId("ldActions"), badge = $byId("ldStatus");
         badge.textContent = !has ? "" : dDirty ? "ذخیره‌نشده" : dTpl.layout ? "Layout ذخیره‌شده" : "بدون Layout — فرم داینامیک";
         badge.className = "mode-badge" + (has && dDirty ? " is-dirty" : has && dTpl.layout ? " is-layout" : "");
         const seg = (items, cur) => `<div class="ld-seg">${items.map(([k, l]) => `<button type="button" data-a="${k}" class="${k === cur ? "on" : ""}">${l}</button>`).join("")}</div>`;
@@ -435,10 +435,10 @@ function validateFieldValue(field, value) {
         a.innerHTML = !has ? "" : READ_ONLY
             ? seg2([["desktop", "دسکتاپ"], ["mobile", "موبایل"]], dDevice)
             : seg2([["edit", "ویرایش"], ["preview", "پیش‌نمایش"]], dPreview ? "preview" : "edit") +
-            (dPreview ? seg2([["desktop", "دسکتاپ"], ["mobile", "موبایل"]], dDevice) : `<button type="button" class="btn ghost" data-a="auto">چیدمان خودکار</button>`) +
-            `<button type="button" class="btn ghost" data-a="json">کپی JSON</button>` +
-            (dTpl.layout ? `<button type="button" class="btn danger" data-a="remove">حذف Layout</button>` : "") +
-            `<button type="button" class="btn primary" data-a="save">ذخیره Layout</button>`;
+              (dPreview ? seg2([["desktop", "دسکتاپ"], ["mobile", "موبایل"]], dDevice) : `<button type="button" class="btn ghost" data-a="auto">چیدمان خودکار</button>`) +
+              `<button type="button" class="btn ghost" data-a="json">کپی JSON</button>` +
+              (dTpl.layout ? `<button type="button" class="btn danger" data-a="remove">حذف Layout</button>` : "") +
+              `<button type="button" class="btn primary" data-a="save">ذخیره Layout</button>`;
         a.querySelectorAll("[data-a]").forEach(b => { b.onclick = () => action(b.dataset.a); });
     }
 
@@ -506,7 +506,7 @@ function validateFieldValue(field, value) {
     const ICON = { text: "Aa", number: "#", date: "D", datetime: "DT", any: "*" };
 
     function renderPalette() {
-        const p = $("ldPalette");
+        const p = $byId("ldPalette");
         if (!dTpl) { p.innerHTML = `<div class="ld-note">ابتدا یک قالب انتخاب کنید.</div>`; return; }
         p.innerHTML = `<div class="ld-tabs">
                 <button type="button" data-t="fields" class="${palTab === "fields" ? "on" : ""}">فیلدها<span>${placedKeys().size}/${dTpl.fields.length}</span></button>
@@ -520,7 +520,7 @@ function validateFieldValue(field, value) {
     }
 
     function fillPalList() {
-        const list = $("ldPalList"); if (!list) return;
+        const list = $byId("ldPalList"); if (!list) return;
         const placed = placedKeys();
         let h = "";
         if (palTab === "fields") {
@@ -712,9 +712,9 @@ function validateFieldValue(field, value) {
     }
 
     function renderStage() {
-        const stage = $("ldStage");
+        const stage = $byId("ldStage");
         stage.innerHTML = "";
-        $("ldBoard").classList.toggle("is-preview", !!dTpl && dPreview);
+        $byId("ldBoard").classList.toggle("is-preview", !!dTpl && dPreview);
         if (!dTpl) {
             stage.innerHTML = `<div class="ld-empty"><div class="ld-empty-title">طراح Layout فرم</div>
                 <p>یک قالب انتخاب کنید تا فرم آن را به‌صورت گرافیکی بچینید. قالبی که Layout داشته باشد در «ورود دستی داده» به‌جای فرم داینامیک، با همین چیدمان بارگذاری می‌شود.</p></div>`;
@@ -756,7 +756,7 @@ function validateFieldValue(field, value) {
     const SPANS = [[3, "¼"], [4, "⅓"], [6, "½"], [8, "⅔"], [9, "¾"], [12, "کامل"]];
 
     function renderProps() {
-        const p = $("ldProps");
+        const p = $byId("ldProps");
         if (!dTpl) { p.innerHTML = `<div class="ld-note">ویژگی‌ها اینجا نمایش داده می‌شوند.</div>`; return; }
         if (dPreview) { p.innerHTML = ""; return; }
         const b = blockById(dSel);

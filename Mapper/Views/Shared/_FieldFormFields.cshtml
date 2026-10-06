@@ -1,108 +1,117 @@
 @model Borc.DataMapper.Application.TemplateFields.ITemplateFieldInput
 @using Borc.DataMapper.Application.TemplateFields.GetFieldLookups
 @using Borc.DataMapper.Domain.Common
+@* ورودی‌های مشترک فیلد قالب (ایجاد و ویرایش). نمایش طول/دقت بر اساس نوع داده و انتخاب Regex آماده: js/field-form.js *@
 @{
     var lookups = ViewData["Lookups"] as FieldLookupsDto
         ?? new FieldLookupsDto(Array.Empty<DataSourceOption>(), Array.Empty<PredefinedRegexOption>());
-    var errStyle = "color:var(--danger);font-size:12px";
+
+    string Invalid(string key) => ViewData.ModelState[key]?.Errors.Count > 0 ? " field-invalid" : "";
+    var advancedOpen = !string.IsNullOrWhiteSpace(Model.ConfigJson) || ViewData.ModelState["ConfigJson"]?.Errors.Count > 0;
 }
 
-<div class="form-group">
-    <label asp-for="Label">برچسب (نام نمایشی فارسی):</label>
-    <input asp-for="Label" autocomplete="off" />
-    <span asp-validation-for="Label" style="@errStyle"></span>
-</div>
-
-<div class="form-group">
-    <label asp-for="DataType">نوع داده:</label>
-    <select asp-for="DataType">
-        @foreach (var t in Enum.GetValues<FieldDataType>())
-        {
-            <option value="@t" selected="@(Model.DataType == t)">@t.ToLabel()</option>
-        }
-    </select>
-    <span asp-validation-for="DataType" style="@errStyle"></span>
-</div>
-
-<div class="form-group">
-    <label asp-for="DbType">نوع در سیستم مقصد:</label>
-    <input asp-for="DbType" dir="ltr" list="dbTypeList" autocomplete="off" />
-    <datalist id="dbTypeList">
-        <option value="VARCHAR2"></option>
-        <option value="NVARCHAR2"></option>
-        <option value="NUMBER"></option>
-        <option value="DATE"></option>
-        <option value="TIMESTAMP"></option>
-        <option value="CLOB"></option>
-    </datalist>
-    <span asp-validation-for="DbType" style="@errStyle"></span>
-</div>
-
-<div class="form-group" id="lengthGroup">
-    <label asp-for="Length">طول (برای متن):</label>
-    <input asp-for="Length" dir="ltr" min="1" max="4000" />
-    <span asp-validation-for="Length" style="@errStyle"></span>
-</div>
-
-<div id="numberGroup">
-    <div class="form-group">
-        <label asp-for="Precision">Precision (برای عدد):</label>
-        <input asp-for="Precision" dir="ltr" min="1" max="38" />
-        <span asp-validation-for="Precision" style="@errStyle"></span>
+<div class="form-grid" style="margin-top:1rem">
+    <div class="field span-2@(Invalid("Label"))">
+        <label class="label" asp-for="Label">برچسب (نام نمایشی)<span class="req">*</span></label>
+        <input class="input" asp-for="Label" autocomplete="off" placeholder="مثلاً: نام سایت" />
+        <span class="field-error" asp-validation-for="Label"></span>
     </div>
 
-    <div class="form-group">
-        <label asp-for="Scale">Scale:</label>
-        <input asp-for="Scale" dir="ltr" min="0" max="38" />
-        <span asp-validation-for="Scale" style="@errStyle"></span>
-    </div>
-</div>
-
-<div class="form-group">
-    <label>
-        <input asp-for="IsRequired" type="checkbox" style="width:auto;margin-left:8px" />
-        فیلد الزامی است
-    </label>
-</div>
-
-<div class="form-group">
-    <label asp-for="Regex">الگوی Regex برای اعتبارسنجی مقدار (اختیاری):</label>
-    <input asp-for="Regex" dir="ltr" autocomplete="off" />
-    <span asp-validation-for="Regex" style="@errStyle"></span>
-
-    @if (lookups.Regexes.Count > 0)
-    {
-        <select id="regexPicker">
-            <option value="">انتخاب از الگوهای آماده...</option>
-            @foreach (var r in lookups.Regexes)
+    <div class="field@(Invalid("DataType"))">
+        <label class="label" asp-for="DataType">نوع داده</label>
+        <select class="select" asp-for="DataType" data-field-type>
+            @foreach (var t in Enum.GetValues<FieldDataType>())
             {
-                <option value="@r.Code" data-pattern="@r.Pattern">@r.Name</option>
+                <option value="@t" selected="@(Model.DataType == t)">@t.ToLabel()</option>
             }
         </select>
+        <span class="field-error" asp-validation-for="DataType"></span>
+    </div>
+
+    <div class="field@(Invalid("DbType"))">
+        <label class="label" asp-for="DbType">نوع در سیستم مقصد<span class="req">*</span></label>
+        <input class="input ltr" asp-for="DbType" list="dbTypeList" autocomplete="off" />
+        <datalist id="dbTypeList">
+            <option value="VARCHAR2"></option>
+            <option value="NVARCHAR2"></option>
+            <option value="NUMBER"></option>
+            <option value="DATE"></option>
+            <option value="TIMESTAMP"></option>
+            <option value="CLOB"></option>
+        </datalist>
+        <span class="field-error" asp-validation-for="DbType"></span>
+    </div>
+
+    <div class="field@(Invalid("Length"))" data-show-for="Text">
+        <label class="label" asp-for="Length">طول متن</label>
+        <input class="input ltr" asp-for="Length" min="1" max="4000" placeholder="مثلاً 200" />
+        <span class="field-error" asp-validation-for="Length"></span>
+    </div>
+
+    <div class="field@(Invalid("Precision"))" data-show-for="Number">
+        <label class="label" asp-for="Precision">Precision (تعداد کل ارقام)</label>
+        <input class="input ltr" asp-for="Precision" min="1" max="38" />
+        <span class="field-error" asp-validation-for="Precision"></span>
+    </div>
+    <div class="field@(Invalid("Scale"))" data-show-for="Number">
+        <label class="label" asp-for="Scale">Scale (ارقام اعشار)</label>
+        <input class="input ltr" asp-for="Scale" min="0" max="38" />
+        <span class="field-error" asp-validation-for="Scale"></span>
+    </div>
+</div>
+
+<div class="fieldset-title">اعتبارسنجی و مقدار</div>
+<div class="form-grid">
+    <div class="field span-2">
+        <label class="toggle">
+            <input asp-for="IsRequired" type="checkbox" />
+            <span class="toggle-track"></span>
+            <span>فیلد الزامی است<small>ردیف بدون این مقدار در ایمپورت نامعتبر می‌شود</small></span>
+        </label>
+    </div>
+
+    <div class="field@(Invalid("Regex"))@(lookups.Regexes.Count > 0 ? "" : " span-2")">
+        <label class="label" asp-for="Regex">الگوی Regex مقدار</label>
+        <input class="input ltr" asp-for="Regex" autocomplete="off" spellcheck="false" data-regex-input placeholder="^\d{10}$" />
+        <span class="field-error" asp-validation-for="Regex"></span>
+    </div>
+    @if (lookups.Regexes.Count > 0)
+    {
+        <div class="field">
+            <label class="label" for="regexPicker">الگوهای آماده</label>
+            <select class="select" id="regexPicker" data-regex-picker>
+                <option value="">انتخاب الگو…</option>
+                @foreach (var r in lookups.Regexes)
+                {
+                    <option value="@r.Code" data-pattern="@r.Pattern">@r.Name</option>
+                }
+            </select>
+        </div>
     }
+    <p class="hint span-2" style="margin-top:-.5rem">الگو روی <b>مقدار</b> فیلد اعمال می‌شود، نه نام سرستون؛ برای تطبیق سرستون از نام‌های مستعار استفاده کنید.</p>
 
-    <div class="hint">این الگو روی مقدار ورودی فیلد اعمال می‌شود، نه روی نام سرستون. برای تطبیق سرستون از aliasها استفاده کنید.</div>
+    <div class="field@(Invalid("DefaultValue"))">
+        <label class="label" asp-for="DefaultValue">مقدار پیش‌فرض</label>
+        <input class="input" asp-for="DefaultValue" autocomplete="off" />
+        <span class="field-error" asp-validation-for="DefaultValue"></span>
+    </div>
+
+    <div class="field">
+        <label class="label" asp-for="DataSourceId">منبع داده (گزینه‌های انتخابی)</label>
+        <select class="select" asp-for="DataSourceId">
+            <option value="">— بدون منبع داده —</option>
+            @foreach (var d in lookups.DataSources)
+            {
+                <option value="@d.Id" selected="@(Model.DataSourceId == d.Id)">@d.Name@(d.IsActive ? "" : " (غیرفعال)")</option>
+            }
+        </select>
+    </div>
 </div>
 
-<div class="form-group">
-    <label asp-for="DefaultValue">مقدار پیش‌فرض (اختیاری):</label>
-    <input asp-for="DefaultValue" autocomplete="off" />
-    <span asp-validation-for="DefaultValue" style="@errStyle"></span>
-</div>
-
-<div class="form-group">
-    <label asp-for="DataSourceId">منبع داده (اختیاری):</label>
-    <select asp-for="DataSourceId">
-        <option value="">— بدون منبع داده —</option>
-        @foreach (var d in lookups.DataSources)
-        {
-            <option value="@d.Id" selected="@(Model.DataSourceId == d.Id)">@d.Name@(d.IsActive ? "" : " (غیرفعال)")</option>
-        }
-    </select>
-</div>
-
-<div class="form-group">
-    <label asp-for="ConfigJson">تنظیمات اضافی (JSON، اختیاری):</label>
-    <textarea asp-for="ConfigJson" rows="4" dir="ltr" style="font-family:var(--mono)"></textarea>
-    <span asp-validation-for="ConfigJson" style="@errStyle"></span>
-</div>
+<details class="adv" open="@advancedOpen">
+    <summary><svg class="ico"><use href="#i-sliders" /></svg>تنظیمات پیشرفته (JSON)</summary>
+    <div class="adv-body field@(Invalid("ConfigJson"))">
+        <textarea class="textarea ltr" asp-for="ConfigJson" rows="4" spellcheck="false" placeholder='{ "placeholder": "..." }'></textarea>
+        <span class="field-error" asp-validation-for="ConfigJson"></span>
+    </div>
+</details>

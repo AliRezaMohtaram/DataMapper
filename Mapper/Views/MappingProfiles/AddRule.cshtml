@@ -1,66 +1,8 @@
 @model Borc.DataMapper.Application.MappingProfiles.AddMappingRule.AddMappingRuleCommand
-@using Borc.DataMapper.Application.MappingProfiles.GetMappingProfile
-@using Borc.DataMapper.Application.MappingProfiles.GetMappingProfileLookups
 @{
     ViewData["Title"] = "قاعدهٔ جدید";
-
-    var profile = (MappingProfileDetailDto)ViewData["Profile"]!;
-    var fields = (IReadOnlyList<ProfileFieldOption>)ViewData["Fields"]!;
-    var mapped = (HashSet<long>)ViewData["MappedFieldIds"]!;
-
-    var modelErrors = ViewData.ModelState
-        .Where(kv => string.IsNullOrEmpty(kv.Key))
-        .SelectMany(kv => kv.Value!.Errors)
-        .Select(e => e.ErrorMessage)
-        .Where(m => !string.IsNullOrWhiteSpace(m))
-        .ToList();
 }
-
-<div class="panel card">
-    <div class="panel-header">
-        <h2>قاعدهٔ جدید — @profile.Name</h2>
-    </div>
-
-    @if (modelErrors.Count > 0)
-    {
-        <div class="status error show">@string.Join(" — ", modelErrors)</div>
-    }
-
-    <form asp-action="AddRule" method="post">
-        <input asp-for="MappingProfileId" type="hidden" />
-
-        <div class="form-group">
-            <label asp-for="SourceColumn">عنوان ستون در فایل Excel:</label>
-            <input asp-for="SourceColumn" autocomplete="off" placeholder="مثلاً نام پیمانکار" />
-            <span asp-validation-for="SourceColumn" style="color:var(--danger);font-size:12px"></span>
-            <div class="hint">مقایسه بدون توجه به فاصله‌ها، ی/ک عربی و ارقام فارسی/انگلیسی انجام می‌شود.</div>
-        </div>
-
-        <div class="form-group">
-            <label asp-for="TargetFieldId">فیلد مقصد:</label>
-            <select asp-for="TargetFieldId">
-                <option value="0">— انتخاب کنید —</option>
-                @foreach (var f in fields)
-                {
-                    var used = mapped.Contains(f.Id);
-                    <option value="@f.Id" disabled="@used" selected="@(Model.TargetFieldId == f.Id)">
-                        @f.Label (@f.Key)@(f.IsRequired ? " *" : "")@(used ? " — قبلاً نگاشت شده" : "")
-                    </option>
-                }
-            </select>
-            <span asp-validation-for="TargetFieldId" style="color:var(--danger);font-size:12px"></span>
-            <div class="hint">هر فیلد فقط یک قاعده دارد. فیلدهای الزامی با * مشخص شده‌اند.</div>
-        </div>
-
-        <div class="form-group">
-            <label asp-for="SortOrder">ترتیب نمایش:</label>
-            <input asp-for="SortOrder" type="number" min="0" dir="ltr" />
-            <span asp-validation-for="SortOrder" style="color:var(--danger);font-size:12px"></span>
-        </div>
-
-        <div class="actions">
-            <button type="submit" class="btn primary">ذخیره قاعده</button>
-            <a asp-action="Detail" asp-route-id="@profile.Id" class="btn ghost">انصراف</a>
-        </div>
-    </form>
+@* معمولاً این فرم در مودال باز می‌شود (data-modal)؛ این صفحه برای لینک مستقیم و حالت بدون JavaScript است. *@
+<div class="modal-page">
+    <partial name="_RuleForm" model="Model" />
 </div>

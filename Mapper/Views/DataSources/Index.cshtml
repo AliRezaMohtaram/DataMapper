@@ -1,10 +1,12 @@
 @model Borc.DataMapper.Web.ViewModels.DataSources.DataSourceIndexViewModel
+@using Borc.DataMapper.Web.ViewModels
 @using Borc.DataMapper.Web.ViewModels.DataSources
 @{
     ViewData["Title"] = "منابع داده";
 
     var result = Model.Result;
     var filter = Model.Filter;
+    var searching = !string.IsNullOrWhiteSpace(filter.Search);
 
     var errors = ViewData.ModelState.Values
         .SelectMany(v => v.Errors)
@@ -17,155 +19,180 @@
     var pageSizes = new[] { 10, 20, 50, 100 };
 }
 
-<div class="panel card">
-    <div class="panel-header">
-        <h2>منابع داده</h2>
+@section Styles {
+    <link rel="stylesheet" href="~/css/vx.css" asp-append-version="true" />
+}
 
-        <div class="summary-stats">
-            <span>کل: <b>@result.TotalCount</b></span>
-            @if (result.TotalCount > 0)
-            {
-                <span>نمایش: <b>@from</b> تا <b>@to</b></span>
-            }
+<div class="vx">
+
+    <header class="vx-head">
+        <div>
+            <h1 class="vx-title">منابع داده</h1>
+            <p class="vx-sub">گزینه‌های فیلدهای قالب از فایل Excel/CSV، قالب‌های داخلی یا API خارجی تأمین می‌شود.</p>
         </div>
-
-        <a asp-action="Create" class="btn primary">+ منبع داده جدید</a>
-    </div>
+        <a asp-action="Create" class="vx-btn vx-btn--primary" data-modal>منبع داده جدید</a>
+    </header>
 
     @if (errors.Count > 0)
     {
-        <div class="status error show">@string.Join(" — ", errors)</div>
+        <div class="vx-alert" role="alert">@string.Join(" — ", errors)</div>
     }
 
-    <form method="get" asp-action="Index">
-        <input type="hidden" name="pageSize" value="@result.PageSize" />
+    <section class="vx-card" aria-label="فهرست منابع داده">
 
-        <div class="form-group">
-            <label for="dsSearch">جستجو (بر اساس کد یا نام):</label>
-            <input type="text" id="dsSearch" name="search" value="@filter.Search"
-                   placeholder="جستجو در منابع داده..." autocomplete="off">
-        </div>
+        <div class="vx-toolbar">
+            <form method="get" asp-action="Index" role="search">
+                <input type="hidden" name="pageSize" value="@result.PageSize" />
 
-        <div class="actions">
-            <button type="submit" class="btn primary">جستجو</button>
-            <a asp-action="Index" asp-route-pageSize="@result.PageSize" class="btn ghost">پاکسازی فیلتر</a>
-        </div>
-    </form>
-</div>
+                <div class="vx-search">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="m20 20-3.5-3.5" />
+                    </svg>
+                    <label for="dsSearch" class="sr-only" style="position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%)">جستجو بر اساس کد یا نام</label>
+                    <input type="search" id="dsSearch" name="search" value="@filter.Search" class="vx-input"
+                           placeholder="جستجو بر اساس کد یا نام…" autocomplete="off" spellcheck="false" />
+                </div>
 
-<div class="panel card">
-    <div class="tscroll results-table-container">
-        <table class="results-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>کد</th>
-                    <th>نام</th>
-                    <th>نوع</th>
-                    <th>وضعیت</th>
-                    <th>تاریخ ایجاد</th>
-                    <th>عملیات</th>
-                </tr>
-            </thead>
-            <tbody>
-            @if (result.Items.Count == 0)
-            {
-                <tr>
-                    <td colspan="7" class="entries-empty">
-                        @(string.IsNullOrWhiteSpace(filter.Search)
-                            ? "هنوز منبع داده‌ای ثبت نشده است."
-                            : "منبع داده‌ای با این مشخصات پیدا نشد.")
-                    </td>
-                </tr>
-            }
-            else
-            {
-                foreach (var d in result.Items)
+                <button type="submit" class="vx-btn">جستجو</button>
+
+                @if (searching)
                 {
-                    <tr>
-                        <td>@d.Id</td>
-                        <td><code dir="ltr" style="font-family:var(--mono)">@d.Code</code></td>
-                        <td>@d.Name</td>
-                        <td><span class="mode-badge">@d.SourceType.ToLabel()</span></td>
-                        <td><span class="mode-badge">@(d.IsActive ? "فعال" : "غیرفعال")</span></td>
-                        <td dir="ltr">@d.CreatedAt.ToJalali()</td>
-                        <td>
-                            <div class="row-actions">
-                                <a asp-action="Edit" asp-route-id="@d.Id" class="btn primary low-padding"
-                                   title="ویرایش" aria-label="ویرایش">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                         fill="none" stroke="currentColor" stroke-width="2"
-                                         stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M12 20h9" />
-                                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                                    </svg>
-                                </a>
-
-                                <form asp-action="SetActive" method="post" style="display:inline">
-                                    <input type="hidden" name="id" value="@d.Id" />
-                                    <input type="hidden" name="isActive" value="@((!d.IsActive).ToString().ToLowerInvariant())" />
-                                    <button type="submit" class="btn ghost low-padding">
-                                        @(d.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")
-                                    </button>
-                                </form>
-
-                                <button type="button" class="btn danger low-padding"
-                                        title="حذف" aria-label="حذف"
-                                        data-delete-id="@d.Id" data-delete-name="@d.Name">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
-                                         fill="none" stroke="currentColor" stroke-width="2"
-                                         stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="3 6 5 6 21 6" />
-                                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                                        <path d="M10 11v6" />
-                                        <path d="M14 11v6" />
-                                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                    <a asp-action="Index" asp-route-pageSize="@result.PageSize" class="vx-btn">پاک کردن فیلتر</a>
                 }
-            }
-            </tbody>
-        </table>
-    </div>
+            </form>
+        </div>
 
-    <div class="pagination">
-        @if (result.HasPrevious)
+        @if (result.Items.Count == 0)
         {
-            <a class="btn ghost" asp-action="Index" asp-route-search="@filter.Search"
-               asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)">قبلی</a>
+            <div class="vx-empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <ellipse cx="12" cy="5" rx="8" ry="3" />
+                    <path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
+                    <path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
+                </svg>
+                @if (searching)
+                {
+                    <strong>نتیجه‌ای پیدا نشد</strong>
+                    <p>منبع داده‌ای با «@filter.Search» وجود ندارد. عبارت دیگری را امتحان کنید یا فیلتر را پاک کنید.</p>
+                    <a asp-action="Index" asp-route-pageSize="@result.PageSize" class="vx-btn">پاک کردن فیلتر</a>
+                }
+                else
+                {
+                    <strong>هنوز منبع داده‌ای ندارید</strong>
+                    <p>یک منبع داده بسازید تا فیلدهای قالب بتوانند گزینه‌هایشان را از آن بگیرند.</p>
+                    <a asp-action="Create" class="vx-btn vx-btn--primary" data-modal>ساخت اولین منبع داده</a>
+                }
+            </div>
         }
         else
         {
-            <button type="button" class="btn ghost" disabled>قبلی</button>
-        }
+            <div class="vx-scroll">
+                <table class="vx-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">نام</th>
+                            <th scope="col">کد</th>
+                            <th scope="col">نوع</th>
+                            <th scope="col">وضعیت</th>
+                            <th scope="col">تاریخ ایجاد</th>
+                            <th scope="col"><span class="sr-only" style="position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%)">عملیات</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in result.Items)
+                        {
+                            <tr>
+                                <td class="vx-num">@d.Id</td>
+                                <td><a asp-action="Detail" asp-route-id="@d.Id" class="vx-link">@d.Name</a></td>
+                                <td data-label="کد"><span class="vx-code">@d.Code</span></td>
+                                <td data-label="نوع"><span class="vx-tag">@d.SourceType.ToLabel()</span></td>
+                                <td data-label="وضعیت">
+                                    <span class="vx-status @(d.IsActive ? "vx-status--on" : "")">@(d.IsActive ? "فعال" : "غیرفعال")</span>
+                                </td>
+                                <td data-label="ایجاد" class="vx-muted" dir="ltr" style="text-align:start">@d.CreatedAt.ToJalali()</td>
+                                <td class="vx-end">
+                                    <div class="vx-actions">
+                                        <a asp-action="Edit" asp-route-id="@d.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="vx-btn vx-btn--icon" data-modal
+                                           title="ویرایش @d.Name" aria-label="ویرایش @d.Name">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <path d="M12 20h9" />
+                                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                                            </svg>
+                                        </a>
 
-        <span>صفحه @result.Page از @Math.Max(1, result.TotalPages)</span>
+                                        <form asp-action="SetActive" method="post">
+                                            <input type="hidden" name="id" value="@d.Id" />
+                                            <input type="hidden" name="isActive" value="@((!d.IsActive).ToString().ToLowerInvariant())" />
+                                            <button type="submit" class="vx-btn">@(d.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")</button>
+                                        </form>
 
-        @if (result.HasNext)
-        {
-            <a class="btn ghost" asp-action="Index" asp-route-search="@filter.Search"
-               asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)">بعدی</a>
-        }
-        else
-        {
-            <button type="button" class="btn ghost" disabled>بعدی</button>
-        }
+                                        <button type="button" class="vx-btn vx-btn--icon vx-btn--danger"
+                                                title="حذف @d.Name" aria-label="حذف @d.Name"
+                                                data-delete-id="@d.Id" data-delete-name="@d.Name">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                                <polyline points="3 6 5 6 21 6" />
+                                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                                <path d="M10 11v6" />
+                                                <path d="M14 11v6" />
+                                                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
 
-        <form method="get" asp-action="Index" style="display:inline">
-            <input type="hidden" name="search" value="@filter.Search" />
-            <label class="rpp-label">ردیف در صفحه:
-                <select name="pageSize" onchange="this.form.submit()">
-                    @foreach (var size in pageSizes)
+            <footer class="vx-foot">
+                <span>@from تا @to از @result.TotalCount</span>
+
+                <nav class="vx-pager" aria-label="صفحه‌بندی">
+                    @if (result.HasPrevious)
                     {
-                        <option value="@size" selected="@(result.PageSize == size)">@size</option>
+                        <a class="vx-btn" asp-action="Index" asp-route-search="@filter.Search"
+                           asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev">قبلی</a>
                     }
-                </select>
-            </label>
-        </form>
-    </div>
+                    else
+                    {
+                        <span class="vx-btn" aria-disabled="true">قبلی</span>
+                    }
+
+                    <span aria-current="page">صفحه @result.Page از @Math.Max(1, result.TotalPages)</span>
+
+                    @if (result.HasNext)
+                    {
+                        <a class="vx-btn" asp-action="Index" asp-route-search="@filter.Search"
+                           asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next">بعدی</a>
+                    }
+                    else
+                    {
+                        <span class="vx-btn" aria-disabled="true">بعدی</span>
+                    }
+                </nav>
+
+                <form method="get" asp-action="Index">
+                    <input type="hidden" name="search" value="@filter.Search" />
+                    <label>
+                        ردیف در صفحه
+                        <select name="pageSize" class="vx-select" onchange="this.form.submit()">
+                            @foreach (var size in pageSizes)
+                            {
+                                <option value="@size" selected="@(result.PageSize == size)">@size</option>
+                            }
+                        </select>
+                    </label>
+                </form>
+            </footer>
+        }
+    </section>
 </div>
 
 <partial name="_DeleteModal" />

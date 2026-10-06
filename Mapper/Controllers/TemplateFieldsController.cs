@@ -8,6 +8,7 @@ using Borc.DataMapper.Application.TemplateFields.UpdateTemplateField;
 using Borc.DataMapper.Application.TemplateVersions.GetTemplateVersion;
 using Borc.DataMapper.Domain.Common;
 using Borc.DataMapper.Domain.Templates;
+using Borc.DataMapper.Web.Mvc;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,6 +17,9 @@ namespace Borc.DataMapper.Web.Controllers;
 public sealed class TemplateFieldsController : Controller
 {
     private readonly ISender _sender;
+
+    /// <summary>فرم مشترک ایجاد/ویرایش فیلد (همراه با نام‌های مستعار)؛ هم در مودال و هم در صفحهٔ کامل.</summary>
+    private const string FormPartial = "_FieldForm";
 
     public TemplateFieldsController(ISender sender)
     {
@@ -34,7 +38,7 @@ public sealed class TemplateFieldsController : Controller
 
         await LoadLookupsAsync(cancellationToken);
 
-        return View(new CreateTemplateFieldCommand(
+        return this.ModalOrView(FormPartial, new CreateTemplateFieldCommand(
             templateVersionId,
             string.Empty,
             string.Empty,
@@ -57,10 +61,10 @@ public sealed class TemplateFieldsController : Controller
             if (result.Success)
             {
                 TempData["Success"] = result.Message ?? "فیلد ایجاد شد.";
-                return RedirectToAction("Detail", "TemplateVersions", new { id = command.TemplateVersionId });
+                return this.ModalOrRedirect(Url.Action("Detail", "TemplateVersions", new { id = command.TemplateVersionId })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "ساخت فیلد انجام نشد.");
+            ModelState.AddResultErrors(result, "ساخت فیلد انجام نشد.", Request);
         }
 
         if (!await LoadDraftVersionAsync(command.TemplateVersionId, cancellationToken))
@@ -68,7 +72,7 @@ public sealed class TemplateFieldsController : Controller
 
         await LoadLookupsAsync(cancellationToken);
 
-        return View(command);
+        return this.ModalOrView(FormPartial, command);
     }
 
     // ---------- ویرایش فیلد ----------
@@ -76,7 +80,15 @@ public sealed class TemplateFieldsController : Controller
     [HttpGet]
     public async Task<IActionResult> Edit(
         long id,
+        string? tab,
         CancellationToken cancellationToken)
+    {
+        ViewData["Tab"] = tab;
+        return await EditFormAsync(id, cancellationToken);
+    }
+
+    /// <summary>فرم ویرایش با داده‌های تازه از دیتابیس (پس از ویرایش alias هم استفاده می‌شود).</summary>
+    private async Task<IActionResult> EditFormAsync(long id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new GetTemplateFieldQuery(id), cancellationToken);
 
@@ -97,7 +109,7 @@ public sealed class TemplateFieldsController : Controller
         ViewData["Info"] = f;
         await LoadLookupsAsync(cancellationToken);
 
-        return View(new UpdateTemplateFieldCommand(
+        return this.ModalOrView(FormPartial, new UpdateTemplateFieldCommand(
             f.Id, f.Label, f.DataType, f.DbType, f.IsRequired, f.SortOrder,
             f.Length, f.Precision, f.Scale, f.Regex, f.DefaultValue, f.DataSourceId, f.ConfigJson));
     }
@@ -115,10 +127,10 @@ public sealed class TemplateFieldsController : Controller
             if (result.Success)
             {
                 TempData["Success"] = result.Message ?? "فیلد ویرایش شد.";
-                return RedirectToAction("Detail", "TemplateVersions", new { id = result.Data });
+                return this.ModalOrRedirect(Url.Action("Detail", "TemplateVersions", new { id = result.Data })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "ویرایش فیلد انجام نشد.");
+            ModelState.AddResultErrors(result, "ویرایش فیلد انجام نشد.", Request);
         }
 
         var info = await _sender.Send(new GetTemplateFieldQuery(command.Id), cancellationToken);
@@ -132,7 +144,7 @@ public sealed class TemplateFieldsController : Controller
         ViewData["Info"] = info.Data;
         await LoadLookupsAsync(cancellationToken);
 
-        return View(command);
+        return this.ModalOrView(FormPartial, command);
     }
 
     // ---------- حذف فیلد ----------
@@ -168,10 +180,14 @@ public sealed class TemplateFieldsController : Controller
             new AddFieldAliasCommand(templateFieldId, alias ?? string.Empty),
             cancellationToken);
 
-        TempData[result.Success ? "Success" : "Error"] =
-            result.Message ?? (result.Success ? "alias اضافه شد." : "افزودن alias انجام نشد.");
+        var message = result.Message ?? (result.Success ? "نام مستعار اضافه شد." : "افزودن نام مستعار انجام نشد.");
 
-        return RedirectToAction(nameof(Edit), new { id = templateFieldId });
+        // در مودال، همان فرم با تب «نام‌های مستعار» دوباره رندر می‌شود
+        if (Request.IsModalRequest())
+            return await AliasesTabAsync(templateFieldId, message, result.Success, cancellationToken);
+
+        TempData[result.Success ? "Success" : "Error"] = message;
+        return RedirectToAction(nameof(Edit), new { id = templateFieldId, tab = "aliases" });
     }
 
     [HttpPost]
@@ -183,13 +199,24 @@ public sealed class TemplateFieldsController : Controller
     {
         var result = await _sender.Send(new DeleteFieldAliasCommand(id), cancellationToken);
 
-        TempData[result.Success ? "Success" : "Error"] =
-            result.Message ?? (result.Success ? "alias حذف شد." : "حذف alias انجام نشد.");
+        var message = result.Message ?? (result.Success ? "نام مستعار حذف شد." : "حذف نام مستعار انجام نشد.");
 
-        return RedirectToAction(nameof(Edit), new { id = fieldId });
+        if (Request.IsModalRequest())
+            return await AliasesTabAsync(fieldId, message, result.Success, cancellationToken);
+
+        TempData[result.Success ? "Success" : "Error"] = message;
+        return RedirectToAction(nameof(Edit), new { id = fieldId, tab = "aliases" });
     }
 
     // ---------- کمکی‌ها ----------
+
+    private Task<IActionResult> AliasesTabAsync(long fieldId, string message, bool success, CancellationToken ct)
+    {
+        ViewData["Tab"] = "aliases";
+        ViewData["Flash"] = message;
+        ViewData["FlashTone"] = success ? "success" : "danger";
+        return EditFormAsync(fieldId, ct);
+    }
 
     private async Task<bool> LoadDraftVersionAsync(long versionId, CancellationToken ct)
     {

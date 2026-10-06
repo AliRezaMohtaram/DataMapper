@@ -1,0 +1,119 @@
+@model Borc.DataMapper.Web.ViewModels.DataSources.DataSourceFormViewModel
+@inject Microsoft.AspNetCore.Mvc.ViewFeatures.IFileVersionProvider FileVersions
+@using Borc.DataMapper.Domain.DataSources
+@using Borc.DataMapper.Web.ViewModels.Dashboard
+@using Borc.DataMapper.Web.ViewModels.DataSources
+@*
+    فرم ایجاد/ویرایش منبع داده — ریشهٔ آن یک .modal است:
+    · از mx.js (data-modal) در مودال بارگذاری و با fetch ارسال می‌شود (data-mx-ajax)؛
+    · در Create.cshtml / Edit.cshtml همین partial به‌صورت صفحهٔ کامل نمایش داده می‌شود.
+*@
+@{
+    var isEdit = Model.IsEdit;
+    var cancelUrl = isEdit
+        ? (Model.ReturnUrl ?? Url.Action("Detail", new { id = Model.Id }))
+        : Url.Action("Index");
+
+    var formErrors = ViewData.ModelState
+        .Where(kv => string.IsNullOrEmpty(kv.Key))
+        .SelectMany(kv => kv.Value!.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(m => !string.IsNullOrWhiteSpace(m))
+        .ToList();
+
+    string Invalid(string key) => ViewData.ModelState[key]?.Errors.Count > 0 ? " field-invalid" : "";
+
+    var types = new[] { DataSourceType.StaticList, DataSourceType.File, DataSourceType.Template, DataSourceType.Api };
+}
+
+<form class="modal modal-lg" method="post" asp-action="@(isEdit ? "Edit" : "Create")"
+      data-mx-ajax data-mx-init="ds-form" data-mx-src="@FileVersions.AddFileVersionToPath(Context.Request.PathBase, "/js/datasource-form.js")"
+      data-ds-current="@Model.SourceType" novalidate>
+
+    <div class="modal-head">
+        <span class="modal-head-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span>
+        <div>
+            <div class="modal-title">@(isEdit ? $"ویرایش «{Model.Name}»" : "منبع داده جدید")</div>
+            <div class="modal-sub">گزینه‌های فیلدهای انتخابی قالب از این منبع خوانده می‌شوند.</div>
+        </div>
+        <a class="icon-btn plain close" href="@cancelUrl" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+    </div>
+
+    <div class="modal-body">
+        @if (formErrors.Count > 0)
+        {
+            <div class="callout tone-danger" role="alert" style="margin-bottom:1rem">
+                <svg class="ico"><use href="#i-alert" /></svg><div>@string.Join(" — ", formErrors)</div>
+            </div>
+        }
+
+        @if (isEdit)
+        {
+            <input asp-for="Id" type="hidden" />
+            <input asp-for="ReturnUrl" type="hidden" />
+
+            <dl class="dl" style="grid-template-columns:repeat(2, minmax(0, 1fr));margin-bottom:1rem">
+                <div><dt>کد منبع</dt><dd><span class="code">@Model.Code</span></dd></div>
+                <div><dt>نوع منبع</dt><dd>@Model.SourceType.ToLabel()</dd></div>
+            </dl>
+            <p class="hint" style="margin:-.4rem 0 1rem">
+                کد و نوع منبع پس از ایجاد قابل تغییر نیست.
+                @if (ViewData["UsedBy"] is int used && used > 0)
+                {
+                    <text>این منبع داده در <b>@used</b> فیلد قالب استفاده می‌شود.</text>
+                }
+            </p>
+        }
+        else
+        {
+            <div class="fieldset-title">نوع منبع</div>
+            <div class="opt-grid" role="radiogroup" aria-label="نوع منبع">
+                @foreach (var t in types)
+                {
+                    <label class="opt">
+                        <input type="radio" name="@nameof(Model.SourceType)" value="@t" checked="@(Model.SourceType == t)" />
+                        <span class="opt-ico @DashboardUi.Tone(t)"><svg class="ico"><use href="#@DashboardUi.Icon(t)" /></svg></span>
+                        <span class="opt-body">
+                            <span class="opt-title">@t.ToLabel()</span>
+                            <span class="opt-desc">@t.Describe()</span>
+                        </span>
+                        <span class="opt-check"></span>
+                    </label>
+                }
+            </div>
+        }
+
+        <div class="fieldset-title">مشخصات</div>
+        <div class="form-grid">
+            @if (!isEdit)
+            {
+                <div class="field@(Invalid(nameof(Model.Code)))">
+                    <label class="label" asp-for="Code">کد منبع<span class="req">*</span></label>
+                    <input class="input ltr" asp-for="Code" autocomplete="off" spellcheck="false" placeholder="CONTRACTORS" />
+                    <span class="field-error" asp-validation-for="Code"></span>
+                    <span class="hint">حروف انگلیسی، عدد، _ و -. پس از ایجاد قابل تغییر نیست.</span>
+                </div>
+            }
+            <div class="field@(Invalid(nameof(Model.Name)))@(isEdit ? " span-2" : "")">
+                <label class="label" asp-for="Name">نام منبع<span class="req">*</span></label>
+                <input class="input" asp-for="Name" autocomplete="off" placeholder="مثلاً: پیمانکاران" />
+                <span class="field-error" asp-validation-for="Name"></span>
+            </div>
+        </div>
+
+        <partial name="_DataSourceFields" model="Model" />
+
+        <script type="application/json" data-ds-lookups>@Html.Raw(Model.LookupsJson)</script>
+    </div>
+
+    <div class="modal-foot">
+        <span class="spacer"></span>
+        <a class="btn btn-quiet" href="@cancelUrl" data-close>انصراف</a>
+        <button type="submit" class="btn btn-primary" data-ds-submit
+                data-label-default="@(isEdit ? "ذخیره تغییرات" : "ایجاد منبع داده")"
+                data-label-file="ایجاد و بارگذاری فایل">
+            <svg class="ico"><use href="#i-check" /></svg>
+            <span data-label>@(isEdit ? "ذخیره تغییرات" : Model.SourceType == DataSourceType.File ? "ایجاد و بارگذاری فایل" : "ایجاد منبع داده")</span>
+        </button>
+    </div>
+</form>

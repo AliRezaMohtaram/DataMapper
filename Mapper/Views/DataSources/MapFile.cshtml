@@ -1,0 +1,77 @@
+@model Borc.DataMapper.Application.DataSources.PreviewDataSourceFile.DataSourceFilePreviewDto
+@{
+    ViewData["Title"] = $"انتخاب ستون‌ها - {Model.DataSourceName}";
+
+    var id = (long)ViewData["DataSourceId"]!;
+}
+
+<div class="panel card">
+    <div class="panel-header">
+        <h2>انتخاب ستون‌ها — @Model.DataSourceName</h2>
+        <div class="summary-stats">
+            <span>فایل: <b dir="ltr">@Model.FileName</b></span>
+            <span>تعداد سطر: <b>@Model.RowCount</b></span>
+        </div>
+    </div>
+
+    <div class="hint">
+        «مقدار واقعی» همان چیزی است که در داده‌های ثبت‌شده ذخیره می‌شود (مثلاً کد)، و «عنوان نمایشی» همان است که کاربر هنگام انتخاب می‌بیند (مثلاً نام).
+        مقدار تکراری یا خالی نادیده گرفته می‌شود.
+    </div>
+
+    <form asp-action="ImportFile" method="post">
+        <input type="hidden" name="id" value="@id" />
+        <input type="hidden" name="token" value="@Model.Token" />
+
+        <div class="form-group">
+            <label for="valueColumnIndex">ستون مقدار واقعی:</label>
+            <select id="valueColumnIndex" name="valueColumnIndex" required>
+                @for (var i = 0; i < Model.Headers.Count; i++)
+                {
+                    <option value="@i" selected="@(i == Model.SuggestedValueIndex)">@Model.Headers[i]</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="displayColumnIndex">ستون عنوان نمایشی:</label>
+            <select id="displayColumnIndex" name="displayColumnIndex">
+                <option value="">— همان مقدار —</option>
+                @for (var i = 0; i < Model.Headers.Count; i++)
+                {
+                    <option value="@i" selected="@(Model.SuggestedDisplayIndex == i)">@Model.Headers[i]</option>
+                }
+            </select>
+        </div>
+
+        <div class="tscroll results-table-container">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        @foreach (var h in Model.Headers)
+                        {
+                            <th>@h</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.SampleRows)
+                    {
+                        <tr>
+                            @for (var i = 0; i < Model.Headers.Count; i++)
+                            {
+                                <td>@(i < row.Count ? row[i] : null)</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="hint">نمونه: @Model.SampleRows.Count سطر اول از @Model.RowCount سطر.</div>
+
+        <div class="actions">
+            <button type="submit" class="btn primary">ثبت گزینه‌ها</button>
+            <a asp-action="Detail" asp-route-id="@id" class="btn ghost">انصراف</a>
+        </div>
+    </form>
+</div>

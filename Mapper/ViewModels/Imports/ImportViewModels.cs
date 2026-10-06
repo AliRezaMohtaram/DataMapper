@@ -1,4 +1,5 @@
 using Borc.DataMapper.Application.Common.Results;
+using Borc.DataMapper.Application.Imports.GetImportLookups;
 using Borc.DataMapper.Application.Imports.ListImportBatches;
 using Borc.DataMapper.Domain.Imports;
 using Borc.DataMapper.Domain.Mappings;
@@ -8,6 +9,12 @@ namespace Borc.DataMapper.Web.ViewModels.Imports;
 public sealed record ImportIndexViewModel(
     ListImportBatchesQuery Filter,
     PagedResult<ImportBatchListItemDto> Result);
+
+/// <summary>فرم آپلود فایل ایمپورت (partial «_UploadForm»)؛ انتخاب‌های قبلی پس از خطا حفظ می‌شوند.</summary>
+public sealed record ImportUploadViewModel(
+    ImportLookupsDto Lookups,
+    long? TemplateVersionId = null,
+    long? MappingProfileId = null);
 
 public static class ImportLabels
 {

@@ -1,127 +1,123 @@
 @model Borc.DataMapper.Application.DataRecords.GetDataRecord.DataRecordDetailDto
 @using Borc.DataMapper.Domain.Common
 @using Borc.DataMapper.Web.ViewModels.DataRecords
+@using Borc.DataMapper.Web.ViewModels.Dashboard
 @using Borc.DataMapper.Domain.Records
 @{
     ViewData["Title"] = $"رکورد {Model.Id}";
+    ViewData["Subtitle"] = $"{Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}";
 
     var canEdit = Model.VersionStatus == TemplateVersionStatus.Published;
+    var filled = Model.Values.Count(v => !string.IsNullOrEmpty(v.Value));
+    var extra = Model.Values.Count(v => v.IsExtra);
 }
 
-<div class="page-grid">
+@section TopbarActions {
+    <a class="btn btn-ghost" asp-action="Index" asp-route-templateVersionId="@Model.TemplateVersionId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">رکوردهای این نسخه</span></a>
+}
 
-    <!-- ===== محتوای اصلی ===== -->
-    <section class="page-main">
-        <div class="panel card">
-            <div class="panel-header">
-                <h2>مقدارهای رکورد</h2>
-                <div class="summary-stats"><span>فیلدها: <b>@Model.Values.Count</b></span></div>
+<div class="split">
+    <article class="card rise">
+        <header class="card-head">
+            <div class="card-title">
+                <span class="card-ico"><svg class="ico"><use href="#i-list" /></svg></span>
+                <div>مقدارهای رکورد<div class="card-sub">@filled.ToPersianNumber() از @Model.Values.Count.ToPersianNumber() فیلد مقدار دارد@(extra > 0 ? $" · {extra.ToPersianNumber()} کلید خارج از قالب" : "")</div></div>
             </div>
+        </header>
 
-            <div class="tscroll results-table-container">
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th>فیلد</th>
-                            <th>نوع</th>
-                            <th>مقدار</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+        <div class="tbl-wrap">
+            <table class="tbl">
+                <thead><tr><th>فیلد</th><th>نوع</th><th>مقدار</th></tr></thead>
+                <tbody>
                     @foreach (var v in Model.Values)
                     {
+                        var ltr = v.DataType is FieldDataType.Number or FieldDataType.Date or FieldDataType.DateTime;
                         <tr>
                             <td>
-                                @v.Label
+                                <div class="cell-main">@v.Label</div>
                                 @if (v.IsExtra)
                                 {
-                                    <span class="mode-badge" title="این کلید دیگر در قالب وجود ندارد">خارج از قالب</span>
+                                    <span class="badge st-archived" title="این کلید دیگر در قالب وجود ندارد">خارج از قالب</span>
                                 }
                                 else
                                 {
-                                    <div dir="ltr" style="text-align:right"><code style="font-family:var(--mono);font-size:11px">@v.Key</code></div>
+                                    <div class="code" style="font-size:.72rem">@v.Key</div>
                                 }
                             </td>
-                            <td>@(v.IsExtra ? "—" : v.DataType.ToLabel())</td>
-                            <td>
+                            <td class="cell-sub">@(v.IsExtra ? "—" : v.DataType.ToLabel())</td>
+                            <td style="white-space:normal">
                                 @if (string.IsNullOrEmpty(v.Value))
                                 {
-                                        <span style="color:var(--muted)">—</span>
-                                    }
-                                    else if (v.DataType == Borc.DataMapper.Domain.Common.FieldDataType.Number || v.DataType == FieldDataType.Date || v.DataType == FieldDataType.DateTime)
-                                    {
-                                    <span dir="ltr">@v.Value</span>
+                                    <span class="faint">—</span>
+                                }
+                                else if (ltr)
+                                {
+                                    <span class="mono strong" dir="ltr">@v.Value</span>
                                 }
                                 else
                                 {
-                                    @v.Value
+                                    <span class="strong" style="font-weight:600">@v.Value</span>
                                 }
                             </td>
                         </tr>
                     }
-                    </tbody>
-                </table>
-            </div>
+                </tbody>
+            </table>
         </div>
-    </section>
+    </article>
 
-    <!-- ===== اطلاعات کلی (aside سمت چپ) ===== -->
-    <aside class="page-aside">
-        <div class="panel card">
-            <div class="aside-title">رکورد @Model.Id</div>
-            <span class="mode-badge">@Model.Source.ToLabel()</span>
-
-            <dl class="info-list">
-                <div>
-                    <dt>قالب</dt>
-                    <dd><a asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a></dd>
-                </div>
-                <div>
-                    <dt>نسخه</dt>
-                    <dd>
-                        <a asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId">نسخه @Model.VersionNo</a>
-                        <span class="mode-badge">@Model.VersionStatus.ToLabel()</span>
-                    </dd>
-                </div>
-                @if (Model.ImportBatchId.HasValue)
-                {
+    <aside class="split-side">
+        <article class="card rise" style="--i:1">
+            <div class="card-body">
+                <div class="row" style="justify-content:space-between;align-items:flex-start">
                     <div>
-                        <dt>ایمپورت مبدأ</dt>
+                        <div class="hero-title">رکورد <span class="code" style="font-size:1rem">@Model.Id</span></div>
+                        <a class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a>
+                    </div>
+                    <span class="badge @(Model.Source == RecordSource.Import ? "st-uploaded" : "st-validated")">@Model.Source.ToLabel()</span>
+                </div>
+
+                <dl class="dl stacked" style="margin-top:1rem">
+                    <div>
+                        <dt>نسخهٔ قالب</dt>
                         <dd>
-                            <a asp-controller="Imports" asp-action="Detail" asp-route-id="@Model.ImportBatchId">@(Model.ImportFileName ?? $"#{Model.ImportBatchId}")</a>
-                            @if (Model.ImportRowNumber.HasValue)
-                            {
-                                <div>سطر @Model.ImportRowNumber</div>
-                            }
+                            <a class="link-btn" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId">نسخهٔ @Model.VersionNo.ToPersianNumber()</a>
+                            <span class="badge @Model.VersionStatus.BadgeClass()">@Model.VersionStatus.ToLabel()</span>
                         </dd>
                     </div>
-                }
-                <div>
-                    <dt>تاریخ ثبت</dt>
-                    <dd dir="ltr" style="text-align:right">@Model.CreatedAt.ToJalali()</dd>
-                </div>
-                <div>
-                    <dt>آخرین ویرایش</dt>
-                    <dd dir="ltr" style="text-align:right">@Model.UpdatedAt.ToJalali()</dd>
-                </div>
-            </dl>
-
-            <div class="aside-actions">
-                @if (canEdit)
-                {
-                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn primary block">ویرایش رکورد</a>
-                }
-                else
-                {
-                    <div class="hint">نسخهٔ این رکورد منتشرشده نیست؛ ویرایش داده ممکن نیست.</div>
-                }
-
-                <button type="button" class="btn danger block"
-                        data-delete-id="@Model.Id" data-delete-name="رکورد @Model.Id">حذف رکورد</button>
-
-                <a asp-action="Index" asp-route-templateVersionId="@Model.TemplateVersionId" class="btn ghost block">رکوردهای این نسخه</a>
+                    @if (Model.ImportBatchId.HasValue)
+                    {
+                        <div>
+                            <dt>ایمپورت مبدأ</dt>
+                            <dd>
+                                <a class="link-btn" asp-controller="Imports" asp-action="Detail" asp-route-id="@Model.ImportBatchId">@(Model.ImportFileName ?? $"IMP-{Model.ImportBatchId:0000}")</a>
+                                @if (Model.ImportRowNumber.HasValue)
+                                {
+                                    <div class="cell-sub">سطر @((int)Model.ImportRowNumber.Value).ToPersianNumber() فایل</div>
+                                }
+                            </dd>
+                        </div>
+                    }
+                    <div><dt>تاریخ ثبت</dt><dd class="nums">@Model.CreatedAt.ToJalali().ToPersianDigits()</dd></div>
+                    <div><dt>آخرین ویرایش</dt><dd class="nums">@(Model.UpdatedAt.HasValue ? Model.UpdatedAt.ToJalali().ToPersianDigits() : "—")</dd></div>
+                </dl>
             </div>
-        </div>
+
+            <div class="card-foot" style="display:block">
+                <div class="action-stack">
+                    @if (canEdit)
+                    {
+                        <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Id"><svg class="ico"><use href="#i-edit" /></svg>ویرایش رکورد</a>
+                    }
+                    else
+                    {
+                        <p class="hint">نسخهٔ این رکورد منتشرشده نیست؛ ویرایش داده ممکن نیست.</p>
+                    }
+                    <div class="dd-sep"></div>
+                    <button type="button" class="btn btn-danger-soft" data-delete-id="@Model.Id" data-delete-name="رکورد @Model.Id"><svg class="ico"><use href="#i-trash" /></svg>حذف رکورد</button>
+                </div>
+            </div>
+        </article>
     </aside>
 </div>
 

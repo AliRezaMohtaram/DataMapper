@@ -1,67 +1,8 @@
-@model Borc.DataMapper.Application.DataSources.UpdateDataSource.UpdateDataSourceCommand
-@using Borc.DataMapper.Domain.DataSources
-@using Borc.DataMapper.Web.ViewModels.DataSources
+@model Borc.DataMapper.Web.ViewModels.DataSources.DataSourceFormViewModel
 @{
     ViewData["Title"] = "ویرایش منبع داده";
-
-    var modelErrors = ViewData.ModelState
-        .Where(kv => string.IsNullOrEmpty(kv.Key))
-        .SelectMany(kv => kv.Value!.Errors)
-        .Select(e => e.ErrorMessage)
-        .Where(m => !string.IsNullOrWhiteSpace(m))
-        .ToList();
 }
-
-<div class="panel card">
-    <div class="panel-header">
-        <h2>ویرایش منبع داده</h2>
-    </div>
-
-    @if (modelErrors.Count > 0)
-    {
-        <div class="status error show">@string.Join(" — ", modelErrors)</div>
-    }
-
-    <form asp-action="Edit" method="post">
-        <input asp-for="Id" type="hidden" />
-        <div class="form-group">
-            <label>کد منبع داده:</label>
-            <input type="text" dir="ltr" value="@ViewData["Code"]" disabled />
-            <div class="hint">
-                کد قابل تغییر نیست.
-                @if (ViewData["UsedBy"] is int used && used > 0)
-                {
-                    <text>این منبع داده در @used فیلد استفاده شده است.</text>
-                }
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label asp-for="Name">نام منبع داده:</label>
-            <input asp-for="Name" autocomplete="off" />
-            <span asp-validation-for="Name" style="color:var(--danger);font-size:12px"></span>
-        </div>
-
-        <div class="form-group">
-            <label asp-for="SourceType">نوع منبع:</label>
-            <select asp-for="SourceType">
-                @foreach (var t in Enum.GetValues<DataSourceType>())
-                {
-                    <option value="@t" selected="@(Model.SourceType == t)">@t.ToLabel()</option>
-                }
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label asp-for="ConfigJson">تنظیمات (JSON، اختیاری):</label>
-            <textarea asp-for="ConfigJson" rows="6" dir="ltr" style="font-family:var(--mono)"></textarea>
-            <span asp-validation-for="ConfigJson" style="color:var(--danger);font-size:12px"></span>
-            <div class="hint">محتوای JSON باید معتبر باشد؛ ساختار آن بسته به نوع منبع تعیین می‌شود.</div>
-        </div>
-
-        <div class="actions">
-            <button type="submit" class="btn primary">ذخیره تغییرات</button>
-            <a asp-action="Index" class="btn ghost">انصراف</a>
-        </div>
-    </form>
+@* معمولاً این فرم در مودال باز می‌شود (data-modal)؛ این صفحه برای لینک مستقیم و حالت بدون JavaScript است. *@
+<div class="modal-page">
+    <partial name="_DataSourceForm" model="Model" />
 </div>

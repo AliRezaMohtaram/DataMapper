@@ -1,4 +1,4 @@
-﻿using Borc.DataMapper.Domain.DataSources;
+using Borc.DataMapper.Domain.DataSources;
 using Borc.DataMapper.Domain.Imports;
 using Borc.DataMapper.Domain.Mappings;
 using Borc.DataMapper.Domain.Records;
@@ -22,6 +22,7 @@ public interface IAppDbContext
     DbSet<PredefinedRegex> PredefinedRegexes { get; }
 
     DbSet<DataSource> DataSources { get; }
+    DbSet<DataSourceItem> DataSourceItems { get; }
 
     DbSet<MappingProfile> MappingProfiles { get; }
     DbSet<MappingRule> MappingRules { get; }

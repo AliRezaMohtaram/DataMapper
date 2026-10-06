@@ -1,0 +1,92 @@
+@model object
+@using Borc.DataMapper.Application.MappingProfiles.CreateMappingProfile
+@using Borc.DataMapper.Application.MappingProfiles.GetMappingProfileLookups
+@using Borc.DataMapper.Application.MappingProfiles.UpdateMappingProfile
+@using Borc.DataMapper.Domain.Mappings
+@*
+    فرم ایجاد/ویرایش پروفایل نگاشت — ریشهٔ آن یک .modal است.
+    مدل: CreateMappingProfileCommand یا UpdateMappingProfileCommand.
+*@
+@{
+    var create = Model as CreateMappingProfileCommand;
+    var update = Model as UpdateMappingProfileCommand;
+    var isEdit = update is not null;
+    var name = isEdit ? update!.Name : create!.Name;
+    var versions = ViewData["Versions"] as IReadOnlyList<ProfileVersionOption> ?? Array.Empty<ProfileVersionOption>();
+    var cancelUrl = isEdit ? Url.Action("Detail", new { id = update!.Id }) : Url.Action("Index");
+
+    var formErrors = ViewData.ModelState.Where(kv => string.IsNullOrEmpty(kv.Key))
+        .SelectMany(kv => kv.Value!.Errors).Select(e => e.ErrorMessage).Where(m => !string.IsNullOrWhiteSpace(m)).ToList();
+    string? ErrorOf(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string Invalid(string key) => ErrorOf(key) is null ? "" : " field-invalid";
+}
+
+<form class="modal" method="post" asp-controller="MappingProfiles" asp-action="@(isEdit ? "Edit" : "Create")" data-mx-ajax novalidate>
+    <div class="modal-head">
+        <span class="modal-head-ico tone-warning"><svg class="ico"><use href="#i-map" /></svg></span>
+        <div>
+            <div class="modal-title">@(isEdit ? $"ویرایش «{name}»" : "پروفایل نگاشت جدید")</div>
+            <div class="modal-sub">پروفایل، نگاشت ستون‌های یک نوع فایل تکراری به فیلدهای قالب را نگه می‌دارد.</div>
+        </div>
+        <a class="icon-btn plain close" href="@cancelUrl" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+    </div>
+
+    <div class="modal-body">
+        @if (formErrors.Count > 0)
+        {
+            <div class="callout tone-danger" role="alert" style="margin-bottom:1rem">
+                <svg class="ico"><use href="#i-alert" /></svg><div>@string.Join(" — ", formErrors)</div>
+            </div>
+        }
+
+        @if (isEdit)
+        {
+            <input type="hidden" name="Id" value="@update!.Id" />
+        }
+
+        <div class="form-grid">
+            <div class="field span-2@(Invalid("Name"))">
+                <label class="label" for="Name">نام پروفایل<span class="req">*</span></label>
+                <input class="input" id="Name" name="Name" value="@name" autocomplete="off" placeholder="مثلاً: فایل ماهانهٔ پیمانکار الف" autofocus />
+                <span class="field-error">@ErrorOf("Name")</span>
+            </div>
+
+            @if (isEdit)
+            {
+                <div class="field">
+                    <span class="label">قالب و نسخه</span>
+                    <span class="code-chip" style="height:2.5rem;display:flex;align-items:center;padding-inline:.8rem;font-family:var(--font)">@ViewData["Target"]</span>
+                    <span class="hint">پس از ساخت پروفایل قابل تغییر نیست.</span>
+                </div>
+            }
+            else
+            {
+                <div class="field@(Invalid("TemplateVersionId"))">
+                    <label class="label" for="TemplateVersionId">قالب و نسخه<span class="req">*</span></label>
+                    <select class="select" id="TemplateVersionId" name="TemplateVersionId">
+                        <option value="0">— انتخاب کنید —</option>
+                        @foreach (var v in versions)
+                        {
+                            <option value="@v.Id" selected="@(create!.TemplateVersionId == v.Id)">@v.Label</option>
+                        }
+                    </select>
+                    <span class="field-error">@ErrorOf("TemplateVersionId")</span>
+                    <span class="hint">پس از ساخت قابل تغییر نیست؛ ایمپورت فقط با نسخهٔ منتشرشده انجام می‌شود.</span>
+                </div>
+            }
+
+            <div class="field">
+                <label class="label" for="SourceType">نوع فایل مبدأ</label>
+                <select class="select" id="SourceType" name="SourceType">
+                    <option value="@ImportSourceType.Excel" selected>Excel (xlsx)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-foot">
+        <span class="spacer"></span>
+        <a class="btn btn-quiet" href="@cancelUrl" data-close>انصراف</a>
+        <button type="submit" class="btn btn-primary"><svg class="ico"><use href="#i-check" /></svg>@(isEdit ? "ذخیره تغییرات" : "ایجاد و افزودن قاعده")</button>
+    </div>
+</form>

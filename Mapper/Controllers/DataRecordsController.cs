@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Borc.DataMapper.Application.DataRecords.CreateDataRecord;
 using Borc.DataMapper.Application.DataRecords.DeleteDataRecord;
 using Borc.DataMapper.Application.DataRecords.GetDataRecord;
@@ -8,6 +8,7 @@ using Borc.DataMapper.Application.DataRecords.UpdateDataRecord;
 using Borc.DataMapper.Application.Imports.GetImportLookups;
 using Borc.DataMapper.Domain.Records;
 using Borc.DataMapper.Web.ViewModels.DataRecords;
+using Borc.DataMapper.Web.Mvc;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -40,7 +41,7 @@ public sealed class DataRecordsController : Controller
 
         if (!result.Success || result.Data is null)
         {
-            ModelState.AddModelError(string.Empty, result.Message ?? "خطا در دریافت رکوردها.");
+            ModelState.AddResultErrors(result, "خطا در دریافت رکوردها.", Request);
 
             return View(new DataRecordIndexViewModel(
                 query, new(Array.Empty<DataRecordListItemDto>(), 1, pageSize, 0), versions));
@@ -58,7 +59,10 @@ public sealed class DataRecordsController : Controller
         if (!versionId.HasValue)
         {
             var lookups = await _sender.Send(new GetImportLookupsQuery(), cancellationToken);
-            return View("SelectVersion", lookups.Data?.Versions ?? Array.Empty<ImportVersionOption>());
+            var versions = lookups.Data?.Versions ?? Array.Empty<ImportVersionOption>();
+
+            // انتخاب قالب در مودال باز می‌شود؛ بدون JavaScript صفحهٔ کامل SelectVersion
+            return this.ModalOrView("_SelectVersion", versions, "SelectVersion");
         }
 
         var form = await _sender.Send(new GetRecordFormQuery(TemplateVersionId: versionId), cancellationToken);
@@ -188,13 +192,17 @@ public sealed class DataRecordsController : Controller
                 precision = f.Precision,
                 scale = f.Scale,
                 regex = f.Regex,
-                options = f.Options.Select(o => new { value = o.Value, label = o.Label })
+                // منبع کوچک: گزینه‌ها همراه فرم؛ منبع بزرگ/API/قالب: dataSourceId و جستجوی سمت سرور
+                options = f.Options?.Select(o => new { value = o.Value, label = o.Label }),
+                dataSourceId = f.DataSourceId
             }),
             values = d.Values,
+            labels = d.Labels,
             urls = new
             {
                 save = Url.Action(nameof(Save), "DataRecords"),
-                index = Url.Action(nameof(Index), "DataRecords")
+                index = Url.Action(nameof(Index), "DataRecords"),
+                options = Url.Action("Options", "DataSources")
             }
         };
 

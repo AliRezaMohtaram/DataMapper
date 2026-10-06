@@ -1,0 +1,180 @@
+@model Borc.DataMapper.Application.TemplateFields.ITemplateFieldInput
+@inject Microsoft.AspNetCore.Mvc.ViewFeatures.IFileVersionProvider FileVersions
+@using Borc.DataMapper.Application.TemplateFields.CreateTemplateField
+@using Borc.DataMapper.Application.TemplateFields.GetTemplateField
+@using Borc.DataMapper.Application.TemplateFields.UpdateTemplateField
+@using Borc.DataMapper.Application.TemplateVersions.GetTemplateVersion
+@*
+    فرم ایجاد/ویرایش فیلد — ریشهٔ آن یک .modal است:
+    · از لینک‌های data-modal صفحهٔ نسخه در مودال باز می‌شود؛ Create/Edit.cshtml همین را به‌صورت صفحهٔ کامل نشان می‌دهند.
+    · در ویرایش، تب «نام‌های مستعار» فرم‌های جداگانهٔ افزودن/حذف دارد که در همان مودال پاسخ می‌گیرند.
+*@
+@{
+    var create = Model as CreateTemplateFieldCommand;
+    var update = Model as UpdateTemplateFieldCommand;
+    var isEdit = update is not null;
+
+    var info = ViewData["Info"] as TemplateFieldDetailDto;
+    var version = ViewData["Version"] as TemplateVersionDetailDto;
+
+    var versionId = isEdit ? info!.TemplateVersionId : create!.TemplateVersionId;
+    var templateName = isEdit ? info!.TemplateName : version?.TemplateName;
+    var versionNo = isEdit ? info!.VersionNo : version?.VersionNo ?? 0;
+    var sortOrder = isEdit ? update!.SortOrder.ToString() : create!.SortOrder?.ToString();
+    var cancelUrl = Url.Action("Detail", "TemplateVersions", new { id = versionId });
+
+    var aliasTab = isEdit && string.Equals(ViewData["Tab"] as string, "aliases", StringComparison.OrdinalIgnoreCase);
+    var flash = ViewData["Flash"] as string;
+
+    var formErrors = ViewData.ModelState
+        .Where(kv => string.IsNullOrEmpty(kv.Key))
+        .SelectMany(kv => kv.Value!.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(m => !string.IsNullOrWhiteSpace(m))
+        .ToList();
+
+    string? ErrorOf(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string Invalid(string key) => ErrorOf(key) is null ? "" : " field-invalid";
+}
+
+<div class="modal modal-lg" data-mx-init="field-form" data-mx-src="@FileVersions.AddFileVersionToPath(Context.Request.PathBase, "/js/field-form.js")"
+     data-mx-toast="@flash" data-mx-toast-tone="@ViewData["FlashTone"]">
+
+    <div class="modal-head">
+        <span class="modal-head-ico tone-violet"><svg class="ico"><use href="#i-list" /></svg></span>
+        <div>
+            <div class="modal-title">
+                @if (isEdit)
+                {
+                    <text>ویرایش فیلد</text> <span class="code">@info!.FieldKey</span>
+                }
+                else
+                {
+                    <text>فیلد جدید</text>
+                }
+            </div>
+            <div class="modal-sub">@templateName · نسخهٔ @versionNo.ToPersianNumber() (پیش‌نویس)</div>
+        </div>
+        <a class="icon-btn plain close" href="@cancelUrl" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+    </div>
+
+    @if (isEdit)
+    {
+        <div style="padding:.75rem 1.35rem 0">
+            <div class="seg" data-tabs role="tablist">
+                <button type="button" role="tab" class="@(aliasTab ? "" : "active")" aria-selected="@(!aliasTab)" data-tab="fldPaneMain">
+                    <svg class="ico"><use href="#i-sliders" /></svg>مشخصات
+                </button>
+                <button type="button" role="tab" class="@(aliasTab ? "active" : "")" aria-selected="@aliasTab" data-tab="fldPaneAlias">
+                    <svg class="ico"><use href="#i-link" /></svg>نام‌های مستعار <span class="tag tg-alias">@info!.Aliases.Count.ToPersianNumber()</span>
+                </button>
+            </div>
+        </div>
+    }
+
+    <div class="modal-body">
+        @if (formErrors.Count > 0)
+        {
+            <div class="callout tone-danger" role="alert" style="margin-bottom:1rem">
+                <svg class="ico"><use href="#i-alert" /></svg><div>@string.Join(" — ", formErrors)</div>
+            </div>
+        }
+
+        <section id="fldPaneMain" role="tabpanel" hidden="@aliasTab">
+            <form id="fieldForm" method="post" asp-controller="TemplateFields" asp-action="@(isEdit ? "Edit" : "Create")" data-mx-ajax novalidate>
+                @if (isEdit)
+                {
+                    <input type="hidden" name="Id" value="@update!.Id" />
+                }
+                else
+                {
+                    <input type="hidden" name="TemplateVersionId" value="@create!.TemplateVersionId" />
+                }
+
+                <div class="form-grid">
+                    @if (isEdit)
+                    {
+                        <div class="field">
+                            <span class="label">کلید فیلد</span>
+                            <span class="code-chip" style="height:2.5rem;display:flex;align-items:center;padding-inline:.8rem">@info!.FieldKey</span>
+                            <span class="hint">کلید پس از ایجاد قابل تغییر نیست.</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="field@(Invalid("FieldKey"))">
+                            <label class="label" for="FieldKey">کلید فیلد<span class="req">*</span></label>
+                            <input class="input ltr" id="FieldKey" name="FieldKey" value="@create!.FieldKey" autocomplete="off" spellcheck="false" placeholder="SiteName" autofocus />
+                            <span class="field-error">@ErrorOf("FieldKey")</span>
+                            <span class="hint">در هر نسخه یکتاست و پس از ایجاد قابل تغییر نیست.</span>
+                        </div>
+                    }
+                    <div class="field@(Invalid("SortOrder"))">
+                        <label class="label" for="SortOrder">ترتیب نمایش</label>
+                        <input class="input ltr" id="SortOrder" name="SortOrder" type="number" min="0" value="@sortOrder" placeholder="@(isEdit ? "" : "خالی = انتهای فهرست")" />
+                        <span class="field-error">@ErrorOf("SortOrder")</span>
+                    </div>
+                </div>
+
+                <partial name="_FieldFormFields" model="Model" />
+            </form>
+        </section>
+
+        @if (isEdit)
+        {
+            <section id="fldPaneAlias" role="tabpanel" hidden="@(!aliasTab)">
+                <div class="callout tone-info" style="margin-bottom:1rem">
+                    <svg class="ico"><use href="#i-info" /></svg>
+                    <div>
+                        نام‌های مستعار برای <b>تطبیق خودکار سرستون‌های Excel</b> با این فیلد استفاده می‌شوند.
+                        تفاوت ی/ک عربی و فارسی، اعراب، نیم‌فاصله و ارقام فارسی هنگام تطبیق نادیده گرفته می‌شود.
+                    </div>
+                </div>
+
+                @if (info!.Aliases.Count == 0)
+                {
+                    <p class="hint" style="margin-bottom:1rem">هنوز نام مستعاری ثبت نشده است.</p>
+                }
+                else
+                {
+                    <div class="alias-list" aria-label="نام‌های مستعار">
+                        @foreach (var a in info.Aliases)
+                        {
+                            <form class="alias-chip" method="post" asp-controller="TemplateFields" asp-action="DeleteAlias" data-mx-ajax>
+                                <input type="hidden" name="id" value="@a.Id" />
+                                <input type="hidden" name="fieldId" value="@info.Id" />
+                                <span>@a.Alias</span>
+                                <button type="submit" class="alias-remove" title="حذف «@a.Alias»" aria-label="حذف نام مستعار @a.Alias">
+                                    <svg class="ico"><use href="#i-x" /></svg>
+                                </button>
+                            </form>
+                        }
+                    </div>
+                }
+
+                <form class="alias-add" method="post" asp-controller="TemplateFields" asp-action="AddAlias" data-mx-ajax>
+                    <input type="hidden" name="templateFieldId" value="@info.Id" />
+                    <div class="input-wrap" style="flex:1">
+                        <svg class="ico"><use href="#i-link" /></svg>
+                        <input class="input" name="alias" maxlength="250" autocomplete="off" required
+                               placeholder="مثلاً: نام سایت" aria-label="نام مستعار جدید" autofocus="@aliasTab" />
+                    </div>
+                    <button type="submit" class="btn btn-soft"><svg class="ico"><use href="#i-plus" /></svg>افزودن</button>
+                </form>
+            </section>
+        }
+    </div>
+
+    <div class="modal-foot">
+        @if (isEdit)
+        {
+            <button type="button" class="btn btn-danger-soft btn-sm" data-delete-id="@info!.Id" data-delete-name="فیلد @info.FieldKey"
+                    data-delete-url="@Url.Action("Delete", "TemplateFields")">
+                <svg class="ico"><use href="#i-trash" /></svg>حذف فیلد
+            </button>
+        }
+        <span class="spacer"></span>
+        <a class="btn btn-quiet" href="@cancelUrl" data-close>انصراف</a>
+        <button type="submit" form="fieldForm" class="btn btn-primary"><svg class="ico"><use href="#i-check" /></svg>@(isEdit ? "ذخیره تغییرات" : "ایجاد فیلد")</button>
+    </div>
+</div>

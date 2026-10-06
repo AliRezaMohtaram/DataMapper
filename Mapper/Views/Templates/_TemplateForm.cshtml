@@ -1,0 +1,80 @@
+@model Borc.DataMapper.Web.ViewModels.Templates.TemplateFormViewModel
+@*
+    فرم ایجاد/ویرایش قالب — ریشهٔ آن یک .modal است:
+    از لینک‌های data-modal در مودال باز می‌شود؛ Create.cshtml / Edit.cshtml همین را به‌صورت صفحهٔ کامل نشان می‌دهند.
+*@
+@{
+    var isEdit = Model.IsEdit;
+    var cancelUrl = isEdit ? (Model.ReturnUrl ?? Url.Action("Detail", new { id = Model.Id })) : Url.Action("Index");
+
+    var formErrors = ViewData.ModelState
+        .Where(kv => string.IsNullOrEmpty(kv.Key))
+        .SelectMany(kv => kv.Value!.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(m => !string.IsNullOrWhiteSpace(m))
+        .ToList();
+
+    string Invalid(string key) => ViewData.ModelState[key]?.Errors.Count > 0 ? " field-invalid" : "";
+}
+
+<form class="modal" method="post" asp-action="@(isEdit ? "Edit" : "Create")" data-mx-ajax novalidate>
+    <div class="modal-head">
+        <span class="modal-head-ico tone-violet"><svg class="ico"><use href="#i-template" /></svg></span>
+        <div>
+            <div class="modal-title">@(isEdit ? $"ویرایش «{Model.Name}»" : "قالب جدید")</div>
+            <div class="modal-sub">@(isEdit ? "وضعیت قالب از صفحهٔ جزئیات تغییر می‌کند." : "قالب با وضعیت «پیش‌نویس» ساخته می‌شود؛ سپس نسخه و فیلدها را تعریف می‌کنید.")</div>
+        </div>
+        <a class="icon-btn plain close" href="@cancelUrl" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+    </div>
+
+    <div class="modal-body">
+        @if (formErrors.Count > 0)
+        {
+            <div class="callout tone-danger" role="alert" style="margin-bottom:1rem">
+                <svg class="ico"><use href="#i-alert" /></svg><div>@string.Join(" — ", formErrors)</div>
+            </div>
+        }
+
+        @if (isEdit)
+        {
+            <input asp-for="Id" type="hidden" />
+            <input asp-for="ReturnUrl" type="hidden" />
+        }
+
+        <div class="form-grid">
+            @if (isEdit)
+            {
+                <div class="field">
+                    <span class="label">کد قالب</span>
+                    <span class="code-chip" style="height:2.5rem;display:flex;align-items:center;padding-inline:.8rem">@Model.Code</span>
+                    <span class="hint">کد پس از ایجاد قابل تغییر نیست.</span>
+                </div>
+            }
+            else
+            {
+                <div class="field@(Invalid(nameof(Model.Code)))">
+                    <label class="label" asp-for="Code">کد قالب<span class="req">*</span></label>
+                    <input class="input ltr" asp-for="Code" autocomplete="off" spellcheck="false" placeholder="SITE" autofocus />
+                    <span class="field-error" asp-validation-for="Code"></span>
+                    <span class="hint">حروف انگلیسی، عدد، _ و -. پس از ایجاد قابل تغییر نیست.</span>
+                </div>
+            }
+            <div class="field@(Invalid(nameof(Model.Name)))">
+                <label class="label" asp-for="Name">نام قالب<span class="req">*</span></label>
+                <input class="input" asp-for="Name" autocomplete="off" placeholder="مثلاً: اطلاعات پایه سایت" />
+                <span class="field-error" asp-validation-for="Name"></span>
+            </div>
+            <div class="field span-2@(Invalid(nameof(Model.Description)))">
+                <label class="label" asp-for="Description">توضیحات</label>
+                <textarea class="textarea" asp-for="Description" rows="3" placeholder="کاربرد قالب و واحد مالک داده…"></textarea>
+                <span class="field-error" asp-validation-for="Description"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-foot">
+        <span class="spacer"></span>
+        <a class="btn btn-quiet" href="@cancelUrl" data-close>انصراف</a>
+        <button type="submit" class="btn btn-primary"><svg class="ico"><use href="#i-check" /></svg>@(isEdit ? "ذخیره تغییرات" : "ایجاد قالب")</button>
+    </div>
+</form>

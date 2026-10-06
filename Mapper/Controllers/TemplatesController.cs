@@ -5,6 +5,7 @@ using Borc.DataMapper.Application.Templates.GetTemplate;
 using Borc.DataMapper.Application.Templates.ListTemplates;
 using Borc.DataMapper.Application.Templates.UpdateTemplate;
 using Borc.DataMapper.Domain.Templates;
+using Borc.DataMapper.Web.Mvc;
 using Borc.DataMapper.Web.ViewModels.Templates;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +15,9 @@ namespace Borc.DataMapper.Web.Controllers;
 public sealed class TemplatesController : Controller
 {
     private readonly ISender _sender;
+
+    /// <summary>فرم مشترک ایجاد/ویرایش؛ هم در مودال و هم در صفحهٔ کامل استفاده می‌شود.</summary>
+    private const string FormPartial = "_TemplateForm";
 
     public TemplatesController(ISender sender)
     {
@@ -49,32 +53,33 @@ public sealed class TemplatesController : Controller
     [HttpGet]
     public IActionResult Create()
     {
-        return View(new CreateTemplateCommand(string.Empty, string.Empty, null));
+        return this.ModalOrView(FormPartial, new TemplateFormViewModel());
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateAsync(
-        CreateTemplateCommand command,
+        TemplateFormViewModel model,
         CancellationToken cancellationToken)
     {
-        if (!ModelState.IsValid)
-            return View(command);
-
-        var result = await _sender.Send(
-            command,
-            cancellationToken);
-
-        if (!result.Success)
+        if (ModelState.IsValid)
         {
-            ModelState.AddModelError(
-                string.Empty,
-                result.Message!);
+            var result = await _sender.Send(
+                new CreateTemplateCommand(model.Code!.Trim(), model.Name!.Trim(), model.Description),
+                cancellationToken);
 
-            return View(command);
+            if (result.Success)
+            {
+                TempData["Success"] = result.Message ?? "قالب ایجاد شد. حالا نسخه و فیلدهای آن را تعریف کنید.";
+
+                // قدم بعدی ساخت قالب، تعریف نسخه و فیلدهاست؛ به صفحهٔ جزئیات می‌رویم
+                return this.ModalOrRedirect(Url.Action(nameof(Detail), new { id = result.Data })!);
+            }
+
+            ModelState.AddResultErrors(result, "ساخت قالب انجام نشد.", Request);
         }
 
-        return RedirectToAction(nameof(Index));
+        return this.ModalOrView(FormPartial, model);
     }
 
     [HttpPost]
@@ -112,6 +117,7 @@ public sealed class TemplatesController : Controller
     [HttpGet]
     public async Task<IActionResult> Edit(
         long id,
+        string? returnUrl,
         CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new Application.Templates.GetTemplate.GetTemplateQuery(id), cancellationToken);
@@ -122,38 +128,43 @@ public sealed class TemplatesController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        ViewData["Code"] = result.Data.Code;
-
-        return View(new UpdateTemplateCommand(
-            result.Data.Id,
-            result.Data.Name,
-            result.Data.Description));
+        return this.ModalOrView(FormPartial, new TemplateFormViewModel
+        {
+            Id = result.Data.Id,
+            Code = result.Data.Code,
+            Name = result.Data.Name,
+            Description = result.Data.Description,
+            ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null
+        });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditAsync(
-        UpdateTemplateCommand command,
+        TemplateFormViewModel model,
         CancellationToken cancellationToken)
     {
         if (ModelState.IsValid)
         {
-            var result = await _sender.Send(command, cancellationToken);
+            var result = await _sender.Send(
+                new UpdateTemplateCommand(model.Id, model.Name!.Trim(), model.Description), cancellationToken);
 
             if (result.Success)
             {
                 TempData["Success"] = result.Message ?? "قالب ویرایش شد.";
-                return RedirectToAction(nameof(Detail), new { id = command.Id });
+                return this.ModalOrRedirect(Url.IsLocalUrl(model.ReturnUrl)
+                    ? model.ReturnUrl!
+                    : Url.Action(nameof(Detail), new { id = model.Id })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "ویرایش قالب انجام نشد.");
+            ModelState.AddResultErrors(result, "ویرایش قالب انجام نشد.", Request);
         }
 
         // نمایش مجدد فرم: کد قالب برای نمایش فقط‌خواندنی دوباره خوانده می‌شود
-        var current = await _sender.Send(new Application.Templates.GetTemplate.GetTemplateQuery(command.Id), cancellationToken);
-        ViewData["Code"] = current.Data?.Code ?? string.Empty;
+        var current = await _sender.Send(new Application.Templates.GetTemplate.GetTemplateQuery(model.Id), cancellationToken);
+        model.Code = current.Data?.Code;
 
-        return View(command);
+        return this.ModalOrView(FormPartial, model);
     }
 
     [HttpPost]

@@ -12,6 +12,12 @@ public class Result
 
     public string? Message { get; init; }
 
+    /// <summary>
+    /// خطاهای اعتبارسنجی به تفکیک نام ویژگی درخواست (مثلاً "Name")؛ فقط وقتی ValidationBehavior
+    /// درخواست را رد کرده پر است. لایهٔ وب آن‌ها را زیر همان فیلدهای فرم نشان می‌دهد.
+    /// </summary>
+    public IReadOnlyDictionary<string, string[]>? ValidationErrors { get; internal set; }
+
     public static Result Ok(string? message = null)
     {
         return new Result
