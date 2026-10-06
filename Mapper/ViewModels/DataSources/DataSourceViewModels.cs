@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Application.DataSources.GetDataSourceLookups;
@@ -18,6 +19,7 @@ public sealed class DataSourceFormViewModel
     /// <summary>در ویرایش ارسال نمی‌شود (nullable تا Required ضمنی MVC خطا ندهد).</summary>
     public string? Code { get; set; }
 
+    [Required(ErrorMessage = "نام منبع داده را وارد کنید.")]
     public string Name { get; set; } = string.Empty;
 
     public DataSourceType SourceType { get; set; } = DataSourceType.StaticList;
@@ -40,6 +42,9 @@ public sealed class DataSourceFormViewModel
     public string? ApiValueKey { get; set; }
 
     public string? ApiDisplayKey { get; set; }
+
+    /// <summary>مقصد پس از ذخیره/انصراف در ویرایش (فقط آدرس داخلی پذیرفته می‌شود).</summary>
+    public string? ReturnUrl { get; set; }
 
     public bool IsEdit => Id > 0;
 

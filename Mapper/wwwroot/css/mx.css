@@ -777,6 +777,30 @@ tr:hover .row-actions, .row-actions:focus-within { opacity:1; }
   border:1px solid rgb(var(--ok) / .35); background:rgb(var(--ok) / .06);
 }
 .filecard-main { flex:1; min-width:0; }
+.filecard-main .cell-main { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* File drop field (partial _FileDrop) */
+.file-drop { position:relative; display:grid; gap:.65rem; }
+.file-drop-input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+.file-drop:has(.file-drop-input:focus-visible) .dropzone { outline:2px solid var(--primary); outline-offset:2px; }
+.file-drop .dropzone { transition:background .2s, border-color .2s, transform .2s var(--ease); }
+.file-drop .dropzone.drag { transform:scale(1.01); border-style:solid; }
+.file-drop.has-file .dropzone { display:none; }
+.file-drop.is-invalid .dropzone { border-color:rgb(var(--err) / .6); background:rgb(var(--err) / .05); }
+.file-drop.is-uploading .filecard [data-file-remove] { visibility:hidden; }
+.filecard { animation:mx-rise .3s var(--ease); }
+.upload-progress { display:grid; gap:.45rem; }
+.upload-progress-head { display:flex; align-items:center; gap:.55rem; font-size:.8rem; color:var(--muted); }
+.upload-progress-head .spinner { width:1rem; height:1rem; }
+.upload-progress-bar { height:6px; border-radius:99px; overflow:hidden; background:var(--surface-3); }
+.upload-progress-bar > i {
+  display:block; width:35%; height:100%; border-radius:inherit;
+  background:linear-gradient(to left, var(--primary), rgb(var(--sel) / .5));
+  animation:mx-indeterminate 1.2s ease-in-out infinite;
+}
+@keyframes mx-indeterminate { from { transform:translateX(120%); } to { transform:translateX(-300%); } }
+.req-list { display:flex; flex-wrap:wrap; gap:.4rem; }
+.req-list .tag { font-weight:600; }
 
 /* ================================================================
    14. STEPS · FLOW · CALLOUT · TILES · DETAIL LIST · SEGMENTED
@@ -949,6 +973,29 @@ tr:hover .row-actions, .row-actions:focus-within { opacity:1; }
 .modal-foot .meta { font-size:.75rem; color:var(--faint); }
 .confirm-ico { width:3.4rem; height:3.4rem; margin:0 auto .9rem; display:grid; place-items:center; border-radius:50%; background:var(--danger-soft); color:var(--danger); }
 .confirm-ico .ico { width:1.5rem; height:1.5rem; }
+
+/* Remote modal: loading state, busy submit, invalid fields */
+.modal-loading .modal-body { display:flex; align-items:center; justify-content:center; gap:.7rem; padding:2.2rem 1rem; color:var(--muted); font-size:.86rem; }
+.spinner {
+  width:1.3rem; height:1.3rem; flex:none; border-radius:50%;
+  border:2px solid var(--line-strong); border-top-color:var(--primary);
+  animation:mx-spin .7s linear infinite;
+}
+@keyframes mx-spin { to { transform:rotate(360deg); } }
+.btn[aria-busy="true"] { position:relative; color:transparent !important; }
+.btn[aria-busy="true"]::after {
+  content:""; position:absolute; inset:0; margin:auto; width:1rem; height:1rem; border-radius:50%;
+  border:2px solid var(--on-primary); border-right-color:transparent;
+  animation:mx-spin .7s linear infinite;
+}
+.field-invalid .input, .field-invalid .select, .field-invalid .textarea { border-color:rgb(var(--err) / .6); }
+.field-error { font-size:.74rem; color:var(--danger); }
+.field-error:empty { display:none; }
+
+/* The same partial rendered as a normal page (no JS / direct URL) */
+.modal-page { display:flex; justify-content:center; }
+.modal-page > .modal { transform:none; width:min(56rem, 100%); max-height:none; overflow:visible; box-shadow:var(--shadow-md); }
+.modal-page > .modal .modal-body { overflow:visible; }
 
 /* ================================================================
    17. COMMAND PALETTE

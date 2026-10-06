@@ -10,6 +10,7 @@ using Borc.DataMapper.Application.DataSources.SetDataSourceActive;
 using Borc.DataMapper.Application.DataSources.UpdateDataSource;
 using Borc.DataMapper.Application.Imports.Common;
 using Borc.DataMapper.Domain.DataSources;
+using Borc.DataMapper.Web.Mvc;
 using Borc.DataMapper.Web.ViewModels.DataSources;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,9 @@ namespace Borc.DataMapper.Web.Controllers;
 public sealed class DataSourcesController : Controller
 {
     private readonly ISender _sender;
+
+    /// <summary>فرم مشترک ایجاد/ویرایش؛ هم در مودال و هم در صفحهٔ کامل استفاده می‌شود.</summary>
+    private const string FormPartial = "_DataSourceForm";
 
     public DataSourcesController(ISender sender)
     {
@@ -58,7 +62,7 @@ public sealed class DataSourcesController : Controller
         var vm = new DataSourceFormViewModel { SourceType = type ?? DataSourceType.StaticList };
         await FillLookupsAsync(vm, cancellationToken);
 
-        return View(vm);
+        return this.ModalOrView(FormPartial, vm);
     }
 
     [HttpPost]
@@ -79,16 +83,16 @@ public sealed class DataSourcesController : Controller
                 TempData["Success"] = result.Message ?? "منبع داده ایجاد شد.";
 
                 // منبع فایل بدون فایل خالی است؛ مستقیم به صفحهٔ بارگذاری می‌رویم.
-                return model.SourceType == DataSourceType.File
-                    ? RedirectToAction(nameof(UploadFile), new { id = result.Data })
-                    : RedirectToAction(nameof(Detail), new { id = result.Data });
+                return this.ModalOrRedirect(model.SourceType == DataSourceType.File
+                    ? Url.Action(nameof(UploadFile), new { id = result.Data })!
+                    : Url.Action(nameof(Detail), new { id = result.Data })!);
             }
 
             ModelState.AddModelError(string.Empty, result.Message ?? "ساخت منبع داده انجام نشد.");
         }
 
         await FillLookupsAsync(model, cancellationToken);
-        return View(model);
+        return this.ModalOrView(FormPartial, model);
     }
 
     // ---------- جزئیات ----------
@@ -110,7 +114,7 @@ public sealed class DataSourcesController : Controller
     // ---------- ویرایش ----------
 
     [HttpGet]
-    public async Task<IActionResult> Edit(long id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Edit(long id, string? returnUrl, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new GetDataSourceQuery(id), cancellationToken);
 
@@ -135,13 +139,14 @@ public sealed class DataSourcesController : Controller
             ApiUrl = d.ApiUrl,
             ApiItemsPath = d.ApiItemsPath,
             ApiValueKey = d.ApiValueKey,
-            ApiDisplayKey = d.ApiDisplayKey
+            ApiDisplayKey = d.ApiDisplayKey,
+            ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null
         };
 
         ViewData["UsedBy"] = d.UsedByFieldCount;
         await FillLookupsAsync(vm, cancellationToken);
 
-        return View(vm);
+        return this.ModalOrView(FormPartial, vm);
     }
 
     [HttpPost]
@@ -160,7 +165,9 @@ public sealed class DataSourcesController : Controller
             if (result.Success)
             {
                 TempData["Success"] = result.Message ?? "منبع داده ویرایش شد.";
-                return RedirectToAction(nameof(Detail), new { id = model.Id });
+                return this.ModalOrRedirect(Url.IsLocalUrl(model.ReturnUrl)
+                    ? model.ReturnUrl!
+                    : Url.Action(nameof(Detail), new { id = model.Id })!);
             }
 
             ModelState.AddModelError(string.Empty, result.Message ?? "ویرایش منبع داده انجام نشد.");
@@ -177,7 +184,7 @@ public sealed class DataSourcesController : Controller
         }
 
         await FillLookupsAsync(model, cancellationToken);
-        return View(model);
+        return this.ModalOrView(FormPartial, model);
     }
 
     // ---------- وضعیت و حذف ----------

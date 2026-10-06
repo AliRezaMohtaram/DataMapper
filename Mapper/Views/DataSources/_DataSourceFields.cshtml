@@ -1,73 +1,94 @@
 @model Borc.DataMapper.Web.ViewModels.DataSources.DataSourceFormViewModel
 @using Borc.DataMapper.Domain.DataSources
-@* بخش‌های مخصوص هر نوع منبع داده؛ JavaScript فقط بخش نوع انتخاب‌شده را نشان می‌دهد (datasource-form.js). *@
+@* بخش‌های مخصوص هر نوع منبع داده؛ datasource-form.js فقط بخش نوع انتخاب‌شده را نشان می‌دهد
+   و کنترل‌های بخش‌های پنهان را غیرفعال می‌کند تا ارسال نشوند. *@
+@{
+    string Hidden(DataSourceType t) => Model.SourceType == t ? "" : "hidden";
+    string Invalid(string key) => ViewData.ModelState[key]?.Errors.Count > 0 ? " field-invalid" : "";
+}
 
-<div data-ds-type="@DataSourceType.StaticList" @(Model.SourceType == DataSourceType.StaticList ? "" : "hidden")>
-    <div class="form-group">
-        <label asp-for="ItemsText">گزینه‌ها (هر خط یک گزینه):</label>
-        <textarea asp-for="ItemsText" rows="8" placeholder="مقدار | عنوان نمایشی&#10;DRILL | حفاری&#10;PROD | تولید"></textarea>
-        <div class="hint">
-            هر خط: «مقدار» یا «مقدار | عنوان». مقدار همان چیزی است که در داده ذخیره می‌شود و عنوان همان است که کاربر می‌بیند.
-            اگر عنوان ننویسید، مقدار نمایش داده می‌شود. حداکثر 5000 گزینه.
+<section data-ds-type="@DataSourceType.StaticList" @Hidden(DataSourceType.StaticList)>
+    <div class="fieldset-title">گزینه‌ها</div>
+    <div class="field@(Invalid(nameof(Model.ItemsText)))">
+        <label class="label" asp-for="ItemsText">هر خط یک گزینه</label>
+        <textarea class="textarea" asp-for="ItemsText" rows="8" style="min-height:9rem"
+                  placeholder="مقدار | عنوان نمایشی&#10;DRILL | حفاری&#10;PROD | تولید"></textarea>
+        <span class="field-error" asp-validation-for="ItemsText"></span>
+        <span class="hint">
+            هر خط: «مقدار» یا «مقدار | عنوان». مقدار در داده ذخیره می‌شود و عنوان به کاربر نمایش داده می‌شود؛
+            بدون عنوان، خود مقدار نمایش داده می‌شود. حداکثر ۵۰۰۰ گزینه.
+        </span>
+    </div>
+</section>
+
+<section data-ds-type="@DataSourceType.File" @Hidden(DataSourceType.File)>
+    <div class="callout tone-success" style="margin-top:1.2rem">
+        <svg class="ico"><use href="#i-sheet" /></svg>
+        <div>
+            پس از ذخیره، فایل Excel (xlsx) یا CSV را بارگذاری و ستون <b>مقدار</b> و ستون <b>عنوان نمایشی</b> را انتخاب می‌کنید.
+            بارگذاری دوبارهٔ فایل، گزینه‌های قبلی را جایگزین می‌کند.
         </div>
     </div>
-</div>
+</section>
 
-<div data-ds-type="@DataSourceType.File" @(Model.SourceType == DataSourceType.File ? "" : "hidden")>
-    <div class="hint">
-        بعد از ذخیره، فایل Excel (xlsx) یا CSV را بارگذاری می‌کنید و ستون «مقدار واقعی» و ستون «عنوان نمایشی» را انتخاب می‌کنید.
-        بارگذاری دوبارهٔ فایل، گزینه‌های قبلی را جایگزین می‌کند.
-    </div>
-</div>
-
-<div data-ds-type="@DataSourceType.Template" @(Model.SourceType == DataSourceType.Template ? "" : "hidden")>
-    <div class="form-group">
-        <label asp-for="TemplateId">قالب منبع:</label>
-        <select asp-for="TemplateId">
-            <option value="">— انتخاب کنید —</option>
-        </select>
-        <div class="hint">فقط قالب‌هایی که نسخهٔ منتشرشده دارند. گزینه‌ها از رکوردهای ثبت‌شدهٔ همان قالب (ورود دستی یا ایمپورت) ساخته می‌شود.</div>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="ValueKey">فیلد مقدار (داده واقعی که ذخیره می‌شود):</label>
-        <select asp-for="ValueKey" data-selected="@Model.ValueKey">
-            <option value="">— ابتدا قالب را انتخاب کنید —</option>
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="DisplayKey">فیلد نمایشی (آنچه کاربر در فهرست می‌بیند):</label>
-        <select asp-for="DisplayKey" data-selected="@Model.DisplayKey">
-            <option value="">— ابتدا قالب را انتخاب کنید —</option>
-        </select>
-        <div class="hint">می‌تواند همان فیلد مقدار باشد؛ مثلاً مقدار = «کد پیمانکار» و نمایشی = «نام پیمانکار».</div>
-    </div>
-</div>
-
-<div data-ds-type="@DataSourceType.Api" @(Model.SourceType == DataSourceType.Api ? "" : "hidden")>
-    <div class="form-group">
-        <label asp-for="ApiUrl">آدرس API (GET، خروجی JSON):</label>
-        <input asp-for="ApiUrl" dir="ltr" autocomplete="off" placeholder="https://example.com/api/contractors" />
-    </div>
-
-    <div class="form-group">
-        <label asp-for="ApiItemsPath">مسیر آرایه در پاسخ (اختیاری):</label>
-        <input asp-for="ApiItemsPath" dir="ltr" autocomplete="off" placeholder="data.items" />
-        <div class="hint">اگر پاسخ خودش آرایه است خالی بگذارید؛ برای پاسخ‌هایی مثل <code dir="ltr">{"data":{"items":[…]}}</code> بنویسید <code dir="ltr">data.items</code>.</div>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="ApiValueKey">نام فیلد مقدار:</label>
-        <input asp-for="ApiValueKey" dir="ltr" autocomplete="off" placeholder="id" />
-    </div>
-
-    <div class="form-group">
-        <label asp-for="ApiDisplayKey">نام فیلد نمایشی:</label>
-        <input asp-for="ApiDisplayKey" dir="ltr" autocomplete="off" placeholder="name" />
-        <div class="hint">
-            اگر عضوهای آرایه خودشان متن یا عدد هستند، هر دو خالی بماند. پاسخ ۵ دقیقه نگه‌داری می‌شود و حداکثر 2 مگابایت است.
-            اتصال به آدرس‌های محلی و شبکهٔ داخلی به‌صورت پیش‌فرض مسدود است.
+<section data-ds-type="@DataSourceType.Template" @Hidden(DataSourceType.Template)>
+    <div class="fieldset-title">قالب منبع</div>
+    <div class="form-grid cols-3">
+        <div class="field@(Invalid(nameof(Model.TemplateId)))">
+            <label class="label" asp-for="TemplateId">قالب</label>
+            <select class="select" asp-for="TemplateId" data-ds-template data-selected="@Model.TemplateId">
+                <option value="">— انتخاب کنید —</option>
+            </select>
+            <span class="field-error" asp-validation-for="TemplateId"></span>
+        </div>
+        <div class="field@(Invalid(nameof(Model.ValueKey)))">
+            <label class="label" asp-for="ValueKey">فیلد مقدار</label>
+            <select class="select" asp-for="ValueKey" data-ds-value data-selected="@Model.ValueKey">
+                <option value="">— ابتدا قالب —</option>
+            </select>
+            <span class="field-error" asp-validation-for="ValueKey"></span>
+        </div>
+        <div class="field@(Invalid(nameof(Model.DisplayKey)))">
+            <label class="label" asp-for="DisplayKey">فیلد نمایشی</label>
+            <select class="select" asp-for="DisplayKey" data-ds-display data-selected="@Model.DisplayKey">
+                <option value="">— ابتدا قالب —</option>
+            </select>
+            <span class="field-error" asp-validation-for="DisplayKey"></span>
         </div>
     </div>
-</div>
+    <p class="hint" style="margin-top:.6rem">
+        فقط قالب‌های دارای نسخهٔ منتشرشده. گزینه‌ها از رکوردهای ثبت‌شدهٔ همان قالب ساخته می‌شوند؛
+        مقدار و نمایش می‌توانند یک فیلد باشند (مثلاً مقدار = «کد پیمانکار»، نمایش = «نام پیمانکار»).
+    </p>
+</section>
+
+<section data-ds-type="@DataSourceType.Api" @Hidden(DataSourceType.Api)>
+    <div class="fieldset-title">سرویس API</div>
+    <div class="form-grid">
+        <div class="field span-2@(Invalid(nameof(Model.ApiUrl)))">
+            <label class="label" asp-for="ApiUrl">آدرس API (GET، خروجی JSON)</label>
+            <div class="input-wrap">
+                <svg class="ico"><use href="#i-cloud" /></svg>
+                <input class="input ltr" asp-for="ApiUrl" autocomplete="off" placeholder="https://example.com/api/contractors" />
+            </div>
+            <span class="field-error" asp-validation-for="ApiUrl"></span>
+        </div>
+        <div class="field span-2@(Invalid(nameof(Model.ApiItemsPath)))">
+            <label class="label" asp-for="ApiItemsPath">مسیر آرایه در پاسخ (اختیاری)</label>
+            <input class="input ltr" asp-for="ApiItemsPath" autocomplete="off" placeholder="data.items" />
+            <span class="hint">اگر پاسخ خودش آرایه است خالی بگذارید؛ برای <span class="code-chip">{"data":{"items":[…]}}</span> بنویسید <span class="code-chip">data.items</span>.</span>
+        </div>
+        <div class="field@(Invalid(nameof(Model.ApiValueKey)))">
+            <label class="label" asp-for="ApiValueKey">نام فیلد مقدار</label>
+            <input class="input ltr" asp-for="ApiValueKey" autocomplete="off" placeholder="id" />
+        </div>
+        <div class="field@(Invalid(nameof(Model.ApiDisplayKey)))">
+            <label class="label" asp-for="ApiDisplayKey">نام فیلد نمایشی</label>
+            <input class="input ltr" asp-for="ApiDisplayKey" autocomplete="off" placeholder="name" />
+        </div>
+    </div>
+    <p class="hint" style="margin-top:.6rem">
+        اگر عضوهای آرایه خودشان متن یا عدد هستند، هر دو نام فیلد خالی بماند. پاسخ ۵ دقیقه نگه‌داری می‌شود و حداکثر ۲ مگابایت است؛
+        اتصال به آدرس‌های محلی و شبکهٔ داخلی به‌صورت پیش‌فرض مسدود است.
+    </p>
+</section>

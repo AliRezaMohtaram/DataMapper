@@ -139,7 +139,7 @@
             </dl>
 
             <div class="aside-actions">
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn primary block">ویرایش</a>
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn primary block" data-modal>ویرایش</a>
 
                 <form asp-action="SetActive" method="post">
                     <input type="hidden" name="id" value="@Model.Id" />

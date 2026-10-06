@@ -15,6 +15,10 @@
      data-filter-group          filter chips for a table
      data-wizard                multi-step flow inside a modal
      data-sidebar-toggle        collapse rail / open mobile nav
+     data-modal                 open a link's server form in a modal
+     data-mx-ajax               (on a form inside a remote modal) submit via fetch
+     data-mx-init="name"        run MX.component(name) on this element
+     data-mx-src="/js/x.js"     …loading that script first if needed
    ========================================================= */
 
 (() => {
@@ -333,6 +337,275 @@
     }
 
 
+
+    /* =====================================================
+       COMPONENTS  (data-mx-init="name" [data-mx-src="url"])
+       Page scripts register with MX.component(name, root => {}).
+       Runs on page load and on every HTML injected by a remote modal.
+       ===================================================== */
+
+    const components = {};
+    const scriptLoads = {};
+
+    function loadScript(src) {
+        if (!scriptLoads[src]) {
+            scriptLoads[src] = new Promise((resolve, reject) => {
+                const el = document.createElement("script");
+                el.src = src;
+                el.onload = resolve;
+                el.onerror = () => reject(new Error(`Could not load ${src}`));
+                document.head.appendChild(el);
+            });
+        }
+        return scriptLoads[src];
+    }
+
+    async function initComponents(scope = document) {
+        const roots = $$("[data-mx-init]", scope);
+        if (scope instanceof Element && scope.matches("[data-mx-init]")) roots.unshift(scope);
+
+        for (const root of roots) {
+            if (root.mxReady) continue;
+            const name = root.dataset.mxInit;
+            if (!components[name] && root.dataset.mxSrc) {
+                try { await loadScript(root.dataset.mxSrc); }
+                catch (err) { console.error(err); continue; }
+            }
+            if (!components[name] || root.mxReady) continue;
+            root.mxReady = true;
+            components[name](root);
+        }
+    }
+
+    /* =====================================================
+       FILE DROP  (partial _FileDrop → data-mx-init="file-drop")
+       Click or drag a file onto the zone; type and size are checked
+       before upload, the chosen file is shown as a card, and the form
+       shows an "uploading" state while the browser posts it.
+       ===================================================== */
+
+    const formatSize = bytes => bytes >= 1048576
+        ? `${fa((bytes / 1048576).toFixed(1).replace(/\.0$/, "").replace(".", "٫"))} مگابایت`
+        : `${fa(Math.max(1, Math.round(bytes / 1024)))} کیلوبایت`;
+
+    components["file-drop"] = root => {
+        const input = $(".file-drop-input", root);
+        const zone = $(".dropzone", root);
+        const card = $("[data-file-card]", root);
+        const error = $("[data-file-error]", root);
+        const progress = $("[data-file-progress]", root);
+        const form = root.closest("form");
+        const maxBytes = Number(root.dataset.maxBytes) || Infinity;
+        const allowed = (input.accept || "").split(",").map(x => x.trim().toLowerCase()).filter(Boolean);
+
+        const extOf = name => (name.match(/\.[^.]+$/)?.[0] || "").toLowerCase();
+
+        function showError(message) {
+            error.textContent = message;
+            root.classList.toggle("is-invalid", !!message);
+        }
+
+        function render() {
+            const file = input.files[0];
+            root.classList.toggle("has-file", !!file);
+            card.hidden = !file;
+            if (!file) return;
+            const ext = extOf(file.name).slice(1).toUpperCase() || "FILE";
+            const kind = $("[data-file-kind]", card);
+            kind.textContent = ext;
+            kind.classList.toggle("csv", ext === "CSV" || ext === "TSV");
+            $("[data-file-name]", card).textContent = file.name;
+            $("[data-file-meta]", card).textContent = formatSize(file.size);
+        }
+
+        function clear() {
+            input.value = "";
+            render();
+        }
+
+        function accept(files) {
+            const file = files?.[0];
+            if (!file) return;
+            if (files.length > 1) toast("فقط یک فایل پذیرفته می‌شود؛ اولین فایل انتخاب شد.", "warning");
+
+            if (allowed.length && !allowed.includes(extOf(file.name))) {
+                clear();
+                showError(`فرمت «${file.name}» مجاز نیست. فقط ${allowed.join("، ")}`);
+                return;
+            }
+            if (file.size > maxBytes) {
+                clear();
+                showError(`حجم «${file.name}» (${formatSize(file.size)}) بیشتر از سقف ${formatSize(maxBytes)} است.`);
+                return;
+            }
+            if (file.size === 0) {
+                clear();
+                showError(`«${file.name}» خالی است.`);
+                return;
+            }
+
+            // Dropped files are not in the input yet — move them there so the form posts them
+            if (input.files[0] !== file) {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+            }
+            showError("");
+            render();
+        }
+
+        input.addEventListener("change", () => accept(input.files));
+        $("[data-file-remove]", card).addEventListener("click", () => { clear(); input.focus(); });
+
+        ["dragenter", "dragover"].forEach(ev => root.addEventListener(ev, e => {
+            e.preventDefault();
+            zone.classList.add("drag");
+        }));
+        ["dragleave", "drop"].forEach(ev => root.addEventListener(ev, e => {
+            if (ev === "dragleave" && root.contains(e.relatedTarget)) return;
+            e.preventDefault();
+            zone.classList.remove("drag");
+        }));
+        root.addEventListener("drop", e => accept(e.dataTransfer.files));
+
+        form?.addEventListener("submit", e => {
+            if (input.required && !input.files.length) {
+                e.preventDefault();
+                showError("ابتدا یک فایل انتخاب کنید.");
+                input.focus();
+                return;
+            }
+            if (e.defaultPrevented) return;
+            progress.hidden = false;
+            root.classList.add("is-uploading");
+            $$('button[type="submit"]', form).forEach(b => b.setAttribute("aria-busy", "true"));
+        });
+
+        // Back/forward cache: the page may come back still showing "uploading"
+        window.addEventListener("pageshow", e => {
+            if (!e.persisted) return;
+            progress.hidden = true;
+            root.classList.remove("is-uploading");
+            $$('button[aria-busy]', form || root).forEach(b => b.removeAttribute("aria-busy"));
+            render();
+        });
+
+        render();
+    };
+
+    function registerComponent(name, init) {
+        components[name] = init;
+        initComponents();   // elements already in the page
+    }
+
+
+    /* =====================================================
+       REMOTE MODAL
+       A link with data-modal loads its URL with header X-MX-Modal: 1;
+       the server answers with a partial whose root is a .modal element.
+       Forms with data-mx-ajax inside it post via fetch:
+         · JSON { redirect }  → navigate (server sets the TempData toast)
+         · HTML               → replace the modal (validation errors)
+       Without JS the same URLs work as full pages.
+       ===================================================== */
+
+    const MODAL_HEADER = { "X-MX-Modal": "1" };
+
+    function remoteHost() {
+        let host = $("#mxRemote");
+        if (!host) {
+            host = document.createElement("div");
+            host.id = "mxRemote";
+            host.className = "modal-overlay";
+            host.setAttribute("role", "dialog");
+            host.setAttribute("aria-modal", "true");
+            host.setAttribute("aria-hidden", "true");
+            host.addEventListener("mx:close", () => {
+                setTimeout(() => { if (!host.classList.contains("open")) host.innerHTML = ""; }, 300);
+            });
+            document.body.appendChild(host);
+        }
+        return host;
+    }
+
+    const LOADING_HTML =
+        `<div class="modal modal-sm modal-loading" aria-busy="true">` +
+        `<div class="modal-body"><span class="spinner"></span><span>در حال بارگذاری…</span></div></div>`;
+
+    async function renderRemote(host, response) {
+        const type = response.headers.get("content-type") || "";
+
+        if (type.includes("application/json")) {
+            const data = await response.json();
+            if (data.redirect) { window.location.href = data.redirect; return; }
+            if (data.message) toast(data.message, data.ok === false ? "danger" : "success");
+            closeModal(host);
+            return;
+        }
+
+        const html = await response.text();
+        // A full page means the server redirected instead (e.g. "not found") — follow it.
+        if (/<html[\s>]/i.test(html)) { window.location.href = response.url; return; }
+
+        host.innerHTML = html;
+        const title = $(".modal-title", host);
+        if (title) {
+            if (!title.id) title.id = "mxRemoteTitle";
+            host.setAttribute("aria-labelledby", title.id);
+        }
+        await initComponents(host);
+        const first = $("[autofocus]", host) ||
+            $(".field-invalid :is(input, select, textarea)", host) ||
+            visibleFocusables($(".modal-body", host) || host)[0];
+        first?.focus({ preventScroll: true });
+    }
+
+    async function openRemote(url) {
+        const host = remoteHost();
+        host.innerHTML = LOADING_HTML;
+        openModal(host);
+
+        try {
+            const response = await fetch(url, { headers: MODAL_HEADER, credentials: "same-origin" });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            await renderRemote(host, response);
+        } catch (err) {
+            console.error(err);
+            closeModal(host);
+            toast("بارگذاری فرم انجام نشد. دوباره تلاش کنید.", "danger");
+        }
+    }
+
+    async function submitRemote(form, submitter) {
+        const host = form.closest(".modal-overlay");
+        const buttons = $$('button[type="submit"], button:not([type])', form);
+        buttons.forEach(b => { b.disabled = true; });
+        submitter?.setAttribute("aria-busy", "true");
+
+        try {
+            const response = await fetch(form.action, {
+                method: (form.getAttribute("method") || "post").toUpperCase(),
+                body: new FormData(form, submitter),
+                headers: MODAL_HEADER,
+                credentials: "same-origin"
+            });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            await renderRemote(host, response);
+        } catch (err) {
+            console.error(err);
+            toast("ذخیره انجام نشد. دوباره تلاش کنید.", "danger");
+            buttons.forEach(b => { b.disabled = false; });
+            submitter?.removeAttribute("aria-busy");
+        }
+    }
+
+    document.addEventListener("submit", e => {
+        const form = e.target;
+        if (!form.matches("[data-mx-ajax]") || !form.closest("#mxRemote")) return;
+        e.preventDefault();
+        submitRemote(form, e.submitter);
+    });
+
     /* =====================================================
        GLOBAL EVENTS
        ===================================================== */
@@ -351,7 +624,18 @@
         if (opener) { e.preventDefault(); openModal(opener.dataset.open); }
 
         const closer = t.closest("[data-close]");
-        if (closer) { closeModal(closer.closest(".modal-overlay")); }
+        if (closer) {
+            const host = closer.closest(".modal-overlay");
+            // In a modal, "close" links (fallback hrefs of the full-page form) must not navigate
+            if (host) { e.preventDefault(); closeModal(host); }
+        }
+
+        // Server form in a modal; modified clicks keep the browser's own behaviour (new tab…)
+        const remoteLink = t.closest("a[data-modal]");
+        if (remoteLink && e.button === 0 && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+            e.preventDefault();
+            openRemote(remoteLink.href);
+        }
 
         const action = t.closest("[data-action]");
         if (action) runAction(action.dataset.action, action);
@@ -438,6 +722,7 @@
         initPalette();
         $$("[data-wizard]").forEach(initWizard);
         $$("[data-filter-group]").forEach(initFilterGroup);
+        initComponents();
     }
 
     window.MX = {
@@ -447,6 +732,8 @@
         fa,
         faNum,
         actions,
+        openRemote,
+        component: registerComponent,
         refreshFilters: () => filterGroups.forEach(apply => apply())
     };
 

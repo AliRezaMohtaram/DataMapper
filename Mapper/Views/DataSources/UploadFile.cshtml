@@ -1,37 +1,68 @@
 @model Borc.DataMapper.Application.DataSources.GetDataSource.DataSourceDetailDto
+@using Borc.DataMapper.Application.Imports.Common
+@using Borc.DataMapper.Web.ViewModels
 @{
     ViewData["Title"] = $"بارگذاری فایل - {Model.Name}";
+    ViewData["Subtitle"] = $"منبع داده «{Model.Name}» · {Model.Code}";
+    var replacing = Model.ItemCount > 0;
 }
 
-<div class="panel card">
-    <div class="panel-header">
-        <h2>بارگذاری فایل — @Model.Name</h2>
-    </div>
-
-    @if (Model.ItemCount > 0)
-    {
-        <div class="status error show">
-            این منبع داده الان @Model.ItemCount گزینه دارد (فایل «@Model.FileName»).
-            بارگذاری فایل جدید همهٔ گزینه‌های فعلی را جایگزین می‌کند.
-        </div>
-    }
-
-    <form asp-action="UploadFile" method="post" enctype="multipart/form-data">
+<div class="modal-page">
+    <form class="modal modal-lg" asp-action="UploadFile" method="post" enctype="multipart/form-data">
         <input type="hidden" name="id" value="@Model.Id" />
 
-        <div class="form-group">
-            <label for="file">فایل Excel (xlsx) یا CSV:</label>
-            <input type="file" id="file" name="file" accept=".xlsx,.csv,.tsv" required />
-            <div class="hint">
-                سطر اول باید سرستون‌ها باشد. در مرحلهٔ بعد ستون «مقدار واقعی» و ستون «عنوان نمایشی» را انتخاب می‌کنید.
-                CSV با جداکننده , یا ; یا Tab و رمزگذاری UTF-8 (یا Windows-1256) پذیرفته می‌شود.
-                حداکثر 10 مگابایت، 20٬000 سطر و 100 ستون.
+        <div class="modal-head">
+            <span class="modal-head-ico tone-success"><svg class="ico"><use href="#i-sheet" /></svg></span>
+            <div>
+                <div class="modal-title">بارگذاری فایل گزینه‌ها</div>
+                <div class="modal-sub">منبع داده «@Model.Name» · <span class="code">@Model.Code</span></div>
             </div>
+            <a class="icon-btn plain close" asp-action="Detail" asp-route-id="@Model.Id" aria-label="بازگشت به جزئیات"><svg class="ico"><use href="#i-x" /></svg></a>
         </div>
 
-        <div class="actions">
-            <button type="submit" class="btn primary">آپلود و ادامه</button>
-            <a asp-action="Detail" asp-route-id="@Model.Id" class="btn ghost">انصراف</a>
+        @* مسیر کامل منبع فایل: مشخصات → فایل → انتخاب ستون‌ها → آماده *@
+        <div class="steps" aria-label="مراحل">
+            <span class="step done"><span class="step-num"><span class="n">۱</span><svg class="ico"><use href="#i-check" /></svg></span>مشخصات منبع</span><span class="step-line"></span>
+            <span class="step active" aria-current="step"><span class="step-num"><span class="n">۲</span></span>بارگذاری فایل</span><span class="step-line"></span>
+            <span class="step"><span class="step-num"><span class="n">۳</span></span>انتخاب ستون‌ها</span><span class="step-line"></span>
+            <span class="step"><span class="step-num"><span class="n">۴</span></span>آماده استفاده</span>
+        </div>
+
+        <div class="modal-body">
+            @if (replacing)
+            {
+                <div class="callout tone-warning" style="margin-bottom:1rem">
+                    <svg class="ico"><use href="#i-alert" /></svg>
+                    <div>
+                        این منبع داده الان <b>@Model.ItemCount.ToPersianNumber()</b> گزینه دارد
+                        @if (!string.IsNullOrEmpty(Model.FileName))
+                        {
+                            <text>(از فایل <span class="code-chip">@Model.FileName</span>)</text>
+                        }
+                        . بارگذاری فایل جدید همهٔ گزینه‌های فعلی را <b>جایگزین</b> می‌کند.
+                    </div>
+                </div>
+            }
+
+            <partial name="_FileDrop" model='new FileDropModel("file", ".xlsx,.csv,.tsv", ImportLimits.MaxFileBytes)' />
+
+            <div class="fieldset-title">شرایط فایل</div>
+            <div class="req-list">
+                <span class="tag tone-primary">سطر اول = سرستون‌ها</span>
+                <span class="tag tone-info">حداکثر @ImportLimits.MaxRows.ToPersianNumber() سطر</span>
+                <span class="tag tone-info">حداکثر @ImportLimits.MaxColumns.ToPersianNumber() ستون</span>
+                <span class="tag tone-violet">CSV با جداکننده , یا ; یا Tab</span>
+                <span class="tag tone-violet">رمزگذاری UTF-8 یا Windows-1256</span>
+            </div>
+            <p class="hint" style="margin-top:.8rem">
+                در مرحلهٔ بعد ستون «مقدار واقعی» (آنچه ذخیره می‌شود، مثلاً کد) و ستون «عنوان نمایشی» (آنچه کاربر می‌بیند، مثلاً نام) را انتخاب می‌کنید.
+            </p>
+        </div>
+
+        <div class="modal-foot">
+            <span class="spacer"></span>
+            <a class="btn btn-quiet" asp-action="Detail" asp-route-id="@Model.Id">انصراف</a>
+            <button type="submit" class="btn btn-primary"><svg class="ico"><use href="#i-upload" /></svg>بارگذاری و ادامه</button>
         </div>
     </form>
 </div>

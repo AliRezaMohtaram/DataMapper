@@ -207,7 +207,7 @@
                 <a class="quick tone-primary" asp-controller="Imports" asp-action="Upload"><span class="quick-ico"><svg class="ico"><use href="#i-upload" /></svg></span><span class="quick-label">ایمپورت فایل</span></a>
                 <a class="quick tone-success" asp-controller="DataRecords" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-pen" /></svg></span><span class="quick-label">ثبت دستی رکورد</span></a>
                 <a class="quick tone-violet" asp-controller="Templates" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-template" /></svg></span><span class="quick-label">قالب جدید</span></a>
-                <a class="quick tone-info" asp-controller="DataSources" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-db" /></svg></span><span class="quick-label">منبع داده</span></a>
+                <a class="quick tone-info" asp-controller="DataSources" asp-action="Create" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-db" /></svg></span><span class="quick-label">منبع داده</span></a>
                 <a class="quick tone-warning" asp-controller="MappingProfiles" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-map" /></svg></span><span class="quick-label">پروفایل نگاشت</span></a>
                 <button class="quick tone-danger" type="button" data-open="cmdk"><span class="quick-ico"><svg class="ico"><use href="#i-search" /></svg></span><span class="quick-label">جستجو و فرمان</span></button>
             </div>
@@ -293,7 +293,7 @@
     <article class="card rise" style="--i:8">
         <header class="card-head">
             <div class="card-title"><span class="card-ico"><svg class="ico"><use href="#i-db" /></svg></span>منابع داده</div>
-            <a class="btn btn-soft btn-sm" asp-controller="DataSources" asp-action="Create"><svg class="ico"><use href="#i-plus" /></svg>منبع جدید</a>
+            <a class="btn btn-soft btn-sm" asp-controller="DataSources" asp-action="Create" data-modal><svg class="ico"><use href="#i-plus" /></svg>منبع جدید</a>
         </header>
         @if (d.DataSources.Count == 0)
         {

@@ -1,63 +1,8 @@
 @model Borc.DataMapper.Web.ViewModels.DataSources.DataSourceFormViewModel
-@using Borc.DataMapper.Web.ViewModels.DataSources
 @{
     ViewData["Title"] = "ویرایش منبع داده";
-
-    var modelErrors = ViewData.ModelState
-        .Where(kv => string.IsNullOrEmpty(kv.Key))
-        .SelectMany(kv => kv.Value!.Errors)
-        .Select(e => e.ErrorMessage)
-        .Where(m => !string.IsNullOrWhiteSpace(m))
-        .ToList();
 }
-
-<div class="panel card">
-    <div class="panel-header">
-        <h2>ویرایش منبع داده</h2>
-    </div>
-
-    @if (modelErrors.Count > 0)
-    {
-        <div class="status error show">@string.Join(" — ", modelErrors)</div>
-    }
-
-    <form asp-action="Edit" method="post" id="dsForm" data-ds-type="@Model.SourceType">
-        <input asp-for="Id" type="hidden" />
-
-        <div class="form-group">
-            <label>کد منبع داده:</label>
-            <input type="text" dir="ltr" value="@Model.Code" disabled />
-            <div class="hint">
-                کد و نوع منبع قابل تغییر نیست.
-                @if (ViewData["UsedBy"] is int used && used > 0)
-                {
-                    <text>این منبع داده توسط @used فیلد قالب استفاده می‌شود.</text>
-                }
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>نوع منبع:</label>
-            <input type="text" value="@Model.SourceType.ToLabel()" disabled />
-        </div>
-
-        <div class="form-group">
-            <label asp-for="Name">نام منبع داده:</label>
-            <input asp-for="Name" autocomplete="off" />
-            <span asp-validation-for="Name" style="color:var(--danger);font-size:12px"></span>
-        </div>
-
-        <partial name="_DataSourceFields" model="Model" />
-
-        <div class="actions">
-            <button type="submit" class="btn primary">ذخیره تغییرات</button>
-            <a asp-action="Detail" asp-route-id="@Model.Id" class="btn ghost">انصراف</a>
-        </div>
-    </form>
+@* معمولاً این فرم در مودال باز می‌شود (data-modal)؛ این صفحه برای لینک مستقیم و حالت بدون JavaScript است. *@
+<div class="modal-page">
+    <partial name="_DataSourceForm" model="Model" />
 </div>
-
-<script id="dsLookups" type="application/json">@Html.Raw(Model.LookupsJson)</script>
-
-@section Scripts {
-    <script src="~/js/datasource-form.js" asp-append-version="true"></script>
-}
