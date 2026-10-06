@@ -25,7 +25,8 @@ public sealed record TemplateVersionItemDto(
     TemplateVersionStatus Status,
     DateTime CreatedAt,
     DateTime? PublishedAt,
-    int FieldCount);
+    int FieldCount,
+    bool HasLayout);
 
 public sealed class GetTemplateHandler
     : IRequestHandler<GetTemplateQuery, Result<TemplateDetailDto>>
@@ -58,7 +59,8 @@ public sealed class GetTemplateHandler
                 v.Status,
                 v.CreatedAt,
                 v.PublishedAt,
-                _db.TemplateFields.Count(f => f.TemplateVersionId == v.Id)))
+                _db.TemplateFields.Count(f => f.TemplateVersionId == v.Id),
+                _db.TemplateLayouts.Any(l => l.TemplateVersionId == v.Id)))
             .ToListAsync(cancellationToken);
 
         var allowed = Enum.GetValues<TemplateStatus>()

@@ -31,6 +31,7 @@ public sealed class UpdateTemplateFieldValidator
     public UpdateTemplateFieldValidator()
     {
         RuleFor(x => x.Id).GreaterThan(0);
+        
 
         RuleFor(x => x.SortOrder).GreaterThanOrEqualTo(0);
 

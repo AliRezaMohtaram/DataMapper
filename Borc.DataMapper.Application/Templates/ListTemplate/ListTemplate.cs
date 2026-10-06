@@ -44,7 +44,6 @@ public sealed class ListTemplatesHandler
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Clamp(request.PageSize, 1, ListTemplatesQuery.MaxPageSize);
 
-        // حذف‌شده‌ها را فیلتر سراسری MapperContext خودش کنار می‌گذارد.
         var query = _db.Templates.AsNoTracking();
 
         if (search is not null)
@@ -60,6 +59,8 @@ public sealed class ListTemplatesHandler
             var status = request.Status.Value;
             query = query.Where(x => x.Status == status);
         }
+
+        
 
         var total = await query.CountAsync(cancellationToken);
 

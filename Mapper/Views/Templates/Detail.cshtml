@@ -3,16 +3,14 @@
     ViewData["Title"] = Model.Name;
 }
 
-<div class="detail-layout">
+<div class="page-grid">
 
-    @* ============ ناحیه اصلی (سمت راست در RTL) ============ *@
-    <main class="detail-main">
+    <!-- ===== محتوای اصلی (سمت راست) ===== -->
+    <section class="page-main">
         <div class="panel card">
             <div class="panel-header">
-                <h2>@Model.Name <span class="mode-badge">@Model.Status.ToLabel()</span></h2>
-                <div class="summary-stats">
-                    <span>تعداد نسخه: <b>@Model.Versions.Count</b></span>
-                </div>
+                <h2>نسخه‌ها</h2>
+                <div class="summary-stats"><span>تعداد: <b>@Model.Versions.Count</b></span></div>
 
                 <form asp-controller="TemplateVersions" asp-action="Create" method="post">
                     <input type="hidden" name="templateId" value="@Model.Id" />
@@ -27,6 +25,7 @@
                             <th>نسخه</th>
                             <th>وضعیت</th>
                             <th>تعداد فیلد</th>
+                            <th>Layout</th>
                             <th>تاریخ ایجاد</th>
                             <th>تاریخ انتشار</th>
                         </tr>
@@ -34,24 +33,24 @@
                     <tbody>
                         @if (Model.Versions.Count == 0)
                         {
-                            <tr>
-                                <td colspan="5" class="entries-empty">
-                                    هنوز نسخه‌ای برای این قالب ثبت نشده است.
-                                </td>
-                            </tr>
+                            <tr><td colspan="6" class="entries-empty">هنوز نسخه‌ای برای این قالب ثبت نشده است.</td></tr>
                         }
                         else
                         {
                             foreach (var v in Model.Versions)
                             {
                                 <tr>
-                                    <td>
-                                        <a asp-controller="TemplateVersions"
-                                           asp-action="Detail"
-                                           asp-route-id="@v.Id">نسخه @v.VersionNo</a>
-                                    </td>
+                                    <td><a asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@v.Id">نسخه @v.VersionNo</a></td>
                                     <td><span class="mode-badge">@v.Status.ToLabel()</span></td>
                                     <td>@v.FieldCount</td>
+                                    <td>
+                                        <a asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@v.Id">
+                                            @* @(v.Status == TemplateVersionStatus.Draft ? "طراحی" : "مشاهده") *@
+                                            مشاهده
+
+                                        </a>
+                                        <span class="mode-badge">@(v.HasLayout ? "دارد" : "ندارد")</span>
+                                    </td>
                                     <td dir="ltr">@v.CreatedAt.ToJalali()</td>
                                     <td dir="ltr">@v.PublishedAt.ToJalali()</td>
                                 </tr>
@@ -61,19 +60,34 @@
                 </table>
             </div>
         </div>
-    </main>
+    </section>
 
-    @* ============ Aside (سمت چپ) ============ *@
-    <aside class="detail-aside">
+    <!-- ===== اطلاعات کلی (aside سمت چپ) ===== -->
+    <aside class="page-aside">
+        <div class="panel card">
+            <div class="aside-title">@Model.Name</div>
+            <span class="mode-badge">@Model.Status.ToLabel()</span>
 
-        @* --- کارت عملیات --- *@
-        <div class="panel card aside-card">
-            <div class="panel-header">
-                <h3>عملیات</h3>
-            </div>
+            <dl class="info-list">
+                <div>
+                    <dt>کد قالب</dt>
+                    <dd dir="ltr" style="text-align:right"><code style="font-family:var(--mono)">@Model.Code</code></dd>
+                </div>
+                <div>
+                    <dt>توضیحات</dt>
+                    <dd>@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</dd>
+                </div>
+                <div>
+                    <dt>تاریخ ایجاد</dt>
+                    <dd dir="ltr" style="text-align:right">@Model.CreatedAt.ToJalali()</dd>
+                </div>
+                <div>
+                    <dt>آخرین ویرایش</dt>
+                    <dd dir="ltr" style="text-align:right">@Model.UpdatedAt.ToJalali()</dd>
+                </div>
+            </dl>
 
             <div class="aside-actions">
-                <a asp-action="Index" class="btn ghost block">بازگشت به فهرست</a>
                 <a asp-action="Edit" asp-route-id="@Model.Id" class="btn primary block">ویرایش</a>
 
                 @foreach (var target in Model.AllowedStatuses)
@@ -95,43 +109,20 @@
                     }
                     else
                     {
-                        <button type="submit" form="@formId" class="btn secondary block">
-                            @target.ToActionLabel()
-                        </button>
+                        <button type="submit" form="@formId" class="btn secondary block">@target.ToActionLabel()</button>
                     }
                 }
 
+                <a asp-action="Index" class="btn ghost block">بازگشت به فهرست</a>
+
                 <button type="button" class="btn danger block"
                         data-delete-id="@Model.Id" data-delete-name="@Model.Name">
-                    حذف
+                    حذف قالب
                 </button>
             </div>
         </div>
-
-        @* --- کارت اطلاعات قالب --- *@
-        <div class="panel card aside-card">
-            <div class="panel-header">
-                <h3>اطلاعات قالب</h3>
-            </div>
-
-            <dl class="aside-info">
-                <dt>کد قالب</dt>
-                <dd dir="ltr" style="text-align:right">
-                    <code style="font-family:var(--mono)">@Model.Code</code>
-                </dd>
-
-                <dt>توضیحات</dt>
-                <dd>@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</dd>
-
-                <dt>تاریخ ایجاد</dt>
-                <dd dir="ltr" style="text-align:right">@Model.CreatedAt.ToJalali()</dd>
-
-                <dt>آخرین ویرایش</dt>
-                <dd dir="ltr" style="text-align:right">@Model.UpdatedAt.ToJalali()</dd>
-            </dl>
-        </div>
-
     </aside>
+
 </div>
 
 <partial name="_DeleteModal" />

@@ -1,0 +1,64 @@
+@model Borc.DataMapper.Application.MappingProfiles.UpdateMappingRule.UpdateMappingRuleCommand
+@using Borc.DataMapper.Application.MappingProfiles.GetMappingProfile
+@using Borc.DataMapper.Application.MappingProfiles.GetMappingProfileLookups
+@{
+    ViewData["Title"] = "ویرایش قاعده";
+
+    var profile = (MappingProfileDetailDto)ViewData["Profile"]!;
+    var fields = (IReadOnlyList<ProfileFieldOption>)ViewData["Fields"]!;
+    var mapped = (HashSet<long>)ViewData["MappedFieldIds"]!;
+
+    var modelErrors = ViewData.ModelState
+        .Where(kv => string.IsNullOrEmpty(kv.Key))
+        .SelectMany(kv => kv.Value!.Errors)
+        .Select(e => e.ErrorMessage)
+        .Where(m => !string.IsNullOrWhiteSpace(m))
+        .ToList();
+}
+
+<div class="panel card">
+    <div class="panel-header">
+        <h2>ویرایش قاعده — @profile.Name</h2>
+    </div>
+
+    @if (modelErrors.Count > 0)
+    {
+        <div class="status error show">@string.Join(" — ", modelErrors)</div>
+    }
+
+    <form asp-action="EditRule" method="post">
+        <input type="hidden" name="profileId" value="@profile.Id" />
+        <input asp-for="Id" type="hidden" />
+
+        <div class="form-group">
+            <label>عنوان ستون در فایل:</label>
+            <input type="text" value="@ViewData["SourceColumn"]" disabled />
+            <div class="hint">عنوان ستون قابل تغییر نیست؛ برای تغییر آن قاعده را حذف و دوباره اضافه کنید.</div>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="TargetFieldId">فیلد مقصد:</label>
+            <select asp-for="TargetFieldId">
+                @foreach (var f in fields)
+                {
+                    var used = mapped.Contains(f.Id);
+                    <option value="@f.Id" disabled="@used" selected="@(Model.TargetFieldId == f.Id)">
+                        @f.Label (@f.Key)@(f.IsRequired ? " *" : "")@(used ? " — قبلاً نگاشت شده" : "")
+                    </option>
+                }
+            </select>
+            <span asp-validation-for="TargetFieldId" style="color:var(--danger);font-size:12px"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="SortOrder">ترتیب نمایش:</label>
+            <input asp-for="SortOrder" type="number" min="0" dir="ltr" />
+            <span asp-validation-for="SortOrder" style="color:var(--danger);font-size:12px"></span>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn primary">ذخیره تغییرات</button>
+            <a asp-action="Detail" asp-route-id="@profile.Id" class="btn ghost">انصراف</a>
+        </div>
+    </form>
+</div>

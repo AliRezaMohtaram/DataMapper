@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 namespace Borc.DataMapper.Application.TemplateFields.GetTemplateField;
 
 public sealed record GetTemplateFieldQuery(long Id) : IRequest<Result<TemplateFieldDetailDto>>;
-
 public sealed record TemplateFieldDetailDto(
     long Id,
     long TemplateVersionId,

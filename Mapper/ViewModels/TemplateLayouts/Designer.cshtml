@@ -1,0 +1,56 @@
+@using Borc.DataMapper.Domain.Templates
+@using Borc.DataMapper.Web.ViewModels.Templates
+@model Borc.DataMapper.Web.ViewModels.TemplateLayouts.LayoutDesignerViewModel
+@{
+    ViewData["Title"] = $"طراح Layout - {Model.TemplateName}";
+    var isDraft = Model.VersionStatus == TemplateVersionStatus.Draft;
+}
+
+@Html.AntiForgeryToken()
+
+<div class="panel card">
+    <div class="panel-header">
+        <h2>
+            طراح Layout فرم — @Model.TemplateName (نسخه @Model.VersionNo)
+            <span class="mode-badge">@Model.VersionStatus.ToLabel()</span>
+        </h2>
+
+        <div class="row-actions">
+            <a asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId"
+               class="btn ghost">بازگشت به نسخه</a>
+        </div>
+    </div>
+
+    <div class="hint">
+        @if (isDraft)
+        {
+            <text>چیدمان فرم ورود داده را با کشیدن فیلدها از پنل راست بچینید. Layout ذخیره‌شده به‌جای فرم داینامیک برای ورود داده استفاده می‌شود.</text>
+        }
+        else
+        {
+            <text>این نسخه پیش‌نویس نیست و Layout آن فقط برای مشاهده است. برای تغییر، یک نسخه جدید بسازید.</text>
+        }
+    </div>
+</div>
+
+<div class="ld-shell">
+    <div class="ld-topbar">
+        <span id="ldStatus" class="mode-badge"></span>
+        <div class="ld-topbar-actions" id="ldActions"></div>
+    </div>
+
+    <div id="ldBoard" class="ld-board">
+        <aside class="ld-pane ld-palette" id="ldPalette"></aside>
+        <main class="ld-stage" id="ldStage"></main>
+        <aside class="ld-pane ld-props" id="ldProps"></aside>
+    </div>
+</div>
+
+<script id="ldData" type="application/json">@Html.Raw(Model.DataJson)</script>
+
+<partial name="_ConfirmModal" />
+
+@section Scripts {
+    <script src="~/js/ui.js" asp-append-version="true"></script>
+    <script src="~/js/layout-designer.js" asp-append-version="true"></script>
+}
