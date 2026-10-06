@@ -2,8 +2,8 @@ using System.Text.Json;
 using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Application.DataRecords.Common;
+using Borc.DataMapper.Application.DataSources.Common;
 using Borc.DataMapper.Application.Imports.Common;
-using Borc.DataMapper.Domain.Common;
 using Borc.DataMapper.Domain.Templates;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -25,7 +25,8 @@ public sealed record RecordFormDto(
     long? RecordId,
     string? LayoutJson,
     IReadOnlyList<RecordFormFieldDto> Fields,
-    IReadOnlyDictionary<string, string?> Values);
+    IReadOnlyDictionary<string, string?> Values,
+    IReadOnlyDictionary<string, string> Labels);
 
 public sealed record RecordFormFieldDto(
     string Key,
@@ -37,16 +38,19 @@ public sealed record RecordFormFieldDto(
     byte? Precision,
     byte? Scale,
     string? Regex,
-    IReadOnlyList<RecordOption> Options);
+    IReadOnlyList<DataSourceOption>? Options,
+    long? DataSourceId);
 
 public sealed class GetRecordFormHandler
     : IRequestHandler<GetRecordFormQuery, Result<RecordFormDto>>
 {
     private readonly IAppDbContext _db;
+    private readonly DataSourceOptionService _options;
 
-    public GetRecordFormHandler(IAppDbContext db)
+    public GetRecordFormHandler(IAppDbContext db, DataSourceOptionService options)
     {
         _db = db;
+        _options = options;
     }
 
     public async Task<Result<RecordFormDto>> Handle(
@@ -112,7 +116,7 @@ public sealed class GetRecordFormHandler
                 f.Target.Key, f.Target.Label, f.Target.DataType,
                 dbTypes.TryGetValue(f.Target.Id, out var dbt) ? dbt : string.Empty,
                 f.Target.IsRequired, f.Target.Length, f.Target.Precision, f.Target.Scale,
-                f.Target.Regex, f.Options))
+                f.Target.Regex, f.Inline, f.IsRemote ? f.DataSourceId : null))
             .ToList();
 
         var values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
@@ -136,8 +140,22 @@ public sealed class GetRecordFormHandler
                 values[f.Target.Key] = f.Target.DefaultValue;
         }
 
+        // عنوان مقدار فعلیِ فیلدهایی که گزینه‌هایشان با جستجوی سمت سرور می‌آید (برای نمایش در Combobox)
+        var labels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var f in fields.Where(f => f.IsRemote))
+        {
+            if (!values.TryGetValue(f.Target.Key, out var current) || string.IsNullOrWhiteSpace(current))
+                continue;
+
+            var found = await _options.FindAsync(f.DataSourceId!.Value, current, cancellationToken);
+
+            if (found.Option is not null)
+                labels[f.Target.Key] = found.Option.Label;
+        }
+
         return Result<RecordFormDto>.Ok(new RecordFormDto(
             version.Id, version.TemplateId, templateName ?? string.Empty, version.VersionNo,
-            version.Status, request.RecordId, layoutJson, dtos, values));
+            version.Status, request.RecordId, layoutJson, dtos, values, labels));
     }
 }

@@ -1,6 +1,7 @@
 using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Application.DataRecords.Common;
+using Borc.DataMapper.Application.DataSources.Common;
 using Borc.DataMapper.Domain.Records;
 using Borc.DataMapper.Domain.Templates;
 using FluentValidation;
@@ -27,10 +28,12 @@ public sealed class CreateDataRecordHandler
     : IRequestHandler<CreateDataRecordCommand, Result<SaveRecordOutcome>>
 {
     private readonly IAppDbContext _db;
+    private readonly DataSourceOptionService _options;
 
-    public CreateDataRecordHandler(IAppDbContext db)
+    public CreateDataRecordHandler(IAppDbContext db, DataSourceOptionService options)
     {
         _db = db;
+        _options = options;
     }
 
     public async Task<Result<SaveRecordOutcome>> Handle(
@@ -57,7 +60,7 @@ public sealed class CreateDataRecordHandler
             .FirstOrDefaultAsync(cancellationToken);
 
         var hidden = LayoutVisibility.HiddenFieldKeys(layoutJson, request.Values);
-        var built = RecordDataBuilder.Build(fields, request.Values, hidden);
+        var built = await RecordDataBuilder.BuildAsync(fields, request.Values, hidden, _options, cancellationToken);
 
         if (built.Json is null)
             return Result<SaveRecordOutcome>.Ok(

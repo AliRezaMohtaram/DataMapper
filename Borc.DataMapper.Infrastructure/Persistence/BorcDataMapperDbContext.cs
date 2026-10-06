@@ -24,6 +24,7 @@ public sealed class BorcDataMapperDbContext : DbContext, IAppDbContext
     public DbSet<PredefinedRegex> PredefinedRegexes => Set<PredefinedRegex>();
     
     public DbSet<DataSource> DataSources => Set<DataSource>();
+    public DbSet<DataSourceItem> DataSourceItems => Set<DataSourceItem>();
 
     public DbSet<MappingProfile> MappingProfiles => Set<MappingProfile>();
     public DbSet<MappingRule> MappingRules => Set<MappingRule>();

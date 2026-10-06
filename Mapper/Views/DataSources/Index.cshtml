@@ -85,7 +85,7 @@
                     <tr>
                         <td>@d.Id</td>
                         <td><code dir="ltr" style="font-family:var(--mono)">@d.Code</code></td>
-                        <td>@d.Name</td>
+                        <td><a asp-action="Detail" asp-route-id="@d.Id">@d.Name</a></td>
                         <td><span class="mode-badge">@d.SourceType.ToLabel()</span></td>
                         <td><span class="mode-badge">@(d.IsActive ? "فعال" : "غیرفعال")</span></td>
                         <td dir="ltr">@d.CreatedAt.ToJalali()</td>

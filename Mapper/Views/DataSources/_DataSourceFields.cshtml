@@ -1,0 +1,73 @@
+@model Borc.DataMapper.Web.ViewModels.DataSources.DataSourceFormViewModel
+@using Borc.DataMapper.Domain.DataSources
+@* بخش‌های مخصوص هر نوع منبع داده؛ JavaScript فقط بخش نوع انتخاب‌شده را نشان می‌دهد (datasource-form.js). *@
+
+<div data-ds-type="@DataSourceType.StaticList" @(Model.SourceType == DataSourceType.StaticList ? "" : "hidden")>
+    <div class="form-group">
+        <label asp-for="ItemsText">گزینه‌ها (هر خط یک گزینه):</label>
+        <textarea asp-for="ItemsText" rows="8" placeholder="مقدار | عنوان نمایشی&#10;DRILL | حفاری&#10;PROD | تولید"></textarea>
+        <div class="hint">
+            هر خط: «مقدار» یا «مقدار | عنوان». مقدار همان چیزی است که در داده ذخیره می‌شود و عنوان همان است که کاربر می‌بیند.
+            اگر عنوان ننویسید، مقدار نمایش داده می‌شود. حداکثر 5000 گزینه.
+        </div>
+    </div>
+</div>
+
+<div data-ds-type="@DataSourceType.File" @(Model.SourceType == DataSourceType.File ? "" : "hidden")>
+    <div class="hint">
+        بعد از ذخیره، فایل Excel (xlsx) یا CSV را بارگذاری می‌کنید و ستون «مقدار واقعی» و ستون «عنوان نمایشی» را انتخاب می‌کنید.
+        بارگذاری دوبارهٔ فایل، گزینه‌های قبلی را جایگزین می‌کند.
+    </div>
+</div>
+
+<div data-ds-type="@DataSourceType.Template" @(Model.SourceType == DataSourceType.Template ? "" : "hidden")>
+    <div class="form-group">
+        <label asp-for="TemplateId">قالب منبع:</label>
+        <select asp-for="TemplateId">
+            <option value="">— انتخاب کنید —</option>
+        </select>
+        <div class="hint">فقط قالب‌هایی که نسخهٔ منتشرشده دارند. گزینه‌ها از رکوردهای ثبت‌شدهٔ همان قالب (ورود دستی یا ایمپورت) ساخته می‌شود.</div>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ValueKey">فیلد مقدار (داده واقعی که ذخیره می‌شود):</label>
+        <select asp-for="ValueKey" data-selected="@Model.ValueKey">
+            <option value="">— ابتدا قالب را انتخاب کنید —</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="DisplayKey">فیلد نمایشی (آنچه کاربر در فهرست می‌بیند):</label>
+        <select asp-for="DisplayKey" data-selected="@Model.DisplayKey">
+            <option value="">— ابتدا قالب را انتخاب کنید —</option>
+        </select>
+        <div class="hint">می‌تواند همان فیلد مقدار باشد؛ مثلاً مقدار = «کد پیمانکار» و نمایشی = «نام پیمانکار».</div>
+    </div>
+</div>
+
+<div data-ds-type="@DataSourceType.Api" @(Model.SourceType == DataSourceType.Api ? "" : "hidden")>
+    <div class="form-group">
+        <label asp-for="ApiUrl">آدرس API (GET، خروجی JSON):</label>
+        <input asp-for="ApiUrl" dir="ltr" autocomplete="off" placeholder="https://example.com/api/contractors" />
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ApiItemsPath">مسیر آرایه در پاسخ (اختیاری):</label>
+        <input asp-for="ApiItemsPath" dir="ltr" autocomplete="off" placeholder="data.items" />
+        <div class="hint">اگر پاسخ خودش آرایه است خالی بگذارید؛ برای پاسخ‌هایی مثل <code dir="ltr">{"data":{"items":[…]}}</code> بنویسید <code dir="ltr">data.items</code>.</div>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ApiValueKey">نام فیلد مقدار:</label>
+        <input asp-for="ApiValueKey" dir="ltr" autocomplete="off" placeholder="id" />
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ApiDisplayKey">نام فیلد نمایشی:</label>
+        <input asp-for="ApiDisplayKey" dir="ltr" autocomplete="off" placeholder="name" />
+        <div class="hint">
+            اگر عضوهای آرایه خودشان متن یا عدد هستند، هر دو خالی بماند. پاسخ ۵ دقیقه نگه‌داری می‌شود و حداکثر 2 مگابایت است.
+            اتصال به آدرس‌های محلی و شبکهٔ داخلی به‌صورت پیش‌فرض مسدود است.
+        </div>
+    </div>
+</div>

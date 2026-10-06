@@ -1,0 +1,37 @@
+@model Borc.DataMapper.Application.DataSources.GetDataSource.DataSourceDetailDto
+@{
+    ViewData["Title"] = $"بارگذاری فایل - {Model.Name}";
+}
+
+<div class="panel card">
+    <div class="panel-header">
+        <h2>بارگذاری فایل — @Model.Name</h2>
+    </div>
+
+    @if (Model.ItemCount > 0)
+    {
+        <div class="status error show">
+            این منبع داده الان @Model.ItemCount گزینه دارد (فایل «@Model.FileName»).
+            بارگذاری فایل جدید همهٔ گزینه‌های فعلی را جایگزین می‌کند.
+        </div>
+    }
+
+    <form asp-action="UploadFile" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="id" value="@Model.Id" />
+
+        <div class="form-group">
+            <label for="file">فایل Excel (xlsx) یا CSV:</label>
+            <input type="file" id="file" name="file" accept=".xlsx,.csv,.tsv" required />
+            <div class="hint">
+                سطر اول باید سرستون‌ها باشد. در مرحلهٔ بعد ستون «مقدار واقعی» و ستون «عنوان نمایشی» را انتخاب می‌کنید.
+                CSV با جداکننده , یا ; یا Tab و رمزگذاری UTF-8 (یا Windows-1256) پذیرفته می‌شود.
+                حداکثر 10 مگابایت، 20٬000 سطر و 100 ستون.
+            </div>
+        </div>
+
+        <div class="actions">
+            <button type="submit" class="btn primary">آپلود و ادامه</button>
+            <a asp-action="Detail" asp-route-id="@Model.Id" class="btn ghost">انصراف</a>
+        </div>
+    </form>
+</div>

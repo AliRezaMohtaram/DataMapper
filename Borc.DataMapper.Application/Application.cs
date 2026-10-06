@@ -18,6 +18,9 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(
             typeof(DependencyInjection).Assembly);
 
+        services.AddMemoryCache();
+        services.AddScoped<DataSources.Common.DataSourceOptionService>();
+
         return services;
     }
 }

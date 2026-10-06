@@ -91,7 +91,7 @@ function validateFieldValue(field, value) {
 
     function buildControl(field, block) {
         /* ۰) فیلد متصل به منبع دادهٔ «لیست ثابت» → لیست کشویی (field.dataOptions = [{value, label}]) */
-        if (Array.isArray(field.dataOptions) && field.dataOptions.length && block.widget !== "radio") {
+        if (Array.isArray(field.dataOptions) && block.widget !== "radio") {
             const sel = el("select", "lf-control", `<option value="">— انتخاب کنید —</option>` +
                 field.dataOptions.map(o => `<option value="${esc(o.value)}">${esc(o.label || o.value)}</option>`).join(""));
             sel.dataset.key = field.key;
@@ -101,7 +101,7 @@ function validateFieldValue(field, value) {
 
         /* ۱) فیلد دارای منبع دادهٔ داینامیک → Combobox جستجوپذیر
               (اولویت بالاتر از widget — چون ممکن است widget پیش‌فرض input باشد) */
-        if (field.dataSource && field.dataSource.templateId && typeof buildCombobox === "function") {
+        if (field.dataSource && field.dataSource.id && typeof buildCombobox === "function") {
             return buildCombobox(field, {
                 required: block.required,
                 placeholder: block.placeholder
@@ -435,10 +435,10 @@ function validateFieldValue(field, value) {
         a.innerHTML = !has ? "" : READ_ONLY
             ? seg2([["desktop", "دسکتاپ"], ["mobile", "موبایل"]], dDevice)
             : seg2([["edit", "ویرایش"], ["preview", "پیش‌نمایش"]], dPreview ? "preview" : "edit") +
-            (dPreview ? seg2([["desktop", "دسکتاپ"], ["mobile", "موبایل"]], dDevice) : `<button type="button" class="btn ghost" data-a="auto">چیدمان خودکار</button>`) +
-            `<button type="button" class="btn ghost" data-a="json">کپی JSON</button>` +
-            (dTpl.layout ? `<button type="button" class="btn danger" data-a="remove">حذف Layout</button>` : "") +
-            `<button type="button" class="btn primary" data-a="save">ذخیره Layout</button>`;
+              (dPreview ? seg2([["desktop", "دسکتاپ"], ["mobile", "موبایل"]], dDevice) : `<button type="button" class="btn ghost" data-a="auto">چیدمان خودکار</button>`) +
+              `<button type="button" class="btn ghost" data-a="json">کپی JSON</button>` +
+              (dTpl.layout ? `<button type="button" class="btn danger" data-a="remove">حذف Layout</button>` : "") +
+              `<button type="button" class="btn primary" data-a="save">ذخیره Layout</button>`;
         a.querySelectorAll("[data-a]").forEach(b => { b.onclick = () => action(b.dataset.a); });
     }
 

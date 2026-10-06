@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Borc.DataMapper.Application.DataRecords.CreateDataRecord;
 using Borc.DataMapper.Application.DataRecords.DeleteDataRecord;
 using Borc.DataMapper.Application.DataRecords.GetDataRecord;
@@ -188,13 +188,17 @@ public sealed class DataRecordsController : Controller
                 precision = f.Precision,
                 scale = f.Scale,
                 regex = f.Regex,
-                options = f.Options.Select(o => new { value = o.Value, label = o.Label })
+                // منبع کوچک: گزینه‌ها همراه فرم؛ منبع بزرگ/API/قالب: dataSourceId و جستجوی سمت سرور
+                options = f.Options?.Select(o => new { value = o.Value, label = o.Label }),
+                dataSourceId = f.DataSourceId
             }),
             values = d.Values,
+            labels = d.Labels,
             urls = new
             {
                 save = Url.Action(nameof(Save), "DataRecords"),
-                index = Url.Action(nameof(Index), "DataRecords")
+                index = Url.Action(nameof(Index), "DataRecords"),
+                options = Url.Action("Options", "DataSources")
             }
         };
 

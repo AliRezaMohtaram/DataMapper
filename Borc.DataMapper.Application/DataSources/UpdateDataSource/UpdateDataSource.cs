@@ -1,6 +1,6 @@
-﻿using Borc.DataMapper.Application.Abstractions.Persistence;
+using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Application.Common.Results;
-using Borc.DataMapper.Application.Common.Validation;
+using Borc.DataMapper.Application.DataSources.Common;
 using Borc.DataMapper.Domain.DataSources;
 using FluentValidation;
 using MediatR;
@@ -8,12 +8,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Borc.DataMapper.Application.DataSources.UpdateDataSource;
 
-/// <summary>Code پس از ایجاد تغییر نمی‌کند.</summary>
+/// <summary>کد و نوع منبع پس از ایجاد تغییر نمی‌کنند (فیلدهای قالب‌ها به آن‌ها وابسته‌اند).</summary>
 public sealed record UpdateDataSourceCommand(
     long Id,
     string Name,
-    DataSourceType SourceType,
-    string? ConfigJson
+    string? ItemsText = null,
+    long? TemplateId = null,
+    string? ValueKey = null,
+    string? DisplayKey = null,
+    string? ApiUrl = null,
+    string? ApiItemsPath = null,
+    string? ApiValueKey = null,
+    string? ApiDisplayKey = null
 ) : IRequest<Result>;
 
 public sealed class UpdateDataSourceValidator
@@ -26,12 +32,6 @@ public sealed class UpdateDataSourceValidator
         RuleFor(x => x.Name)
             .NotEmpty()
             .MaximumLength(250);
-
-        RuleFor(x => x.SourceType).IsInEnum();
-
-        RuleFor(x => x.ConfigJson)
-            .Must(ValidationRules.IsValidJson)
-            .WithMessage("ConfigJson معتبر نیست؛ باید JSON درست باشد.");
     }
 }
 
@@ -49,18 +49,74 @@ public sealed class UpdateDataSourceHandler
         UpdateDataSourceCommand request,
         CancellationToken cancellationToken)
     {
-        var ds = await _db.DataSources
+        var current = await _db.DataSources
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
-        if (ds is null)
+        if (current is null)
             return Result.Failure("منبع داده موردنظر پیدا نشد.");
 
-        var config = string.IsNullOrWhiteSpace(request.ConfigJson) ? null : request.ConfigJson;
+        var type = current.SourceType;
+        var config = current.ConfigJson;
 
-        ds.Update(request.Name, request.SourceType, config);
+        if (type is DataSourceType.Template or DataSourceType.Api)
+        {
+            var built = await DataSourceSettings.BuildConfigAsync(
+                _db, type, request.TemplateId, request.ValueKey, request.DisplayKey,
+                request.ApiUrl, request.ApiItemsPath, request.ApiValueKey, request.ApiDisplayKey,
+                cancellationToken);
 
-        await _db.SaveChangesAsync(cancellationToken);
+            if (built.Error is not null)
+                return Result.Failure(built.Error);
 
-        return Result.Ok("منبع داده ویرایش شد.");
+            config = built.ConfigJson;
+        }
+
+        List<(string Value, string Label)>? items = null;
+
+        if (type == DataSourceType.StaticList)
+        {
+            var parsed = DataSourceSettings.ParseItemsText(request.ItemsText);
+
+            if (parsed.Error is not null)
+                return Result.Failure(parsed.Error);
+
+            if (parsed.Items.Count == 0)
+                return Result.Failure("حداقل یک گزینه وارد کنید.");
+
+            items = parsed.Items;
+        }
+
+        var now = DateTime.UtcNow;
+
+        try
+        {
+            return await _db.InTransactionAsync(async () =>
+            {
+                var ds = await _db.DataSources.FirstAsync(x => x.Id == request.Id, cancellationToken);
+                ds.Update(request.Name, ds.SourceType, config);
+
+                if (items is not null)
+                {
+                    await _db.DataSourceItems
+                        .Where(i => i.DataSourceId == ds.Id)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(i => i.IsDeleted, true)
+                            .SetProperty(i => i.DeletedAt, (DateTime?)now),
+                            cancellationToken);
+
+                    for (var i = 0; i < items.Count; i++)
+                        _db.DataSourceItems.Add(DataSourceItem.Create(ds.Id, items[i].Value, items[i].Label, i));
+                }
+
+                await _db.SaveChangesAsync(cancellationToken);
+
+                return Result.Ok("منبع داده ویرایش شد.");
+            }, cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            return Result.Failure("ویرایش منبع داده انجام نشد؛ دوباره تلاش کنید.");
+        }
     }
 }

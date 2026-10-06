@@ -1,0 +1,165 @@
+@model Borc.DataMapper.Application.DataSources.GetDataSource.DataSourceDetailDto
+@using Borc.DataMapper.Web.ViewModels
+@using Borc.DataMapper.Web.ViewModels.DataSources
+@using Borc.DataMapper.Domain.DataSources
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="page-grid">
+
+    <!-- ===== محتوای اصلی ===== -->
+    <section class="page-main">
+        <div class="panel card">
+            <div class="panel-header">
+                <h2>گزینه‌ها</h2>
+
+                @if (Model.SourceType == DataSourceType.File)
+                {
+                    <a asp-action="UploadFile" asp-route-id="@Model.Id" class="btn primary">
+                        @(Model.ItemCount == 0 ? "بارگذاری فایل" : "بارگذاری فایل جدید")
+                    </a>
+                }
+
+                <button type="button" id="dsPreviewBtn" class="btn secondary"
+                        data-url="@Url.Action("Options", "DataSources", new { id = Model.Id })">نمایش نمونه</button>
+            </div>
+
+            @switch (Model.SourceType)
+            {
+                case DataSourceType.StaticList:
+                    <div class="hint">@Model.ItemCount گزینه ثبت شده است. برای تغییر، «ویرایش» را بزنید.</div>
+                    break;
+
+                case DataSourceType.File:
+                    if (Model.ItemCount == 0)
+                    {
+                        <div class="status error show">هنوز فایلی بارگذاری نشده است.</div>
+                    }
+                    else
+                    {
+                        <div class="hint">
+                            @Model.ItemCount گزینه از فایل «@Model.FileName» خوانده شده است
+                            (مقدار: «@Model.FileValueColumn»@(string.IsNullOrEmpty(Model.FileDisplayColumn) ? "" : $"، نمایشی: «{Model.FileDisplayColumn}»")).
+                        </div>
+                    }
+                    break;
+
+                case DataSourceType.Template:
+                    <div class="hint">گزینه‌ها هر بار از رکوردهای ثبت‌شدهٔ قالب خوانده می‌شود؛ با افزودن رکورد جدید، فهرست خودکار به‌روز می‌شود (حداکثر 5000 رکورد آخر بررسی می‌شود).</div>
+                    break;
+
+                case DataSourceType.Api:
+                    <div class="hint">گزینه‌ها از سرویس خارجی خوانده و 5 دقیقه نگه‌داری می‌شود. «نمایش نمونه» اتصال و تنظیمات مسیر را بررسی می‌کند.</div>
+                    break;
+            }
+
+            <div id="dsPreviewOut"></div>
+        </div>
+    </section>
+
+    <!-- ===== اطلاعات کلی (aside سمت چپ) ===== -->
+    <aside class="page-aside">
+        <div class="panel card">
+            <div class="aside-title">@Model.Name</div>
+            <span class="mode-badge">@Model.SourceType.ToLabel()</span>
+            <span class="mode-badge">@(Model.IsActive ? "فعال" : "غیرفعال")</span>
+
+            <dl class="info-list">
+                <div>
+                    <dt>کد</dt>
+                    <dd dir="ltr" style="text-align:right"><code style="font-family:var(--mono)">@Model.Code</code></dd>
+                </div>
+
+                @if (Model.SourceType == DataSourceType.Template)
+                {
+                    <div>
+                        <dt>قالب منبع</dt>
+                        <dd>
+                            @if (Model.TemplateId.HasValue)
+                            {
+                                <a asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@(Model.TemplateName ?? $"#{Model.TemplateId}")</a>
+                            }
+                            else
+                            {
+                                <text>—</text>
+                            }
+                        </dd>
+                    </div>
+                    <div>
+                        <dt>فیلد مقدار / نمایشی</dt>
+                        <dd dir="ltr" style="text-align:right">@Model.ValueKey / @Model.DisplayKey</dd>
+                    </div>
+                }
+
+                @if (Model.SourceType == DataSourceType.Api)
+                {
+                    <div>
+                        <dt>آدرس API</dt>
+                        <dd dir="ltr" style="text-align:right;word-break:break-all">@Model.ApiUrl</dd>
+                    </div>
+                    <div>
+                        <dt>مسیر آرایه</dt>
+                        <dd dir="ltr" style="text-align:right">@(string.IsNullOrEmpty(Model.ApiItemsPath) ? "(ریشه)" : Model.ApiItemsPath)</dd>
+                    </div>
+                    <div>
+                        <dt>فیلد مقدار / نمایشی</dt>
+                        <dd dir="ltr" style="text-align:right">@(Model.ApiValueKey ?? "—") / @(Model.ApiDisplayKey ?? "—")</dd>
+                    </div>
+                }
+
+                @if (Model.SourceType == DataSourceType.File && Model.FileImportedAt.HasValue)
+                {
+                    <div>
+                        <dt>آخرین بارگذاری</dt>
+                        <dd dir="ltr" style="text-align:right">@Model.FileImportedAt.ToJalali()</dd>
+                    </div>
+                }
+
+                @if (Model.SourceType is DataSourceType.StaticList or DataSourceType.File)
+                {
+                    <div>
+                        <dt>تعداد گزینه</dt>
+                        <dd>@Model.ItemCount</dd>
+                    </div>
+                }
+
+                <div>
+                    <dt>استفاده در فیلدهای قالب</dt>
+                    <dd>@Model.UsedByFieldCount</dd>
+                </div>
+                <div>
+                    <dt>تاریخ ایجاد</dt>
+                    <dd dir="ltr" style="text-align:right">@Model.CreatedAt.ToJalali()</dd>
+                </div>
+                <div>
+                    <dt>آخرین ویرایش</dt>
+                    <dd dir="ltr" style="text-align:right">@Model.UpdatedAt.ToJalali()</dd>
+                </div>
+            </dl>
+
+            <div class="aside-actions">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn primary block">ویرایش</a>
+
+                <form asp-action="SetActive" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="isActive" value="@((!Model.IsActive).ToString().ToLowerInvariant())" />
+                    <input type="hidden" name="returnTo" value="detail" />
+                    <button type="submit" class="btn secondary block">@(Model.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")</button>
+                </form>
+
+                <button type="button" class="btn danger block"
+                        data-delete-id="@Model.Id" data-delete-name="@Model.Name">حذف منبع داده</button>
+
+                <a asp-action="Index" class="btn ghost block">بازگشت به فهرست</a>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<partial name="_DeleteModal" />
+
+@section Scripts {
+    <script src="~/js/confirm-delete.js" asp-append-version="true"></script>
+    <script src="~/js/datasource-preview.js" asp-append-version="true"></script>
+}

@@ -3,6 +3,7 @@ using Borc.DataMapper.Application.Abstractions.Files;
 using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Infrastructure;
 using Borc.DataMapper.Infrastructure.Files;
+using Borc.DataMapper.Infrastructure.Http;
 using Borc.DataMapper.Infrastructure.Persistence;
 using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 
@@ -12,7 +13,8 @@ builder.Services.AddControllersWithViews();
 
 builder.Services
     .AddApplication().AddScoped<IExcelReader, ClosedXmlExcelReader>()
-    .AddInfrastructure(builder.Configuration);
+    .AddInfrastructure(builder.Configuration)
+    .AddApiOptionFetcher(builder.Configuration.GetValue<bool>("DataSources:AllowPrivateNetworks"));
 
 
 
