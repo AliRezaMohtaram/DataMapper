@@ -1,6 +1,7 @@
 using Borc.DataMapper.Application.Dashboard.GetDashboard;
 using Borc.DataMapper.Application.Imports.ListImportBatches;
 using Borc.DataMapper.Web.ViewModels.Dashboard;
+using Borc.DataMapper.Web.Mvc;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,7 +23,7 @@ public sealed class DashboardController : Controller
 
         if (!result.Success || result.Data is null)
         {
-            ModelState.AddModelError(string.Empty, result.Message ?? "خطا در دریافت اطلاعات داشبورد.");
+            ModelState.AddResultErrors(result, "خطا در دریافت اطلاعات داشبورد.", Request);
 
             return View(new DashboardViewModel(new DashboardDto(
                 new DashboardKpis(0, 0, 0, 0, 0, 0, 0, 0, null),

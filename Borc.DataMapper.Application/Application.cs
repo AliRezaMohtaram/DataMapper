@@ -13,10 +13,15 @@ public static class DependencyInjection
         {
             cfg.RegisterServicesFromAssembly(
                 typeof(DependencyInjection).Assembly);
+
+            // validatorهای FluentValidation پیش از هر Handler اجرا می‌شوند
+            cfg.AddOpenBehavior(typeof(Common.Validation.ValidationBehavior<,>));
         });
 
         services.AddValidatorsFromAssembly(
             typeof(DependencyInjection).Assembly);
+
+        Common.Validation.ValidationMessages.Configure();
 
         services.AddMemoryCache();
         services.AddScoped<DataSources.Common.DataSourceOptionService>();

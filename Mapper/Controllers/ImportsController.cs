@@ -41,7 +41,7 @@ public sealed class ImportsController : Controller
 
         if (!result.Success || result.Data is null)
         {
-            ModelState.AddModelError(string.Empty, result.Message ?? "خطا در دریافت فهرست ایمپورت‌ها.");
+            ModelState.AddResultErrors(result, "خطا در دریافت فهرست ایمپورت‌ها.", Request);
 
             return View(new ImportIndexViewModel(
                 query,

@@ -76,7 +76,7 @@ public sealed class TemplatesController : Controller
                 return this.ModalOrRedirect(Url.Action(nameof(Detail), new { id = result.Data })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "ساخت قالب انجام نشد.");
+            ModelState.AddResultErrors(result, "ساخت قالب انجام نشد.", Request);
         }
 
         return this.ModalOrView(FormPartial, model);
@@ -157,7 +157,7 @@ public sealed class TemplatesController : Controller
                     : Url.Action(nameof(Detail), new { id = model.Id })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "ویرایش قالب انجام نشد.");
+            ModelState.AddResultErrors(result, "ویرایش قالب انجام نشد.", Request);
         }
 
         // نمایش مجدد فرم: کد قالب برای نمایش فقط‌خواندنی دوباره خوانده می‌شود

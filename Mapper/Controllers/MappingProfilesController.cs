@@ -44,7 +44,7 @@ public sealed class MappingProfilesController : Controller
 
         if (!result.Success || result.Data is null)
         {
-            ModelState.AddModelError(string.Empty, result.Message ?? "خطا در دریافت پروفایل‌های نگاشت.");
+            ModelState.AddResultErrors(result, "خطا در دریافت پروفایل‌های نگاشت.", Request);
 
             return View(new MappingProfileIndexViewModel(
                 query,
@@ -80,7 +80,7 @@ public sealed class MappingProfilesController : Controller
                 return this.ModalOrRedirect(Url.Action(nameof(Detail), new { id = result.Data })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "ساخت پروفایل انجام نشد.");
+            ModelState.AddResultErrors(result, "ساخت پروفایل انجام نشد.", Request);
         }
 
         await LoadVersionsAsync(cancellationToken);
@@ -137,7 +137,7 @@ public sealed class MappingProfilesController : Controller
                 return this.ModalOrRedirect(Url.Action(nameof(Detail), new { id = command.Id })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "ویرایش پروفایل انجام نشد.");
+            ModelState.AddResultErrors(result, "ویرایش پروفایل انجام نشد.", Request);
         }
 
         var current = await _sender.Send(new GetMappingProfileQuery(command.Id), cancellationToken);
@@ -203,7 +203,7 @@ public sealed class MappingProfilesController : Controller
                 return this.ModalOrRedirect(Url.Action(nameof(Detail), new { id = command.MappingProfileId })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "افزودن قاعده انجام نشد.");
+            ModelState.AddResultErrors(result, "افزودن قاعده انجام نشد.", Request);
         }
 
         if (!await LoadRuleFormAsync(command.MappingProfileId, null, cancellationToken))
@@ -249,7 +249,7 @@ public sealed class MappingProfilesController : Controller
                 return this.ModalOrRedirect(Url.Action(nameof(Detail), new { id = profileId })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "ویرایش قاعده انجام نشد.");
+            ModelState.AddResultErrors(result, "ویرایش قاعده انجام نشد.", Request);
         }
 
         if (!await LoadRuleFormAsync(profileId, command.Id, cancellationToken))

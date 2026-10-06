@@ -44,7 +44,7 @@ public sealed class DataSourcesController : Controller
 
         if (!result.Success || result.Data is null)
         {
-            ModelState.AddModelError(string.Empty, result.Message ?? "خطا در دریافت منابع داده.");
+            ModelState.AddResultErrors(result, "خطا در دریافت منابع داده.", Request);
 
             return View(new DataSourceIndexViewModel(
                 query,
@@ -88,7 +88,7 @@ public sealed class DataSourcesController : Controller
                     : Url.Action(nameof(Detail), new { id = result.Data })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "ساخت منبع داده انجام نشد.");
+            ModelState.AddResultErrors(result, "ساخت منبع داده انجام نشد.", Request);
         }
 
         await FillLookupsAsync(model, cancellationToken);
@@ -170,7 +170,7 @@ public sealed class DataSourcesController : Controller
                     : Url.Action(nameof(Detail), new { id = model.Id })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "ویرایش منبع داده انجام نشد.");
+            ModelState.AddResultErrors(result, "ویرایش منبع داده انجام نشد.", Request);
         }
 
         // کد و نوع در فرم ارسال نمی‌شوند؛ از منبع داده دوباره خوانده می‌شوند.

@@ -64,7 +64,7 @@ public sealed class TemplateFieldsController : Controller
                 return this.ModalOrRedirect(Url.Action("Detail", "TemplateVersions", new { id = command.TemplateVersionId })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "ساخت فیلد انجام نشد.");
+            ModelState.AddResultErrors(result, "ساخت فیلد انجام نشد.", Request);
         }
 
         if (!await LoadDraftVersionAsync(command.TemplateVersionId, cancellationToken))
@@ -130,7 +130,7 @@ public sealed class TemplateFieldsController : Controller
                 return this.ModalOrRedirect(Url.Action("Detail", "TemplateVersions", new { id = result.Data })!);
             }
 
-            ModelState.AddModelError(string.Empty, result.Message ?? "ویرایش فیلد انجام نشد.");
+            ModelState.AddResultErrors(result, "ویرایش فیلد انجام نشد.", Request);
         }
 
         var info = await _sender.Send(new GetTemplateFieldQuery(command.Id), cancellationToken);

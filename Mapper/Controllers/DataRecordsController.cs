@@ -41,7 +41,7 @@ public sealed class DataRecordsController : Controller
 
         if (!result.Success || result.Data is null)
         {
-            ModelState.AddModelError(string.Empty, result.Message ?? "خطا در دریافت رکوردها.");
+            ModelState.AddResultErrors(result, "خطا در دریافت رکوردها.", Request);
 
             return View(new DataRecordIndexViewModel(
                 query, new(Array.Empty<DataRecordListItemDto>(), 1, pageSize, 0), versions));
