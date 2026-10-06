@@ -1,73 +1,67 @@
- :root {
-  /* Surfaces */
-  --bg: #0d1117;
-  --bg-2: #111721;
-  --surface: #151b24;
-  --surface-2: #1b2330;
-  --surface-3: #222c39;
-  --input-bg: rgba(17,23,33,.85);
-  --danger : rgb(152, 2, 2);
-  /* Text */
-  --text: var(--text);
-  --text-strong: var(--text-strong);
-  --muted: #8b98a8;
-  --faint: #5b6675;
-  --text-inverse: #081018;
-
-  /* Accent */
-  --primary: #3bffcb;
-  --primary-soft: rgba(59,255,203,.12);
-  --primary-hover: rgba(59,255,203,.20);
-  --primary-border: rgba(59,255,203,.55);
-  --sel: 36 233 206;
-
-  /* Semantic */
-  --success: var(--success);
-  --success-soft: rgba(105,219,124,.12);
-  --success-border: rgba(105,219,124,.40);
-  --warning: var(--warning);
-  --warning-soft: rgba(255,212,59,.10);
-  --warning-border: rgba(255,212,59,.40);
-  --danger: var(--danger);
-  --danger-soft: rgba(255,107,107,.12);
-  --danger-border: rgba(255,107,107,.40);
-  --info: var(--info);
-  --info-soft: rgba(77,171,247,.12);
-  --info-border: rgba(77,171,247,.40);
-
-  /* Lines / focus */
-  --line: rgba(230,237,243,.08);
-  --line-soft: rgba(230,237,243,.05);
-  --line-strong: rgba(230,237,243,.16);
-  --input-border: rgba(230,237,243,.12);
-  --input-focus: rgba(59,255,203,.70);
-  --input-focus-ring: rgba(59,255,203,.16);
-
-  /* Overlay / shadows */
-  --overlay: rgba(0,0,0,.42);
-  --overlay-heavy: rgba(5,8,12,.60);
-  --shadow-sm: 0 8px 20px -10px rgba(0,0,0,.35);
-  --shadow-md: 0 20px 40px -15px rgba(0,0,0,.60);
-  --shadow-lg: 0 40px 80px -30px rgba(0,0,0,.80);
-
-  /* Shape / density */
-  --radius-xs: 6px;
-  --radius-sm: 7px;
-  --radius: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-pill: 999px;
-  --font-size: 14px;
-  --density: 1;
-
-  --grid-color: rgba(230,237,243,.028);
-  --selection-color: rgba(230,237,243,.10);
-  --selection-color-strong: rgba(230,237,243,.16);
-
-  --sans: "Avenir Next", "Segoe UI", "Helvetica Neue", "Nimbus Sans", Arial, sans-serif;
-  --geo: Futura, "Century Gothic", "URW Gothic", "Avenir Next", "Trebuchet MS", sans-serif;
-  --mono: "iransans", "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, monospace;
-  color-scheme: dark;
+:root {
+    /* Surfaces */
+    --bg: #0d1117;
+    --bg-2: #111721;
+    --surface: #151b24;
+    --surface-2: #1b2330;
+    --surface-3: #222c39;
+    --input-bg: rgba(17,23,33,.85);
+    --danger: rgb(152, 2, 2);
+    /* Text */
+    --text: var(--text);
+    --text-strong: var(--text-strong);
+    --muted: #8b98a8;
+    --faint: #5b6675;
+    --text-inverse: #081018;
+    /* Accent */
+    --primary: #3bffcb;
+    --primary-soft: rgba(59,255,203,.12);
+    --primary-hover: rgba(59,255,203,.20);
+    --primary-border: rgba(59,255,203,.55);
+    --sel: 36 233 206;
+    /* Semantic */
+    --success: var(--success);
+    --success-soft: rgba(105,219,124,.12);
+    --success-border: rgba(105,219,124,.40);
+    --warning: var(--warning);
+    --warning-soft: rgba(255,212,59,.10);
+    --warning-border: rgba(255,212,59,.40);
+    --danger: var(--danger);
+    --danger-soft: rgba(255,107,107,.12);
+    --danger-border: rgba(255,107,107,.40);
+    --info: var(--info);
+    --info-soft: rgba(77,171,247,.12);
+    --info-border: rgba(77,171,247,.40);
+    /* Lines / focus */
+    --line: rgba(230,237,243,.08);
+    --line-soft: rgba(230,237,243,.05);
+    --line-strong: rgba(230,237,243,.16);
+    --input-border: rgba(230,237,243,.12);
+    --input-focus: rgba(59,255,203,.70);
+    --input-focus-ring: rgba(59,255,203,.16);
+    /* Overlay / shadows */
+    --overlay: rgba(0,0,0,.42);
+    --overlay-heavy: rgba(5,8,12,.60);
+    --shadow-sm: 0 8px 20px -10px rgba(0,0,0,.35);
+    --shadow-md: 0 20px 40px -15px rgba(0,0,0,.60);
+    --shadow-lg: 0 40px 80px -30px rgba(0,0,0,.80);
+    /* Shape / density */
+    --radius-xs: 6px;
+    --radius-sm: 7px;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-pill: 999px;
+    --font-size: 14px;
+    --density: 1;
+    --grid-color: rgba(230,237,243,.028);
+    --selection-color: rgba(230,237,243,.10);
+    --selection-color-strong: rgba(230,237,243,.16);
+    --sans: "Avenir Next", "Segoe UI", "Helvetica Neue", "Nimbus Sans", Arial, sans-serif;
+    --geo: Futura, "Century Gothic", "URW Gothic", "Avenir Next", "Trebuchet MS", sans-serif;
+    --mono: "vazir", "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    color-scheme: dark;
+    --base-font : 'vazir'
 }
 
 [data-theme="light"] {
@@ -106,6 +100,14 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  font-family:var(--base-font);
+}
+a {
+    font-family: var(--base-font);
+    text-decoration: none;
+}
+h1, h2, h3, h4 {
+    font-family: var(--base-font) !important;
 }
 body {
   margin: 0;
@@ -453,7 +455,7 @@ input::-webkit-calendar-picker-indicator {
 
 /* Buttons */
 .btn {
-    font-family : 'A Iranian Sans'
+    font-family : var(--base-font);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1004,6 +1006,8 @@ th {
   font-weight: bold;
 }
 
+
+
 /* Pagination */
 .pagination {
   display: flex;
@@ -1159,17 +1163,18 @@ th {
   justify-content: flex-end;
   gap: 10px;
 }
-
-/* Footer */
 .foot {
-  display: flex;
-  justify-content: space-between;
-  margin: 18px 0 34px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-  font-size: 12px;
-  color: var(--faint);
-  font-family: var(--mono);
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin: 18px 0 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--faint);
+    font-family: var(--mono);
 }
 
 @media (max-width: 720px) {
@@ -2843,6 +2848,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); transit
     display: block;
     width: 100%;
     text-align: center;
+    align-content: space-evenly
 }
 
 /* لیست اطلاعات قالب */
@@ -2884,4 +2890,101 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); transit
         width: auto;
         flex: 1 1 auto;
     }
+}
+
+/* ===== چیدمان دو ستونه: محتوای اصلی + aside =====
+   این بلوک را به انتهای theme.css اضافه کنید.
+   در RTL ستون اول (محتوای اصلی) سمت راست و ستون دوم (aside) سمت چپ می‌افتد؛
+   ترتیب در HTML باید «main» و بعد «aside» باشد. */
+
+.page-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 20px;
+    align-items: start;
+}
+
+.page-main {
+    min-width: 0; /* اجازه می‌دهد جدول‌ها داخل tscroll اسکرول شوند */
+}
+
+.page-aside {
+    position: sticky;
+    top: 16px;
+}
+
+    .page-aside .card {
+        margin-bottom: 0;
+        padding: 20px;
+    }
+
+.aside-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    word-break: break-word;
+}
+
+    .aside-title + .mode-badge {
+        margin-inline-start: 0;
+    }
+
+.info-list {
+    display: grid;
+    gap: 14px;
+    margin: 18px 0 0;
+}
+
+    .info-list dt {
+        font: 500 11px var(--mono);
+        color: var(--muted);
+        margin-bottom: 4px;
+    }
+
+    .info-list dd {
+        margin: 0;
+        font-size: 13px;
+        word-break: break-word;
+    }
+
+.aside-actions {
+    display: grid;
+    gap: 8px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+}
+
+    .aside-actions form {
+        margin: 0;
+    }
+
+.btn.block {
+    width: 100%;
+}
+
+/* صفحه‌های کوچک: aside بالای محتوا و تک‌ستونه */
+@media (max-width: 1100px) {
+    .page-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-aside {
+        position: static;
+        order: -1;
+    }
+}
+
+.aside-actions {
+  
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+}
+
+
+@font-face {
+    font-family: 'vazir';
+    src: url('../font/vazir.woff2') format('woff2');
 }

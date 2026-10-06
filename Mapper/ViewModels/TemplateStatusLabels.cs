@@ -41,4 +41,6 @@ public static class TemplateStatusLabels
         FieldDataType.Any => "هر نوع",
         _ => type.ToString()
     };
+
+ 
 }

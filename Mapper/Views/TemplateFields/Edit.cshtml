@@ -11,7 +11,7 @@
         .Where(m => !string.IsNullOrWhiteSpace(m))
         .ToList();
 }
-
+<aside class="detail-aside">
 <div class="panel card">
     <div class="panel-header">
         <h2>ویرایش فیلد — @info.TemplateName (نسخه @info.VersionNo)</h2>
@@ -53,6 +53,14 @@
         </div>
     </form>
 </div>
+
+</aside>
+
+
+<div class="detail-layout">
+
+@* ============ ناحیه اصلی (سمت راست در RTL) ============ *@
+    <main class="detail-main">
 
 <div class="panel card">
     <div class="panel-header">
@@ -111,6 +119,8 @@
             <button type="submit" class="btn primary">+ افزودن alias</button>
         </div>
     </form>
+</div>
+</main>
 </div>
 
 <partial name="_DeleteModal" />

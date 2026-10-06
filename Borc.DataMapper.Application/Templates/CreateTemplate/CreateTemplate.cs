@@ -50,6 +50,7 @@ public sealed class CreateTemplateHandler
         var code = request.Code.Trim();
 
         // collation دیتابیس CI است؛ فیلتر سراسری حذف‌شده‌ها را کنار می‌گذارد.
+     
         var exists = await _db.Templates
             .AnyAsync(x => x.Code == code, cancellationToken);
 

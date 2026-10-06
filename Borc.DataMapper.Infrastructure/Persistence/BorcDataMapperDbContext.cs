@@ -16,7 +16,7 @@ public sealed class BorcDataMapperDbContext : DbContext, IAppDbContext
     {
     }
 
-    public DbSet<Template> Templates => Set<Domain.Templates.Template>();
+    public DbSet<Template> Templates => Set<Template>();
     public DbSet<TemplateVersion> TemplateVersions => Set<TemplateVersion>();
     public DbSet<TemplateField> TemplateFields => Set<TemplateField>();
     public DbSet<TemplateFieldAlias> TemplateFieldAliases => Set<TemplateFieldAlias>();

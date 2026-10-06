@@ -1,0 +1,45 @@
+@model Borc.DataMapper.Web.ViewModels.DataRecords.RecordFormPageViewModel
+@{
+    var isEdit = Model.RecordId.HasValue;
+    ViewData["Title"] = isEdit ? $"ویرایش رکورد {Model.RecordId}" : $"ورود دستی داده - {Model.TemplateName}";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="panel card">
+    <div class="panel-header">
+        <h2>
+            @(isEdit ? $"ویرایش رکورد {Model.RecordId}" : "رکورد جدید") — @Model.TemplateName (نسخه @Model.VersionNo)
+        </h2>
+
+        <div class="row-actions">
+            @if (isEdit)
+            {
+                <a asp-action="Detail" asp-route-id="@Model.RecordId" class="btn ghost">انصراف</a>
+            }
+            else
+            {
+                <a asp-action="Index" class="btn ghost">بازگشت به فهرست</a>
+            }
+        </div>
+    </div>
+
+    <div id="rfHost" class="rf-host"></div>
+
+    <div class="actions">
+        <button type="button" id="rfSave" class="btn primary">ذخیره رکورد</button>
+        @if (!isEdit)
+        {
+            <button type="button" id="rfSaveNew" class="btn secondary">ذخیره و رکورد جدید</button>
+        }
+    </div>
+</div>
+
+<script id="rfData" type="application/json">@Html.Raw(Model.DataJson)</script>
+
+@section Scripts {
+    <script src="~/js/ui.js" asp-append-version="true"></script>
+    <script src="~/js/jalali-picker.js" asp-append-version="true"></script>
+    <script src="~/js/layout-designer.js" asp-append-version="true"></script>
+    <script src="~/js/record-form.js" asp-append-version="true"></script>
+}
