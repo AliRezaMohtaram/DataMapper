@@ -1,14 +1,16 @@
-﻿<div id="deleteOverlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="deleteTitle">
-    <div class="modal-box">
-        <h3 id="deleteTitle">تأیید حذف</h3>
-        <p id="deleteMessage"></p>
-
-        <form method="post" asp-action="Delete">
+@* مودال تأیید حذف — با هر عنصری که data-delete-id (و اختیاری data-delete-name) داشته باشد باز می‌شود (js/confirm-delete.js). *@
+<div id="deleteOverlay" class="modal-overlay" role="alertdialog" aria-modal="true" aria-labelledby="deleteTitle" aria-describedby="deleteMessage">
+    <form class="modal modal-sm" method="post" asp-action="Delete">
+        <div class="modal-body" style="text-align:center;padding-top:1.6rem">
+            <div class="confirm-ico"><svg class="ico"><use href="#i-trash" /></svg></div>
+            <div class="modal-title" id="deleteTitle" style="justify-content:center">تأیید حذف</div>
+            <p class="muted" id="deleteMessage" style="font-size:.86rem;margin-top:.4rem;white-space:pre-line"></p>
             <input type="hidden" name="id" id="deleteId" />
-            <div class="modal-actions">
-                <button type="button" class="btn ghost" id="deleteCancelBtn">انصراف</button>
-                <button type="submit" class="btn danger">حذف</button>
-            </div>
-        </form>
-    </div>
+        </div>
+        <div class="modal-foot">
+            @* پیش‌فرض ایمن: فوکوس روی انصراف، Enter حذف نمی‌کند *@
+            <button type="button" class="btn btn-ghost" id="deleteCancelBtn" data-close autofocus style="flex:1">انصراف</button>
+            <button type="submit" class="btn btn-danger" style="flex:1"><svg class="ico"><use href="#i-trash" /></svg>حذف شود</button>
+        </div>
+    </form>
 </div>

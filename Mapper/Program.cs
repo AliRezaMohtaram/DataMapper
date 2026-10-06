@@ -5,7 +5,6 @@ using Borc.DataMapper.Infrastructure;
 using Borc.DataMapper.Infrastructure.Files;
 using Borc.DataMapper.Infrastructure.Http;
 using Borc.DataMapper.Infrastructure.Persistence;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +40,6 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Tempaltes}/{action=Index}/{id?}");
+    pattern: "{controller=Dashboard}/{action=Index}/{id?}");
 
 app.Run();

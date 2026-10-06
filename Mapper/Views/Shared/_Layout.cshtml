@@ -1,25 +1,27 @@
+@using Borc.DataMapper.Web.ViewModels
 @{
-    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var title = ViewData["Title"] as string ?? "Data Mapper";
+    var subtitle = ViewData["Subtitle"] as string ?? DateTime.Now.ToJalaliLong();
 
-    // هر تب = یک Controller. با ساخته شدن بخش‌های بعدی، همین‌جا اضافه کنید.
-    var tabs = new (string Controller, string Label)[]
+    // هر آیتم منو = یک Controller اصلی؛ Controllerهای زیرمجموعه همان آیتم را فعال نگه می‌دارند.
+    var nav = new[]
     {
-        ("Templates", "۱. طراحی قالب پایه"),
-        ("DataSources", "منابع داده"),
-        ("MappingProfiles", "پروفایل‌های نگاشت"),
-        ("Imports", "ایمپورت داده"),
-        ("DataRecords", "داده‌های ثبت‌شده"),
-        // ("Mapping",   "۲. معادل‌سازی و خروجی"),
-        // ("Entry",     "۳. فرم ورود دستی داده"),
-        // ("Layouts",   "۴. طراح Layout فرم"),
+        new NavItem("میز کار", "Dashboard", "داشبورد", "i-home", new[] { "Dashboard" }),
+        new NavItem("طراحی", "Templates", "قالب‌ها", "i-template", new[] { "Templates", "TemplateVersions", "TemplateFields", "TemplateLayouts" }),
+        new NavItem("طراحی", "DataSources", "منابع داده", "i-db", new[] { "DataSources" }),
+        new NavItem("طراحی", "MappingProfiles", "پروفایل‌های نگاشت", "i-map", new[] { "MappingProfiles" }),
+        new NavItem("داده", "Imports", "ایمپورت داده", "i-upload", new[] { "Imports" }),
+        new NavItem("داده", "DataRecords", "داده‌های ثبت‌شده", "i-rows", new[] { "DataRecords" }),
     };
+    bool IsActive(NavItem item) => item.Controllers.Contains(controller, StringComparer.OrdinalIgnoreCase);
 }
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewData["Title"] - Data Mapper</title>
+    <title>@title - Data Mapper</title>
 
     <!-- اعمال تم ذخیره‌شده پیش از اولین رندر (جلوگیری از پرش رنگ) -->
     <script>
@@ -36,364 +38,222 @@
         })();
     </script>
 
+    @* theme.css: کامپوننت‌های Viewهای قدیمی · mx.css: سیستم طراحی جدید · mx-legacy.css: پل بین این دو *@
     <link rel="stylesheet" href="~/css/theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mx.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/mx-legacy.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <div class="wrap">
+    <partial name="_Icons" />
 
-        <!-- هدر -->
-        <header class="top">
-            <div class="brand">
-                <div class="logo"><b>M</b><i>v2.2</i></div>
-                <div>
-                    <h1>Data Mapper</h1>
-                    <p>سامانه هوشمند معادل‌سازی و اعتبارسنجی داده‌های سازمانی</p>
+    <div class="app">
+
+        <!-- ═════ SIDEBAR ═════ -->
+        <aside class="sidebar" aria-label="ناوبری اصلی">
+            <a class="sb-brand" asp-controller="Dashboard" asp-action="Index">
+                <span class="sb-logo">M<small>v2.2</small></span>
+                <span class="brand-text">
+                    <span class="brand-name">Data Mapper</span>
+                    <span class="brand-sub">معادل‌سازی و اعتبارسنجی داده</span>
+                </span>
+            </a>
+
+            <nav class="nav">
+                @foreach (var group in nav.GroupBy(n => n.Section))
+                {
+                    <div class="nav-section">@group.Key</div>
+                    @foreach (var item in group)
+                    {
+                        <a class="nav-item@(IsActive(item) ? " active" : "")" title="@item.Label"
+                           aria-current="@(IsActive(item) ? "page" : null)"
+                           asp-controller="@item.Controller" asp-action="Index">
+                            <svg class="ico"><use href="#@item.Icon" /></svg><span class="nav-label">@item.Label</span>
+                        </a>
+                    }
+                }
+
+                <div class="nav-section">سیستم</div>
+                <button class="nav-item" type="button" data-action="theme-open" title="تنظیمات ظاهر">
+                    <svg class="ico"><use href="#i-palette" /></svg><span class="nav-label">تنظیمات ظاهر</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-foot dd">
+                <button class="user-chip" type="button" data-dd aria-expanded="false">
+                    <span class="avatar">DM</span>
+                    <span class="user-info">
+                        <span class="user-name">کاربر سامانه</span>
+                        <span class="user-role">مدیر داده</span>
+                    </span>
+                    <svg class="ico faint"><use href="#i-chev-down" /></svg>
+                </button>
+                <div class="dd-menu up start">
+                    <button class="dd-item" type="button" data-action="theme-open"><svg class="ico"><use href="#i-palette" /></svg>تنظیمات ظاهر</button>
+                    <button class="dd-item" type="button" data-action="sidebar"><svg class="ico"><use href="#i-sidebar" /></svg>جمع / باز کردن منو</button>
                 </div>
             </div>
-
-
-
-            <div class="header-left">
-
-                <button class="header-icon-btn"
-                        id="openThemeSettings"
-                        title="تنظیمات ظاهر"
-                        aria-label="تنظیمات ظاهر">
-
-                    <svg width="19"
-                         height="19"
-                         viewBox="0 0 24 24"
-                         fill="none"
-                         stroke="currentColor"
-                         stroke-width="1.8">
-
-                        <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
-
-                        <path d="
-                    M19.4 15a1.7 1.7 0 0 0
-                    .34 1.88l.06.06-1.7 1.7-.06-.06
-                    a1.7 1.7 0 0 0-1.88-.34
-                    1.7 1.7 0 0 0-1.03 1.56V20h-2.4v-.2
-                    a1.7 1.7 0 0 0-1.03-1.56
-                    1.7 1.7 0 0 0-1.88.34l-.06.06
-                    -1.7-1.7.06-.06A1.7 1.7 0 0 0
-                    8.46 15 1.7 1.7 0 0 0 6.9 14H6.7v-2.4h.2
-                    A1.7 1.7 0 0 0 8.46 10
-                    1.7 1.7 0 0 0 8.12 8.12l-.06-.06
-                    1.7-1.7.06.06A1.7 1.7 0 0 0
-                    11.7 6.08V5.9h2.4v.2
-                    a1.7 1.7 0 0 0 1.03 1.56
-                    1.7 1.7 0 0 0 1.88-.34l.06-.06
-                    1.7 1.7-.06.06A1.7 1.7 0 0 0
-                    18.4 10c.17.62.72 1.1 1.36 1.1h.2v2.4h-.2
-                    A1.7 1.7 0 0 0 19.4 15Z" />
-
-                    </svg>
-
-                </button>
-
-            </div>
-
-            <form class="search" method="get" asp-controller="Templates" asp-action="Index" role="search">
-                <label for="globalSearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg></label>
-                <input type="text" id="globalSearch" name="search" placeholder="جستجوی سریع در قالب‌ها..." autocomplete="off">
-                <kbd>Ctrl + K</kbd>
-            </form>
-        </header>
-
-        <!-- تنظیمات ظاهر -->
-        <div class="theme-overlay" id="themeOverlay"></div>
-
-        <aside class="theme-drawer"
-               id="themeDrawer"
-               aria-hidden="true">
-
-            <div class="theme-drawer-header">
-
-                <div>
-                    <h3>تنظیمات ظاهر</h3>
-                    <p>محیط کاربری را مطابق سلیقه خود تنظیم کنید.</p>
-                </div>
-
-                <button class="theme-close"
-                        id="closeThemeSettings"
-                        aria-label="بستن">
-
-                    ×
-
-                </button>
-
-            </div>
-
-
-            <div class="theme-drawer-body">
-
-                <!-- MODE -->
-
-                <section class="theme-section">
-
-                    <div class="theme-section-title">
-                        حالت نمایش
-                    </div>
-
-                    <div class="theme-mode">
-
-                        <button data-mode="light">
-                            <span class="theme-option-icon">☀</span>
-                            <span>روشن</span>
-                        </button>
-
-                        <button data-mode="dark">
-                            <span class="theme-option-icon">☾</span>
-                            <span>تیره</span>
-                        </button>
-
-                        <button data-mode="system">
-                            <span class="theme-option-icon">◐</span>
-                            <span>سیستم</span>
-                        </button>
-
-                    </div>
-
-                </section>
-
-
-                <!-- PRESETS -->
-
-                <section class="theme-section">
-
-                    <div class="theme-section-title">
-                        قالب آماده
-                    </div>
-
-                    <div class="theme-presets">
-
-                        <button class="preset"
-                                data-preset-select="ocean-dark">
-
-                            <span class="preset-preview ocean">
-                            </span>
-
-                            <span>
-                                Ocean Dark
-                            </span>
-
-                        </button>
-
-
-                        <button class="preset"
-                                data-preset-select="midnight">
-
-                            <span class="preset-preview midnight">
-                            </span>
-
-                            <span>
-                                Midnight
-                            </span>
-
-                        </button>
-
-
-                        <button class="preset"
-                                data-preset-select="graphite">
-
-                            <span class="preset-preview graphite">
-                            </span>
-
-                            <span>
-                                Graphite
-                            </span>
-
-                        </button>
-
-
-                        <button class="preset"
-                                data-preset-select="arctic-light">
-
-                            <span class="preset-preview arctic">
-                            </span>
-
-                            <span>
-                                Arctic Light
-                            </span>
-
-                        </button>
-
-
-                        <button class="preset"
-                                data-preset-select="emerald">
-
-                            <span class="preset-preview emerald">
-                            </span>
-
-                            <span>
-                                Emerald
-                            </span>
-
-                        </button>
-
-
-                        <button class="preset"
-                                data-preset-select="royal-blue">
-
-                            <span class="preset-preview royal">
-                            </span>
-
-                            <span>
-                                Royal Blue
-                            </span>
-
-                        </button>
-
-                    </div>
-
-                </section>
-
-
-                <!-- ACCENT -->
-
-                <section class="theme-section">
-
-                    <div class="theme-section-title">
-                        رنگ اصلی
-                    </div>
-
-                    <div class="accent-list">
-
-                        <button data-accent-select="cyan"
-                                style="--accent:#3bffcb">
-                        </button>
-
-                        <button data-accent-select="blue"
-                                style="--accent:#4dabf7">
-                        </button>
-
-                        <button data-accent-select="purple"
-                                style="--accent:#b197fc">
-                        </button>
-
-                        <button data-accent-select="orange"
-                                style="--accent:#ff922b">
-                        </button>
-
-                        <button data-accent-select="pink"
-                                style="--accent:#f783ac">
-                        </button>
-
-                    </div>
-
-                </section>
-
-
-                <!-- SIZE -->
-
-                <section class="theme-section">
-
-                    <div class="theme-section-title">
-                        اندازه رابط کاربری
-                    </div>
-
-                    <div class="theme-select">
-
-                        <button data-size-select="small">
-                            کوچک
-                        </button>
-
-                        <button data-size-select="medium">
-                            متوسط
-                        </button>
-
-                        <button data-size-select="large">
-                            بزرگ
-                        </button>
-
-                    </div>
-
-                </section>
-
-
-                <!-- RADIUS -->
-
-                <section class="theme-section">
-
-                    <div class="theme-section-title">
-                        گردی المان‌ها
-                    </div>
-
-                    <div class="theme-select">
-
-                        <button data-radius-select="sharp">
-                            کم
-                        </button>
-
-                        <button data-radius-select="medium">
-                            متوسط
-                        </button>
-
-                        <button data-radius-select="round">
-                            زیاد
-                        </button>
-
-                    </div>
-
-                </section>
-
-            </div>
-
-
-            <div class="theme-drawer-footer">
-
-                <button id="resetTheme" class="reset-theme">
-
-                    ↻
-                    بازگردانی تنظیمات
-
-                </button>
-
-            </div>
-
         </aside>
+        <div class="scrim"></div>
 
-        <!-- تب‌های ناوبری -->
-        <nav class="tabs">
-            @foreach (var tab in tabs)
-            {
-                var active = string.Equals(controller, tab.Controller, StringComparison.OrdinalIgnoreCase);
-                <a class="chip@(active ? " active" : "")" style="text-decoration:none"
-                   asp-controller="@tab.Controller" asp-action="Index"><i></i> @tab.Label</a>
-            }
-        </nav>
+        <!-- ═════ MAIN ═════ -->
+        <div class="main">
+            <header class="topbar">
+                <button class="icon-btn plain menu-btn" type="button" data-sidebar-toggle aria-label="منو"><svg class="ico"><use href="#i-menu" /></svg></button>
+                <button class="icon-btn plain hide-mobile" type="button" data-sidebar-toggle aria-label="جمع کردن منو" title="جمع / باز کردن منو"><svg class="ico"><use href="#i-sidebar" /></svg></button>
+                <div class="topbar-title">
+                    <h1>@title</h1>
+                    <p>@subtitle</p>
+                </div>
 
-        <main>
-            @if (TempData["Success"] is string okMessage)
-            {
-                <div class="status success show">@okMessage</div>
-            }
-            @if (TempData["Error"] is string errMessage)
-            {
-                <div class="status error show">@errMessage</div>
-            }
+                <div class="topbar-actions">
+                    <button class="cmd-trigger" type="button" data-open="cmdk" aria-label="جستجو و فرمان‌ها">
+                        <svg class="ico"><use href="#i-search" /></svg>
+                        <span class="cmd-text">جستجو یا فرمان…</span>
+                        <span class="kbd">Ctrl K</span>
+                    </button>
+                    <button class="icon-btn" type="button" data-action="theme-toggle" title="تغییر حالت روشن/تیره" aria-label="تغییر حالت روشن/تیره">
+                        <svg class="ico"><use href="#i-moon" /></svg>
+                    </button>
+                    <button class="icon-btn" type="button" id="openThemeSettings" title="تنظیمات ظاهر" aria-label="تنظیمات ظاهر">
+                        <svg class="ico"><use href="#i-palette" /></svg>
+                    </button>
+                    @await RenderSectionAsync("TopbarActions", required: false)
+                    <a class="btn btn-primary" asp-controller="Imports" asp-action="Upload">
+                        <svg class="ico"><use href="#i-upload" /></svg><span class="lbl">ایمپورت جدید</span>
+                    </a>
+                </div>
+            </header>
 
-            @RenderBody()
-        </main>
+            <main class="page">
+                @if (TempData["Error"] is string errMessage)
+                {
+                    <div class="callout tone-danger" role="alert" style="margin-bottom:1rem">
+                        <svg class="ico"><use href="#i-alert" /></svg><div>@errMessage</div>
+                    </div>
+                }
 
-        <footer class="foot">
-            <p>سامانه معادل‌سازی داینامیک داده‌ها - طراحی شده برای یکپارچه‌سازی اطلاعات واحدهای سازمانی</p>
-        </footer>
+                @RenderBody()
+            </main>
+        </div>
     </div>
 
+
+    <!-- ═════ COMMAND PALETTE ═════ -->
+    <div class="modal-overlay cmdk-overlay" id="cmdk" role="dialog" aria-modal="true" aria-label="جستجو و فرمان‌ها">
+        <div class="cmdk">
+            <div class="cmdk-search">
+                <svg class="ico"><use href="#i-search" /></svg>
+                <input type="text" placeholder="جستجوی صفحه، فرمان یا عبارت…" autofocus autocomplete="off" aria-label="جستجو">
+                <span class="kbd">Esc</span>
+            </div>
+            <div class="cmdk-list">
+                <div class="cmdk-group">جستجو</div>
+                <a class="cmdk-item" data-search-href="@Url.Action("Index", "Templates")?search="><span class="src-ico tone-violet"><svg class="ico"><use href="#i-template" /></svg></span><span>جستجوی «<b data-q></b>» در قالب‌ها</span></a>
+                <a class="cmdk-item" data-search-href="@Url.Action("Index", "DataRecords")?search="><span class="src-ico tone-success"><svg class="ico"><use href="#i-rows" /></svg></span><span>جستجوی «<b data-q></b>» در داده‌های ثبت‌شده</span></a>
+                <a class="cmdk-item" data-search-href="@Url.Action("Index", "Imports")?search="><span class="src-ico tone-primary"><svg class="ico"><use href="#i-upload" /></svg></span><span>جستجوی «<b data-q></b>» در ایمپورت‌ها</span></a>
+                <a class="cmdk-item" data-search-href="@Url.Action("Index", "DataSources")?search="><span class="src-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span><span>جستجوی «<b data-q></b>» در منابع داده</span></a>
+
+                <div class="cmdk-group">اقدامات سریع</div>
+                <a class="cmdk-item" asp-controller="Imports" asp-action="Upload" data-k="import upload excel csv آپلود فایل"><span class="src-ico tone-primary"><svg class="ico"><use href="#i-upload" /></svg></span>ایمپورت فایل جدید</a>
+                <a class="cmdk-item" asp-controller="DataRecords" asp-action="Create" data-k="record manual entry رکورد"><span class="src-ico tone-success"><svg class="ico"><use href="#i-pen" /></svg></span>ثبت دستی رکورد</a>
+                <a class="cmdk-item" asp-controller="Templates" asp-action="Create" data-k="template new"><span class="src-ico tone-violet"><svg class="ico"><use href="#i-template" /></svg></span>قالب جدید</a>
+                <a class="cmdk-item" asp-controller="DataSources" asp-action="Create" data-k="datasource api list"><span class="src-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span>منبع داده جدید</a>
+                <a class="cmdk-item" asp-controller="MappingProfiles" asp-action="Create" data-k="mapping profile"><span class="src-ico tone-warning"><svg class="ico"><use href="#i-map" /></svg></span>پروفایل نگاشت جدید</a>
+
+                <div class="cmdk-group">صفحات</div>
+                @foreach (var item in nav)
+                {
+                    <a class="cmdk-item" asp-controller="@item.Controller" asp-action="Index" data-k="@item.Controller"><span class="src-ico"><svg class="ico"><use href="#@item.Icon" /></svg></span>@item.Label<span class="hint faint">@item.Section</span></a>
+                }
+
+                <div class="cmdk-group">ظاهر</div>
+                <button class="cmdk-item" type="button" data-action="mode:light" data-k="light theme روشن"><span class="src-ico tone-warning"><svg class="ico"><use href="#i-sun" /></svg></span>حالت روشن</button>
+                <button class="cmdk-item" type="button" data-action="mode:dark" data-k="dark theme تیره"><span class="src-ico tone-violet"><svg class="ico"><use href="#i-moon" /></svg></span>حالت تیره</button>
+                <button class="cmdk-item" type="button" data-action="theme-open" data-k="theme appearance color رنگ"><span class="src-ico"><svg class="ico"><use href="#i-palette" /></svg></span>تنظیمات ظاهر…</button>
+                <button class="cmdk-item" type="button" data-action="sidebar" data-k="sidebar menu منو"><span class="src-ico"><svg class="ico"><use href="#i-sidebar" /></svg></span>جمع / باز کردن منو</button>
+                <div class="cmdk-empty" hidden>نتیجه‌ای پیدا نشد.</div>
+            </div>
+            <div class="cmdk-foot">
+                <span><span class="kbd">↑</span><span class="kbd">↓</span> جابه‌جایی</span>
+                <span><span class="kbd">Enter</span> اجرا</span>
+                <span><span class="kbd">Ctrl K</span> یا <span class="kbd">/</span> باز کردن</span>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═════ THEME DRAWER (theme.js) ═════ -->
+    <div class="mx-drawer-overlay" id="themeOverlay"></div>
+    <aside class="mx-drawer" id="themeDrawer" aria-hidden="true" aria-label="تنظیمات ظاهر">
+        <div class="drawer-head">
+            <span class="modal-head-ico"><svg class="ico"><use href="#i-palette" /></svg></span>
+            <div><h3>تنظیمات ظاهر</h3><p>تغییرات بلافاصله اعمال و ذخیره می‌شوند.</p></div>
+            <button class="icon-btn plain" id="closeThemeSettings" type="button" aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></button>
+        </div>
+        <div class="drawer-body">
+            <section>
+                <div class="drawer-label">حالت نمایش</div>
+                <div class="seg block">
+                    <button type="button" data-mode="light"><svg class="ico"><use href="#i-sun" /></svg>روشن</button>
+                    <button type="button" data-mode="dark"><svg class="ico"><use href="#i-moon" /></svg>تیره</button>
+                    <button type="button" data-mode="system"><svg class="ico"><use href="#i-sliders" /></svg>سیستم</button>
+                </div>
+            </section>
+
+            <section>
+                <div class="drawer-label">پالت <span class="faint" style="font-weight:500">هر پالت نسخه روشن و تیره دارد</span></div>
+                <div class="pal-grid">
+                    <button class="pal" type="button" data-preset-select="ocean-dark" style="--sw-db:#0d1117;--sw-ds:#1b2633;--sw-lb:#f3f6f9;--sw-ls:#ffffff"><span class="pal-swatch"><i></i><i><b></b></i></span>Ocean</button>
+                    <button class="pal" type="button" data-preset-select="midnight" style="--sw-db:#09090b;--sw-ds:#1e1e23;--sw-lb:#f6f6f7;--sw-ls:#ffffff"><span class="pal-swatch"><i></i><i><b></b></i></span>Midnight</button>
+                    <button class="pal" type="button" data-preset-select="graphite" style="--sw-db:#161514;--sw-ds:#2c2a27;--sw-lb:#f7f5f2;--sw-ls:#fffefc"><span class="pal-swatch"><i></i><i><b></b></i></span>Graphite</button>
+                    <button class="pal" type="button" data-preset-select="arctic-light" style="--sw-db:#0b1218;--sw-ds:#192a36;--sw-lb:#eef4f8;--sw-ls:#ffffff"><span class="pal-swatch"><i></i><i><b></b></i></span>Arctic</button>
+                    <button class="pal" type="button" data-preset-select="emerald" style="--sw-db:#071411;--sw-ds:#153229;--sw-lb:#f0f7f4;--sw-ls:#ffffff"><span class="pal-swatch"><i></i><i><b></b></i></span>Emerald</button>
+                    <button class="pal" type="button" data-preset-select="royal-blue" style="--sw-db:#08111f;--sw-ds:#152943;--sw-lb:#eef3fb;--sw-ls:#ffffff"><span class="pal-swatch"><i></i><i><b></b></i></span>Royal</button>
+                </div>
+            </section>
+
+            <section>
+                <div class="drawer-label">رنگ اصلی</div>
+                <div class="acc-list">
+                    <button class="accent-dot" type="button" data-accent-select="cyan" style="--c-d:#3bffcb;--c-l:#00876c" aria-label="فیروزه‌ای"></button>
+                    <button class="accent-dot" type="button" data-accent-select="blue" style="--c-d:#4dabf7;--c-l:#1c64c8" aria-label="آبی"></button>
+                    <button class="accent-dot" type="button" data-accent-select="purple" style="--c-d:#b197fc;--c-l:#6748d6" aria-label="بنفش"></button>
+                    <button class="accent-dot" type="button" data-accent-select="orange" style="--c-d:#ff922b;--c-l:#b85400" aria-label="نارنجی"></button>
+                    <button class="accent-dot" type="button" data-accent-select="pink" style="--c-d:#f783ac;--c-l:#be2864" aria-label="صورتی"></button>
+                    <button class="accent-dot" type="button" data-accent-select="green" style="--c-d:#69db7c;--c-l:#22823a" aria-label="سبز"></button>
+                </div>
+            </section>
+
+            <section>
+                <div class="drawer-label">اندازه رابط کاربری</div>
+                <div class="seg block">
+                    <button type="button" data-size-select="small">کوچک</button>
+                    <button type="button" data-size-select="medium">متوسط</button>
+                    <button type="button" data-size-select="large">بزرگ</button>
+                </div>
+            </section>
+
+            <section>
+                <div class="drawer-label">گردی گوشه‌ها</div>
+                <div class="seg block">
+                    <button type="button" data-radius-select="sharp">کم</button>
+                    <button type="button" data-radius-select="medium">متوسط</button>
+                    <button type="button" data-radius-select="round">زیاد</button>
+                </div>
+            </section>
+        </div>
+        <div class="drawer-foot">
+            <button class="btn btn-ghost" type="button" id="resetTheme" style="width:100%"><svg class="ico"><use href="#i-refresh" /></svg>بازگردانی تنظیمات پیش‌فرض</button>
+        </div>
+    </aside>
+
     <script src="~/js/theme.js" asp-append-version="true"></script>
-    <script>
-        // میان‌بر Ctrl + K برای جستجوی سریع
-        document.addEventListener("keydown", function (e) {
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-                e.preventDefault();
-                var input = document.getElementById("globalSearch");
-                if (input) { input.focus(); input.select(); }
-            }
-        });
-    </script>
+    <script src="~/js/mx.js" asp-append-version="true"></script>
+    @if (TempData["Success"] is string okMessage)
+    {
+        <script>MX.toast(@Json.Serialize(okMessage), "success");</script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

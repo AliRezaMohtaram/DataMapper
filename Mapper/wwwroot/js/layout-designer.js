@@ -427,7 +427,7 @@ function validateFieldValue(field, value) {
     function renderAll() { renderTopbar(); renderPalette(); renderStage(); renderProps(); }
 
     function renderTopbar() {
-        const has = !!dTpl, a = $("ldActions"), badge = $("ldStatus");
+        const has = !!dTpl, a = $byId("ldActions"), badge = $byId("ldStatus");
         badge.textContent = !has ? "" : dDirty ? "ذخیره‌نشده" : dTpl.layout ? "Layout ذخیره‌شده" : "بدون Layout — فرم داینامیک";
         badge.className = "mode-badge" + (has && dDirty ? " is-dirty" : has && dTpl.layout ? " is-layout" : "");
         const seg = (items, cur) => `<div class="ld-seg">${items.map(([k, l]) => `<button type="button" data-a="${k}" class="${k === cur ? "on" : ""}">${l}</button>`).join("")}</div>`;
@@ -506,7 +506,7 @@ function validateFieldValue(field, value) {
     const ICON = { text: "Aa", number: "#", date: "D", datetime: "DT", any: "*" };
 
     function renderPalette() {
-        const p = $("ldPalette");
+        const p = $byId("ldPalette");
         if (!dTpl) { p.innerHTML = `<div class="ld-note">ابتدا یک قالب انتخاب کنید.</div>`; return; }
         p.innerHTML = `<div class="ld-tabs">
                 <button type="button" data-t="fields" class="${palTab === "fields" ? "on" : ""}">فیلدها<span>${placedKeys().size}/${dTpl.fields.length}</span></button>
@@ -520,7 +520,7 @@ function validateFieldValue(field, value) {
     }
 
     function fillPalList() {
-        const list = $("ldPalList"); if (!list) return;
+        const list = $byId("ldPalList"); if (!list) return;
         const placed = placedKeys();
         let h = "";
         if (palTab === "fields") {
@@ -712,9 +712,9 @@ function validateFieldValue(field, value) {
     }
 
     function renderStage() {
-        const stage = $("ldStage");
+        const stage = $byId("ldStage");
         stage.innerHTML = "";
-        $("ldBoard").classList.toggle("is-preview", !!dTpl && dPreview);
+        $byId("ldBoard").classList.toggle("is-preview", !!dTpl && dPreview);
         if (!dTpl) {
             stage.innerHTML = `<div class="ld-empty"><div class="ld-empty-title">طراح Layout فرم</div>
                 <p>یک قالب انتخاب کنید تا فرم آن را به‌صورت گرافیکی بچینید. قالبی که Layout داشته باشد در «ورود دستی داده» به‌جای فرم داینامیک، با همین چیدمان بارگذاری می‌شود.</p></div>`;
@@ -756,7 +756,7 @@ function validateFieldValue(field, value) {
     const SPANS = [[3, "¼"], [4, "⅓"], [6, "½"], [8, "⅔"], [9, "¾"], [12, "کامل"]];
 
     function renderProps() {
-        const p = $("ldProps");
+        const p = $byId("ldProps");
         if (!dTpl) { p.innerHTML = `<div class="ld-note">ویژگی‌ها اینجا نمایش داده می‌شوند.</div>`; return; }
         if (dPreview) { p.innerHTML = ""; return; }
         const b = blockById(dSel);

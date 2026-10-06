@@ -1,0 +1,348 @@
+@model Borc.DataMapper.Web.ViewModels.Dashboard.DashboardViewModel
+@using Borc.DataMapper.Domain.Imports
+@using Borc.DataMapper.Web.ViewModels.Dashboard
+@using Borc.DataMapper.Web.ViewModels.DataSources
+@using Borc.DataMapper.Web.ViewModels.Imports
+@{
+    ViewData["Title"] = "داشبورد";
+
+    var d = Model.Data;
+    var k = d.Kpis;
+    var errors = ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+    var coverage = d.Templates.Where(t => t.FieldCount > 0).ToList();
+    var activity = Model.Activity();
+
+    string Fa(int n) => n.ToPersianNumber();
+    ViewData["Subtitle"] = DateTime.Now.ToJalaliLong()
+        + (k.ImportsInProgress > 0 ? $" · {Fa(k.ImportsInProgress)} ایمپورت در جریان" : "");
+}
+
+@if (errors.Count > 0)
+{
+    <div class="callout tone-danger" role="alert" style="margin-bottom:1rem">
+        <svg class="ico"><use href="#i-alert" /></svg><div>@string.Join(" — ", errors)</div>
+    </div>
+}
+
+<!-- ═════ KPI ═════ -->
+<section class="kpi-grid" aria-label="شاخص‌ها">
+    <article class="kpi tone-primary rise" style="--i:0">
+        <div class="kpi-top">
+            <span class="kpi-ico"><svg class="ico"><use href="#i-template" /></svg></span>
+            <a class="link-btn" asp-controller="Templates" asp-action="Index">همه قالب‌ها</a>
+        </div>
+        <div class="kpi-value">@Fa(k.TemplatesActive)<small>از @Fa(k.TemplatesTotal)</small></div>
+        <div class="kpi-label">قالب‌های فعال</div>
+        <div class="kpi-foot"><span>@Fa(k.TemplatesDraft) پیش‌نویس</span>·<span>@Fa(k.TemplatesTotal - k.TemplatesActive - k.TemplatesDraft) غیرفعال/بایگانی</span></div>
+    </article>
+
+    <article class="kpi tone-success rise" style="--i:1">
+        <div class="kpi-top"><span class="kpi-ico"><svg class="ico"><use href="#i-rows" /></svg></span></div>
+        <div class="kpi-value">@Fa(k.RecordsTotal)</div>
+        <div class="kpi-label">رکوردهای ثبت‌شده</div>
+        <div class="kpi-foot">
+            @if (k.RecordsThisWeek > 0)
+            {
+                <span class="delta up">↑ @Fa(k.RecordsThisWeek)</span><span>در ۷ روز گذشته</span>
+            }
+            else
+            {
+                <span>رکورد جدیدی در ۷ روز گذشته ثبت نشده</span>
+            }
+        </div>
+    </article>
+
+    <article class="kpi tone-warning rise" style="--i:2">
+        <div class="kpi-top">
+            <span class="kpi-ico"><svg class="ico"><use href="#i-upload" /></svg></span>
+            @if (k.ImportsInProgress > 0)
+            {
+                <span class="badge st-validating pulse">در جریان</span>
+            }
+        </div>
+        <div class="kpi-value">@Fa(k.ImportsInProgress)</div>
+        <div class="kpi-label">ایمپورت‌های در جریان</div>
+        <div class="kpi-foot">
+            <span>@Fa(k.ImportsReadyToCommit) آماده ثبت نهایی</span>
+            @if (k.ImportsFailed > 0)
+            {
+                <span>·</span><span class="delta down">@Fa(k.ImportsFailed) ناموفق</span>
+            }
+        </div>
+    </article>
+
+    <article class="kpi tone-info rise" style="--i:3">
+        <div class="kpi-top"><span class="kpi-ico"><svg class="ico"><use href="#i-check" /></svg></span></div>
+        @if (k.ValidRowRate is double rate)
+        {
+            <div class="kpi-value">@rate.ToString("0.#").Replace('.', '٫').ToPersianDigits()<small>٪</small></div>
+        }
+        else
+        {
+            <div class="kpi-value">—</div>
+        }
+        <div class="kpi-label">نرخ اعتبار داده‌های ورودی</div>
+        <div class="kpi-foot"><span>از ردیف‌های ایمپورت‌های اعتبارسنجی‌شده</span></div>
+    </article>
+</section>
+
+<!-- ═════ IMPORTS + SIDE ═════ -->
+<section class="dash-main">
+
+    <article class="card fill rise" style="--i:4">
+        <header class="card-head">
+            <div class="card-title">
+                <span class="card-ico"><svg class="ico"><use href="#i-upload" /></svg></span>
+                <div>ایمپورت‌های اخیر<div class="card-sub">وضعیت بارگذاری، اعتبارسنجی و ثبت فایل‌ها</div></div>
+            </div>
+            @if (d.RecentImports.Count > 0)
+            {
+                <div class="fchips" data-filter-group data-target="#importsTable" data-count="#importsCount" role="group" aria-label="فیلتر وضعیت">
+                    <button class="fchip active" type="button" data-filter="all" aria-pressed="true">همه <span class="n"></span></button>
+                    <button class="fchip" type="button" data-filter="running">در جریان <span class="n"></span></button>
+                    <button class="fchip" type="button" data-filter="issues">دارای خطا <span class="n"></span></button>
+                    <button class="fchip" type="button" data-filter="imported">ثبت‌شده <span class="n"></span></button>
+                </div>
+            }
+        </header>
+
+        <div class="tbl-wrap">
+            <table class="tbl" id="importsTable">
+                <thead>
+                    <tr><th>فایل</th><th>قالب</th><th>ردیف‌ها</th><th>وضعیت</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in d.RecentImports)
+                    {
+                        var kind = DashboardUi.FileKind(b.FileName);
+                        var checkedRows = b.ValidRows + b.InvalidRows;
+                        var okPct = checkedRows == 0 ? 0 : 100.0 * b.ValidRows / checkedRows;
+                        <tr data-status="@b.FilterKeys()">
+                            <td>
+                                <div class="file-cell">
+                                    <span class="file-ico@(kind == "CSV" ? " csv" : "")">@kind</span>
+                                    <div>
+                                        <div class="cell-main">@b.FileName</div>
+                                        <div class="cell-sub"><span class="code">IMP-@b.Id.ToString("0000")</span></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><div class="cell-main">@b.TemplateName</div><div class="cell-sub">نسخه @Fa(b.VersionNo)</div></td>
+                            <td>
+                                <div class="rowbar">
+                                    <div class="rowbar-track">
+                                        @if (checkedRows > 0)
+                                        {
+                                            <span class="ok" style="width:@okPct.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                                            <span class="bad" style="width:@((100 - okPct).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                                        }
+                                    </div>
+                                    <div class="rowbar-meta">
+                                        @if (b.Status == ImportBatchStatus.Failed && checkedRows == 0)
+                                        {
+                                            <span class="bad">پردازش ناموفق</span>
+                                        }
+                                        else if (checkedRows == 0)
+                                        {
+                                            <span>@(b.TotalRows > 0 ? $"{Fa(b.TotalRows)} ردیف · بررسی‌نشده" : "در انتظار پردازش")</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@Fa(b.TotalRows) ردیف</span>
+                                            @if (b.InvalidRows > 0)
+                                            {
+                                                <span class="bad">@Fa(b.InvalidRows) خطا</span>
+                                            }
+                                            else
+                                            {
+                                                <span>بدون خطا</span>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="c-status">
+                                <span class="badge @b.Status.BadgeClass()" title="@b.Status.ToLabel()">@b.Status.ShortLabel()</span>
+                                <div class="cell-sub">@b.CreatedAt.ToRelative()</div>
+                            </td>
+                            <td>
+                                <div class="row-actions">
+                                    <a class="icon-btn sm primary" asp-controller="Imports" asp-action="Detail" asp-route-id="@b.Id" title="جزئیات" aria-label="جزئیات IMP-@b.Id">
+                                        <svg class="ico"><use href="#i-eye" /></svg>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    <tr class="empty-row" data-empty-row @(d.RecentImports.Count > 0 ? "hidden" : null)>
+                        <td colspan="5">
+                            @if (d.RecentImports.Count == 0)
+                            {
+                                <div>هنوز فایلی ایمپورت نشده است.</div>
+                                <a class="btn btn-soft btn-sm" style="margin-top:.75rem" asp-controller="Imports" asp-action="Upload"><svg class="ico"><use href="#i-upload" /></svg>اولین ایمپورت</a>
+                            }
+                            else
+                            {
+                                <span>موردی با این فیلتر وجود ندارد.</span>
+                            }
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <footer class="card-foot">
+            <span>نمایش <b id="importsCount">@Fa(d.RecentImports.Count)</b> ایمپورت اخیر</span>
+            <a class="link-btn" asp-controller="Imports" asp-action="Index">همه ایمپورت‌ها<svg class="ico"><use href="#i-chev-left" /></svg></a>
+        </footer>
+    </article>
+
+    <div class="dash-side">
+        <article class="card rise" style="--i:5">
+            <header class="card-head">
+                <div class="card-title"><span class="card-ico"><svg class="ico"><use href="#i-zap" /></svg></span>دسترسی سریع</div>
+                <span class="kbd" title="کلید میان‌بر جستجو و فرمان‌ها">/</span>
+            </header>
+            <div class="quick-grid">
+                <a class="quick tone-primary" asp-controller="Imports" asp-action="Upload"><span class="quick-ico"><svg class="ico"><use href="#i-upload" /></svg></span><span class="quick-label">ایمپورت فایل</span></a>
+                <a class="quick tone-success" asp-controller="DataRecords" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-pen" /></svg></span><span class="quick-label">ثبت دستی رکورد</span></a>
+                <a class="quick tone-violet" asp-controller="Templates" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-template" /></svg></span><span class="quick-label">قالب جدید</span></a>
+                <a class="quick tone-info" asp-controller="DataSources" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-db" /></svg></span><span class="quick-label">منبع داده</span></a>
+                <a class="quick tone-warning" asp-controller="MappingProfiles" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-map" /></svg></span><span class="quick-label">پروفایل نگاشت</span></a>
+                <button class="quick tone-danger" type="button" data-open="cmdk"><span class="quick-ico"><svg class="ico"><use href="#i-search" /></svg></span><span class="quick-label">جستجو و فرمان</span></button>
+            </div>
+        </article>
+
+        <article class="card rise" style="--i:6">
+            <header class="card-head">
+                <div class="card-title"><span class="card-ico"><svg class="ico"><use href="#i-map" /></svg></span>پوشش نگاشت خودکار</div>
+                <span class="card-sub">فیلدهای دارای نام مستعار</span>
+            </header>
+            @if (coverage.Count == 0)
+            {
+                <div class="empty">قالبی با فیلد تعریف‌شده وجود ندارد.</div>
+            }
+            else
+            {
+                <div class="meters">
+                    @foreach (var t in coverage)
+                    {
+                        var pct = (int)Math.Round(100.0 * t.AliasedFieldCount / t.FieldCount);
+                        <a asp-controller="Templates" asp-action="Detail" asp-route-id="@t.Id" title="@t.Name — @pct٪">
+                            <div class="meter-head"><b>@t.Name</b><span>@Fa(t.AliasedFieldCount) از @Fa(t.FieldCount)</span></div>
+                            <div class="meter @DashboardUi.CoverageTone(pct)"><i style="width:@pct%"></i></div>
+                        </a>
+                    }
+                </div>
+            }
+        </article>
+    </div>
+</section>
+
+<!-- ═════ BOTTOM ROW ═════ -->
+<section class="dash-row">
+    <article class="card rise" style="--i:7">
+        <header class="card-head">
+            <div class="card-title"><span class="card-ico"><svg class="ico"><use href="#i-template" /></svg></span>قالب‌های پرکاربرد</div>
+            <a class="btn btn-soft btn-sm" asp-controller="Templates" asp-action="Create"><svg class="ico"><use href="#i-plus" /></svg>قالب جدید</a>
+        </header>
+        @if (d.Templates.Count == 0)
+        {
+            <div class="empty">هنوز قالبی ساخته نشده است.</div>
+        }
+        else
+        {
+            <div class="tbl-wrap">
+                <table class="tbl compact">
+                    <thead><tr><th>قالب</th><th>نسخه</th><th>فیلدها</th><th>رکوردها</th><th>وضعیت</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach (var t in d.Templates)
+                        {
+                            <tr>
+                                <td><div class="cell-main">@t.Name</div><div class="code">@t.Code</div></td>
+                                <td class="nums">@(t.VersionNo is int v ? Fa(v) : "—")</td>
+                                <td class="nums">@Fa(t.FieldCount)</td>
+                                <td class="nums">
+                                    @if (t.VersionId is long rv && t.RecordCount > 0)
+                                    {
+                                        <a class="link-btn" asp-controller="DataRecords" asp-action="Index" asp-route-templateVersionId="@rv" title="رکوردهای نسخه جاری">@Fa(t.RecordCount)</a>
+                                    }
+                                    else
+                                    {
+                                        @Fa(t.RecordCount)
+                                    }
+                                </td>
+                                <td><span class="badge @t.Status.BadgeClass()">@t.Status.ToLabel()</span></td>
+                                <td>
+                                    <div class="row-actions">
+                                        <a class="icon-btn sm primary" asp-controller="Templates" asp-action="Detail" asp-route-id="@t.Id" title="جزئیات"><svg class="ico"><use href="#i-eye" /></svg></a>
+                                        @if (t.VersionId is long vid)
+                                        {
+                                            <a class="icon-btn sm" asp-controller="DataRecords" asp-action="Create" asp-route-versionId="@vid" title="ثبت رکورد"><svg class="ico"><use href="#i-plus" /></svg></a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </article>
+
+    <article class="card rise" style="--i:8">
+        <header class="card-head">
+            <div class="card-title"><span class="card-ico"><svg class="ico"><use href="#i-db" /></svg></span>منابع داده</div>
+            <a class="btn btn-soft btn-sm" asp-controller="DataSources" asp-action="Create"><svg class="ico"><use href="#i-plus" /></svg>منبع جدید</a>
+        </header>
+        @if (d.DataSources.Count == 0)
+        {
+            <div class="empty">منبع داده‌ای تعریف نشده است.</div>
+        }
+        else
+        {
+            <div>
+                @foreach (var s in d.DataSources)
+                {
+                    <a class="src" asp-controller="DataSources" asp-action="Detail" asp-route-id="@s.Id">
+                        <span class="src-ico @DashboardUi.Tone(s.SourceType)"><svg class="ico"><use href="#@DashboardUi.Icon(s.SourceType)" /></svg></span>
+                        <span class="src-main">
+                            <span class="src-name" style="display:block">@s.Name</span>
+                            <span class="src-meta"><span class="code">@s.Code</span><span>@s.SourceType.ToLabel()@(s.ItemCount > 0 ? $" · {Fa(s.ItemCount)} مورد" : "")</span></span>
+                        </span>
+                        <span class="badge @(s.IsActive ? "st-active" : "st-inactive")">@(s.IsActive ? "فعال" : "غیرفعال")</span>
+                    </a>
+                }
+            </div>
+        }
+    </article>
+
+    <article class="card rise" style="--i:9">
+        <header class="card-head">
+            <div class="card-title"><span class="card-ico"><svg class="ico"><use href="#i-clock" /></svg></span>آخرین فعالیت‌ها</div>
+        </header>
+        @if (activity.Count == 0)
+        {
+            <div class="empty">فعالیتی ثبت نشده است.</div>
+        }
+        else
+        {
+            <div class="tl">
+                @foreach (var a in activity)
+                {
+                    <div class="tl-item @a.Tone">
+                        <span class="tl-dot"><svg class="ico"><use href="#@a.Icon" /></svg></span>
+                        <div class="tl-body">
+                            <div class="tl-title">@a.Title</div>
+                            @if (!string.IsNullOrEmpty(a.Subtitle))
+                            {
+                                <div class="tl-sub">@a.Subtitle</div>
+                            }
+                            <div class="tl-time">@a.At.ToRelative()</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </article>
+</section>
