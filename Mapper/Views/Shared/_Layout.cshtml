@@ -119,7 +119,7 @@
                         <svg class="ico"><use href="#i-palette" /></svg>
                     </button>
                     @await RenderSectionAsync("TopbarActions", required: false)
-                    <a class="btn btn-primary" asp-controller="Imports" asp-action="Upload">
+                    <a class="btn btn-primary" asp-controller="Imports" asp-action="Upload" data-modal>
                         <svg class="ico"><use href="#i-upload" /></svg><span class="lbl">ایمپورت جدید</span>
                     </a>
                 </div>
@@ -155,11 +155,11 @@
                 <a class="cmdk-item" data-search-href="@Url.Action("Index", "DataSources")?search="><span class="src-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span><span>جستجوی «<b data-q></b>» در منابع داده</span></a>
 
                 <div class="cmdk-group">اقدامات سریع</div>
-                <a class="cmdk-item" asp-controller="Imports" asp-action="Upload" data-k="import upload excel csv آپلود فایل"><span class="src-ico tone-primary"><svg class="ico"><use href="#i-upload" /></svg></span>ایمپورت فایل جدید</a>
-                <a class="cmdk-item" asp-controller="DataRecords" asp-action="Create" data-k="record manual entry رکورد"><span class="src-ico tone-success"><svg class="ico"><use href="#i-pen" /></svg></span>ثبت دستی رکورد</a>
+                <a class="cmdk-item" asp-controller="Imports" asp-action="Upload" data-modal data-k="import upload excel csv آپلود فایل"><span class="src-ico tone-primary"><svg class="ico"><use href="#i-upload" /></svg></span>ایمپورت فایل جدید</a>
+                <a class="cmdk-item" asp-controller="DataRecords" asp-action="Create" data-modal data-k="record manual entry رکورد"><span class="src-ico tone-success"><svg class="ico"><use href="#i-pen" /></svg></span>ثبت دستی رکورد</a>
                 <a class="cmdk-item" asp-controller="Templates" asp-action="Create" data-k="template new"><span class="src-ico tone-violet"><svg class="ico"><use href="#i-template" /></svg></span>قالب جدید</a>
                 <a class="cmdk-item" asp-controller="DataSources" asp-action="Create" data-modal data-k="datasource api list"><span class="src-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span>منبع داده جدید</a>
-                <a class="cmdk-item" asp-controller="MappingProfiles" asp-action="Create" data-k="mapping profile"><span class="src-ico tone-warning"><svg class="ico"><use href="#i-map" /></svg></span>پروفایل نگاشت جدید</a>
+                <a class="cmdk-item" asp-controller="MappingProfiles" asp-action="Create" data-modal data-k="mapping profile"><span class="src-ico tone-warning"><svg class="ico"><use href="#i-map" /></svg></span>پروفایل نگاشت جدید</a>
 
                 <div class="cmdk-group">صفحات</div>
                 @foreach (var item in nav)

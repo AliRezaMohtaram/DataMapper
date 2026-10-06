@@ -557,6 +557,26 @@ tr:hover .row-actions, .row-actions:focus-within { opacity:1; }
 
 .empty-row td { padding:2.2rem 1rem; text-align:center; color:var(--muted); }
 
+/* Import column mapping / row errors */
+.sample-list { display:flex; flex-wrap:wrap; gap:.3rem; }
+.sample-chip {
+  max-width:9rem; padding:.05rem .45rem; border-radius:var(--radius-xs);
+  background:rgb(var(--line-rgb) / .06); color:var(--muted); font-size:.74rem;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.tbl tr.is-skipped td { opacity:.62; }
+.tbl tr.is-skipped td:nth-child(3) { opacity:1; }
+.tbl tr.is-dup td { background:rgb(var(--err) / .06); }
+.tbl tr.is-dup .select { border-color:rgb(var(--err) / .6); }
+.err-list { display:grid; gap:.3rem; }
+.err-item {
+  display:flex; align-items:flex-start; gap:.4rem;
+  padding:.3rem .55rem; border-radius:var(--radius-xs);
+  background:var(--danger-soft); border-inline-start:3px solid var(--danger);
+  color:var(--text); font-size:.78rem; line-height:1.6;
+}
+.err-item .ico { color:var(--danger); width:.9rem; height:.9rem; margin-top:.2rem; }
+
 .pager { display:flex; gap:.25rem; }
 .pager button {
   min-width:1.9rem; height:1.9rem; padding:0 .4rem;

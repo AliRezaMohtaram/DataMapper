@@ -179,7 +179,7 @@
                             @if (d.RecentImports.Count == 0)
                             {
                                 <div>هنوز فایلی ایمپورت نشده است.</div>
-                                <a class="btn btn-soft btn-sm" style="margin-top:.75rem" asp-controller="Imports" asp-action="Upload"><svg class="ico"><use href="#i-upload" /></svg>اولین ایمپورت</a>
+                                <a class="btn btn-soft btn-sm" style="margin-top:.75rem" asp-controller="Imports" asp-action="Upload" data-modal><svg class="ico"><use href="#i-upload" /></svg>اولین ایمپورت</a>
                             }
                             else
                             {
@@ -204,11 +204,11 @@
                 <span class="kbd" title="کلید میان‌بر جستجو و فرمان‌ها">/</span>
             </header>
             <div class="quick-grid">
-                <a class="quick tone-primary" asp-controller="Imports" asp-action="Upload"><span class="quick-ico"><svg class="ico"><use href="#i-upload" /></svg></span><span class="quick-label">ایمپورت فایل</span></a>
-                <a class="quick tone-success" asp-controller="DataRecords" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-pen" /></svg></span><span class="quick-label">ثبت دستی رکورد</span></a>
+                <a class="quick tone-primary" asp-controller="Imports" asp-action="Upload" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-upload" /></svg></span><span class="quick-label">ایمپورت فایل</span></a>
+                <a class="quick tone-success" asp-controller="DataRecords" asp-action="Create" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-pen" /></svg></span><span class="quick-label">ثبت دستی رکورد</span></a>
                 <a class="quick tone-violet" asp-controller="Templates" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-template" /></svg></span><span class="quick-label">قالب جدید</span></a>
                 <a class="quick tone-info" asp-controller="DataSources" asp-action="Create" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-db" /></svg></span><span class="quick-label">منبع داده</span></a>
-                <a class="quick tone-warning" asp-controller="MappingProfiles" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-map" /></svg></span><span class="quick-label">پروفایل نگاشت</span></a>
+                <a class="quick tone-warning" asp-controller="MappingProfiles" asp-action="Create" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-map" /></svg></span><span class="quick-label">پروفایل نگاشت</span></a>
                 <button class="quick tone-danger" type="button" data-open="cmdk"><span class="quick-ico"><svg class="ico"><use href="#i-search" /></svg></span><span class="quick-label">جستجو و فرمان</span></button>
             </div>
         </article>

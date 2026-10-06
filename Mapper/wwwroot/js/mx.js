@@ -493,6 +493,30 @@
         render();
     };
 
+    /* =====================================================
+       FILTER LIST  (data-mx-init="filter-list")
+       An input[data-filter-input] hides [data-filter-item] elements whose
+       text (plus data-k) does not contain the query; [data-filter-empty]
+       shows when nothing matches.
+       ===================================================== */
+
+    components["filter-list"] = root => {
+        const input = $("[data-filter-input]", root);
+        const items = $$("[data-filter-item]", root);
+        const empty = $("[data-filter-empty]", root);
+        if (!input) return;
+        input.addEventListener("input", () => {
+            const q = input.value.trim().toLowerCase();
+            let shown = 0;
+            items.forEach(el => {
+                const hit = !q || (el.textContent + " " + (el.dataset.k || "")).toLowerCase().includes(q);
+                el.hidden = !hit;
+                if (hit) shown++;
+            });
+            if (empty) empty.hidden = shown > 0;
+        });
+    };
+
     function registerComponent(name, init) {
         components[name] = init;
         initComponents();   // elements already in the page
@@ -606,6 +630,8 @@
     document.addEventListener("submit", e => {
         const form = e.target;
         if (!form.matches("[data-mx-ajax]") || !form.closest("#mxRemote")) return;
+        // A component (e.g. file-drop) may already have rejected the submit
+        if (e.defaultPrevented) return;
         e.preventDefault();
         submitRemote(form, e.submitter);
     });

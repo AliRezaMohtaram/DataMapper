@@ -8,6 +8,7 @@ using Borc.DataMapper.Application.DataRecords.UpdateDataRecord;
 using Borc.DataMapper.Application.Imports.GetImportLookups;
 using Borc.DataMapper.Domain.Records;
 using Borc.DataMapper.Web.ViewModels.DataRecords;
+using Borc.DataMapper.Web.Mvc;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -58,7 +59,10 @@ public sealed class DataRecordsController : Controller
         if (!versionId.HasValue)
         {
             var lookups = await _sender.Send(new GetImportLookupsQuery(), cancellationToken);
-            return View("SelectVersion", lookups.Data?.Versions ?? Array.Empty<ImportVersionOption>());
+            var versions = lookups.Data?.Versions ?? Array.Empty<ImportVersionOption>();
+
+            // انتخاب قالب در مودال باز می‌شود؛ بدون JavaScript صفحهٔ کامل SelectVersion
+            return this.ModalOrView("_SelectVersion", versions, "SelectVersion");
         }
 
         var form = await _sender.Send(new GetRecordFormQuery(TemplateVersionId: versionId), cancellationToken);

@@ -1,264 +1,336 @@
 @model Borc.DataMapper.Application.Imports.GetImportBatch.ImportBatchDetailDto
+@inject Microsoft.AspNetCore.Mvc.ViewFeatures.IFileVersionProvider FileVersions
 @using Borc.DataMapper.Web.ViewModels.Imports
+@using Borc.DataMapper.Web.ViewModels.Dashboard
 @using Borc.DataMapper.Domain.Imports
-@using Borc.DataMapper.Domain.Templates
+@using System.Globalization
 @{
-    ViewData["Title"] = $"ایمپورت {Model.FileName}";
+    ViewData["Title"] = Model.FileName;
+    ViewData["Subtitle"] = $"IMP-{Model.Id:0000} · {Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}";
 
     var rowStatus = ViewData["RowStatus"] as ImportRowStatus?;
     var rows = Model.Rows;
-    var errStyle = "color:var(--danger);font-size:12px";
+    var mapping = Model.Status == ImportBatchStatus.Uploaded;
+    var imported = Model.Status == ImportBatchStatus.Imported;
+    var kind = DashboardUi.FileKind(Model.FileName);
+
+    // مرحلهٔ فعلی در مسیر: ۰ قالب و فایل (همیشه انجام‌شده) · ۱ تطبیق · ۲ بررسی سطرها · ۳ ثبت نهایی
+    var stage = Model.Status switch
+    {
+        ImportBatchStatus.Uploaded => 1,
+        ImportBatchStatus.Imported => 4,
+        _ => 2
+    };
+    string StepClass(int i) => i < stage ? "step done" : i == stage ? "step active" : "step";
+    var stepNames = new[] { "قالب و فایل", "تطبیق ستون‌ها", "بررسی سطرها", "ثبت نهایی" };
+
+    string Pct(double v) => v.ToString("0.##", CultureInfo.InvariantCulture);
+    var checkedRows = Model.ValidRows + Model.InvalidRows;
 }
 
-<div class="page-grid">
+@section TopbarActions {
+    <a class="btn btn-ghost" asp-action="Index"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">همه ایمپورت‌ها</span></a>
+}
 
-    <!-- ===== محتوای اصلی ===== -->
-    <section class="page-main">
+<article class="card rise" style="margin-bottom:1rem">
+    <div class="steps" style="border-bottom:0" aria-label="مراحل ایمپورت">
+        @for (var i = 0; i < stepNames.Length; i++)
+        {
+            if (i > 0)
+            {
+                <span class="step-line"></span>
+            }
+            <span class="@StepClass(i)" aria-current="@(i == stage ? "step" : null)">
+                <span class="step-num"><span class="n">@((i + 1).ToPersianNumber())</span><svg class="ico"><use href="#i-check" /></svg></span>@stepNames[i]
+            </span>
+        }
+    </div>
+</article>
 
-    @if (Model.Status == ImportBatchStatus.Uploaded)
-    {
-        <div class="panel card">
-            <div class="panel-header">
-                <h2>تطبیق ستون‌ها</h2>
-                <div class="summary-stats"><span>ستون‌ها: <b>@Model.Columns.Count</b></span></div>
-            </div>
+@if (Model.Status == ImportBatchStatus.Failed)
+{
+    <div class="callout tone-danger" style="margin-bottom:1rem">
+        <svg class="ico"><use href="#i-alert" /></svg><div>پردازش این ایمپورت ناموفق بود. فایل را بررسی و دوباره بارگذاری کنید.</div>
+    </div>
+}
 
-            <div class="hint">
-                برای هر ستون Excel فیلد مقصد را انتخاب کنید. پیشنهادها از روی پروفایل، aliasها، نام فیلدها و شباهت نام‌ها
-                ساخته شده است. هر فیلد فقط به یک ستون وصل می‌شود.
-            </div>
+<div class="split">
+    <section class="stack" style="min-width:0">
 
-            <form asp-action="Map" method="post">
+        @if (mapping)
+        {
+            var required = Model.Fields.Where(f => f.IsRequired).ToList();
+
+            <form class="card rise" asp-action="Map" method="post"
+                  data-mx-init="import-map" data-mx-src="@FileVersions.AddFileVersionToPath(Context.Request.PathBase, "/js/import-map.js")">
                 <input type="hidden" name="id" value="@Model.Id" />
 
-                <div class="tscroll results-table-container">
-                    <table class="results-table">
-                        <thead>
-                            <tr>
-                                <th>ستون Excel</th>
-                                <th>نمونه مقادیر</th>
-                                <th>فیلد مقصد</th>
-                                <th>روش تطبیق</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        @for (var i = 0; i < Model.Columns.Count; i++)
-                        {
-                            var c = Model.Columns[i];
+                <header class="card-head">
+                    <div class="card-title">
+                        <span class="card-ico"><svg class="ico"><use href="#i-map" /></svg></span>
+                        <div>تطبیق ستون‌ها<div class="card-sub" data-map-summary>@Model.Columns.Count.ToPersianNumber() ستون در فایل</div></div>
+                    </div>
+                </header>
 
-                            <tr>
-                                <td>
-                                    @c.Header
-                                    <input type="hidden" name="mappings[@i].SourceColumn" value="@c.Header" />
-                                </td>
-                                <td style="white-space:normal;text-align:right;max-width:260px">
-                                    @(c.Samples.Count == 0 ? "—" : string.Join("  |  ", c.Samples))
-                                </td>
-                                <td>
-                                    <select name="mappings[@i].TargetFieldKey">
-                                        <option value="">— نادیده گرفتن —</option>
-                                        @foreach (var f in Model.Fields)
+                <div class="card-body" style="padding-bottom:0">
+                    <div class="callout tone-primary">
+                        <svg class="ico"><use href="#i-zap" /></svg>
+                        <div>
+                            پیشنهادها از روی پروفایل، نام‌های مستعار، نام فیلدها و شباهت نام‌ها ساخته شده است.
+                            برای هر ستون فیلد مقصد را بررسی کنید؛ هر فیلد فقط به <b>یک</b> ستون وصل می‌شود.
+                        </div>
+                    </div>
+
+                    @if (required.Count > 0)
+                    {
+                        <div class="fieldset-title">فیلدهای الزامی</div>
+                        <div class="req-list" data-required-list>
+                            @foreach (var f in required)
+                            {
+                                <span class="tag tone-warning" data-required="@f.Key">@f.Label</span>
+                            }
+                        </div>
+                        <p class="hint" style="margin-top:.4rem" data-required-hint></p>
+                    }
+                </div>
+
+                <div class="tbl-wrap" style="margin-top:1rem">
+                    <table class="tbl">
+                        <thead><tr><th>ستون فایل</th><th>نمونه مقادیر</th><th style="min-width:15rem">فیلد مقصد</th><th>پیشنهاد</th></tr></thead>
+                        <tbody>
+                            @for (var i = 0; i < Model.Columns.Count; i++)
+                            {
+                                var c = Model.Columns[i];
+                                <tr data-map-row>
+                                    <td>
+                                        <span class="code-chip">@c.Header</span>
+                                        <input type="hidden" name="mappings[@i].SourceColumn" value="@c.Header" />
+                                    </td>
+                                    <td style="max-width:18rem;white-space:normal">
+                                        @if (c.Samples.Count == 0)
                                         {
-                                            <option value="@f.Key" selected="@(string.Equals(c.FieldKey, f.Key, StringComparison.OrdinalIgnoreCase))">
-                                                @f.Label@(f.IsRequired ? " *" : "") — @f.Key
-                                            </option>
+                                            <span class="cell-sub">بدون مقدار</span>
                                         }
-                                    </select>
-                                </td>
-                                <td>
-                                    @if (c.FieldKey is null)
-                                    {
-                                        <text>—</text>
-                                    }
-                                    else
-                                    {
-                                        <span class="mode-badge">@c.Method.ToLabel() (@c.Confidence.ToString("0"))</span>
-                                    }
-                                </td>
-                            </tr>
-                        }
+                                        else
+                                        {
+                                            <div class="sample-list">
+                                                @foreach (var sample in c.Samples.Take(3))
+                                                {
+                                                    <span class="sample-chip" title="@sample">@sample</span>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <select class="select" name="mappings[@i].TargetFieldKey" aria-label="فیلد مقصد برای ستون @c.Header" data-map-select>
+                                            <option value="">— نادیده گرفتن —</option>
+                                            @foreach (var f in Model.Fields)
+                                            {
+                                                <option value="@f.Key" selected="@(string.Equals(c.FieldKey, f.Key, StringComparison.OrdinalIgnoreCase))">@f.Label@(f.IsRequired ? " *" : "") — @f.Key</option>
+                                            }
+                                        </select>
+                                        <div class="field-error" data-map-error></div>
+                                    </td>
+                                    <td>
+                                        @if (c.FieldKey is null)
+                                        {
+                                            <span class="cell-sub">بدون پیشنهاد</span>
+                                        }
+                                        else
+                                        {
+                                            <div class="conf" style="min-width:7.5rem">
+                                                <span class="tag @c.Method.TagClass()">@c.Method.ToLabel()</span>
+                                                <span class="meter @DashboardUi.CoverageTone((int)c.Confidence)"><i style="width:@Pct((double)c.Confidence)%"></i></span>
+                                                <span>@(((int)c.Confidence).ToPersianNumber())٪</span>
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>
 
-                <div class="form-group">
-                    <label for="saveProfileName">ذخیرهٔ این نگاشت به‌عنوان پروفایل (اختیاری):</label>
-                    <input type="text" id="saveProfileName" name="saveProfileName" maxlength="250" autocomplete="off"
-                           placeholder="نام پروفایل، مثلاً «فایل ماهانهٔ سایت‌ها»" />
-                    <div class="hint">پروفایل‌ها در دفعات بعد برای همین قالب پیشنهاد داده می‌شوند. فیلدهای الزامی با * مشخص شده‌اند.</div>
+                <div class="card-body">
+                    <div class="field">
+                        <label class="label" for="saveProfileName">ذخیرهٔ این نگاشت به‌عنوان پروفایل</label>
+                        <div class="input-wrap">
+                            <svg class="ico"><use href="#i-map" /></svg>
+                            <input class="input" type="text" id="saveProfileName" name="saveProfileName" maxlength="250" autocomplete="off"
+                                   placeholder="اختیاری — مثلاً «فایل ماهانهٔ سایت‌ها»" />
+                        </div>
+                        <span class="hint">پروفایل در ایمپورت‌های بعدی همین قالب پیشنهاد داده می‌شود.</span>
+                    </div>
                 </div>
 
-                <div class="actions">
-                    <button type="submit" class="btn primary">اعمال نگاشت و اعتبارسنجی</button>
-                </div>
+                <footer class="card-foot">
+                    <span data-map-status></span>
+                    <button type="submit" class="btn btn-primary" data-map-submit><svg class="ico"><use href="#i-check" /></svg>اعمال نگاشت و اعتبارسنجی</button>
+                </footer>
             </form>
-        </div>
-    }
-    else if (rows is not null)
-    {
-        <div class="panel card">
-            <div class="panel-header">
-                <h2>سطرها</h2>
-                <div class="summary-stats">
-                    <span>معتبر: <b>@Model.ValidRows</b></span>
-                    <span>نامعتبر: <b>@Model.InvalidRows</b></span>
-                    <span>کل: <b>@Model.TotalRows</b></span>
-                </div>
+        }
+        else if (rows is not null)
+        {
+            <div class="tiles rise">
+                <div class="tile tone-info"><div class="tile-v">@Model.TotalRows.ToPersianNumber()</div><div class="tile-l">کل سطرها</div></div>
+                <div class="tile tone-success"><div class="tile-v">@Model.ValidRows.ToPersianNumber()</div><div class="tile-l">@(imported ? "ثبت‌شده" : "معتبر")</div></div>
+                <div class="tile tone-danger"><div class="tile-v">@Model.InvalidRows.ToPersianNumber()</div><div class="tile-l">نامعتبر</div></div>
             </div>
 
-            <div class="actions" style="margin-top:0;margin-bottom:12px">
-                <a asp-action="Detail" asp-route-id="@Model.Id"
-                   class="btn @(rowStatus is null ? "primary" : "ghost")">همه</a>
-                <a asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@ImportRowStatus.Invalid"
-                   class="btn @(rowStatus == ImportRowStatus.Invalid ? "primary" : "ghost")">نامعتبر</a>
-                <a asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@ImportRowStatus.Valid"
-                   class="btn @(rowStatus == ImportRowStatus.Valid ? "primary" : "ghost")">معتبر</a>
-                @if (Model.Status == ImportBatchStatus.Imported)
+            <article class="card rise" style="--i:1">
+                <header class="card-head">
+                    <div class="card-title">
+                        <span class="card-ico"><svg class="ico"><use href="#i-rows" /></svg></span>
+                        <div>سطرها<div class="card-sub">@rows.TotalCount.ToPersianNumber() سطر با فیلتر فعلی</div></div>
+                    </div>
+                    <nav class="fchips" aria-label="فیلتر سطرها">
+                        <a class="fchip@(rowStatus is null ? " active" : "")" asp-action="Detail" asp-route-id="@Model.Id">همه <span class="n">@Model.TotalRows.ToPersianNumber()</span></a>
+                        <a class="fchip@(rowStatus == ImportRowStatus.Invalid ? " active" : "")" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@ImportRowStatus.Invalid">نامعتبر <span class="n">@Model.InvalidRows.ToPersianNumber()</span></a>
+                        @if (imported)
+                        {
+                            <a class="fchip@(rowStatus == ImportRowStatus.Imported ? " active" : "")" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@ImportRowStatus.Imported">ثبت‌شده <span class="n">@Model.ValidRows.ToPersianNumber()</span></a>
+                        }
+                        else
+                        {
+                            <a class="fchip@(rowStatus == ImportRowStatus.Valid ? " active" : "")" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@ImportRowStatus.Valid">معتبر <span class="n">@Model.ValidRows.ToPersianNumber()</span></a>
+                        }
+                    </nav>
+                </header>
+
+                @if (rows.Items.Count == 0)
                 {
-                    <a asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@ImportRowStatus.Imported"
-                       class="btn @(rowStatus == ImportRowStatus.Imported ? "primary" : "ghost")">ثبت‌شده</a>
+                    <div class="empty">سطری با این فیلتر وجود ندارد.</div>
                 }
+                else
+                {
+                    <div class="tbl-wrap">
+                        <table class="tbl">
+                            <thead><tr><th>سطر</th><th>وضعیت</th><th style="min-width:16rem">خطاها</th><th>پیش‌نمایش مقادیر</th></tr></thead>
+                            <tbody>
+                                @foreach (var r in rows.Items)
+                                {
+                                    <tr>
+                                        <td class="nums cell-main">@r.RowNumber.ToPersianNumber()</td>
+                                        <td><span class="badge @r.Status.BadgeClass()">@r.Status.ToLabel()</span></td>
+                                        <td style="white-space:normal">
+                                            @if (r.Errors.Count == 0)
+                                            {
+                                                <span class="cell-sub">—</span>
+                                            }
+                                            else
+                                            {
+                                                <div class="err-list">
+                                                    @foreach (var e in r.Errors)
+                                                    {
+                                                        <div class="err-item"><svg class="ico"><use href="#i-alert" /></svg><span>@e</span></div>
+                                                    }
+                                                </div>
+                                            }
+                                        </td>
+                                        <td class="cell-sub" style="white-space:normal;max-width:26rem">@r.Preview</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+
+                @if (rows.TotalCount > 0)
+                {
+                    <footer class="card-foot">
+                        <span>صفحهٔ @rows.Page.ToPersianNumber() از @Math.Max(1, rows.TotalPages).ToPersianNumber()</span>
+                        <nav class="pager" aria-label="صفحه‌بندی سطرها">
+                            @if (rows.HasPrevious)
+                            {
+                                <a asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@rowStatus" asp-route-pageSize="@rows.PageSize" asp-route-page="@(rows.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
+                            }
+                            else
+                            {
+                                <span aria-disabled="true"><svg class="ico"><use href="#i-chev-right" /></svg></span>
+                            }
+                            @if (rows.HasNext)
+                            {
+                                <a asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@rowStatus" asp-route-pageSize="@rows.PageSize" asp-route-page="@(rows.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
+                            }
+                            else
+                            {
+                                <span aria-disabled="true"><svg class="ico"><use href="#i-chev-left" /></svg></span>
+                            }
+                        </nav>
+                    </footer>
+                }
+            </article>
+        }
+    </section>
+
+    <aside class="split-side">
+        <article class="card rise" style="--i:1">
+            <div class="card-body">
+                <div class="file-cell" style="min-width:0">
+                    <span class="file-ico@(kind == "CSV" ? " csv" : "")">@kind</span>
+                    <div style="min-width:0">
+                        <div class="hero-title" style="font-size:.95rem;overflow-wrap:anywhere">@Model.FileName</div>
+                        <span class="code">IMP-@Model.Id.ToString("0000")</span>
+                    </div>
+                </div>
+                <div style="margin-top:.8rem"><span class="badge @Model.Status.BadgeClass()">@Model.Status.ToLabel()</span></div>
+
+                @if (checkedRows > 0)
+                {
+                    var okPct = 100.0 * Model.ValidRows / checkedRows;
+                    <div class="rowbar" style="margin-top:1rem">
+                        <div class="rowbar-track"><span class="ok" style="width:@Pct(okPct)%"></span><span class="bad" style="width:@Pct(100 - okPct)%"></span></div>
+                        <div class="rowbar-meta"><span>@(((int)Math.Round(okPct)).ToPersianNumber())٪ معتبر</span></div>
+                    </div>
+                }
+
+                <dl class="dl stacked" style="margin-top:1rem">
+                    <div><dt>قالب</dt><dd><a class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a> · نسخهٔ @Model.VersionNo.ToPersianNumber()</dd></div>
+                    <div><dt>پروفایل نگاشت</dt><dd>@(Model.MappingProfileName ?? "تطبیق خودکار")</dd></div>
+                    <div><dt>حجم فایل</dt><dd>@(Model.FileSize.HasValue ? $"{(Model.FileSize.Value / 1024.0).ToString("0.#", CultureInfo.InvariantCulture)} KB".ToPersianDigits() : "—")</dd></div>
+                    <div><dt>آپلود</dt><dd class="nums">@Model.CreatedAt.ToJalali().ToPersianDigits()</dd></div>
+                    <div><dt>پایان</dt><dd class="nums">@(Model.CompletedAt.HasValue ? Model.CompletedAt.ToJalali().ToPersianDigits() : "—")</dd></div>
+                </dl>
             </div>
 
-            <div class="tscroll results-table-container">
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th>سطر Excel</th>
-                            <th>وضعیت</th>
-                            <th>خطاها</th>
-                            <th>پیش‌نمایش مقادیر</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @if (rows.Items.Count == 0)
+            <div class="card-foot" style="display:block">
+                <div class="action-stack">
+                    @if (Model.Status == ImportBatchStatus.Validated)
                     {
-                        <tr><td colspan="4" class="entries-empty">سطری با این فیلتر وجود ندارد.</td></tr>
+                        @if (Model.ValidRows > 0)
+                        {
+                            <form id="commitForm" asp-action="Commit" method="post" hidden>
+                                <input type="hidden" name="id" value="@Model.Id" />
+                            </form>
+                            <button type="button" class="btn btn-primary" data-confirm-target="commitForm" data-confirm-title="ثبت نهایی"
+                                    data-confirm-message="@($"{Model.ValidRows.ToPersianNumber()} سطر معتبر به‌عنوان رکورد ثبت می‌شود و {Model.InvalidRows.ToPersianNumber()} سطر نامعتبر نادیده گرفته می‌شود. ثبت نهایی قابل بازگشت نیست. ادامه می‌دهید؟")">
+                                <svg class="ico"><use href="#i-play" /></svg>ثبت نهایی @Model.ValidRows.ToPersianNumber() رکورد
+                            </button>
+                        }
+                        else
+                        {
+                            <p class="hint">هیچ سطر معتبری برای ثبت وجود ندارد؛ نگاشت را تغییر دهید یا فایل را اصلاح کنید.</p>
+                        }
+
+                        <form asp-action="Reopen" method="post">
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#i-map" /></svg>تغییر تطبیق ستون‌ها</button>
+                        </form>
+                    }
+
+                    @if (imported)
+                    {
+                        <a class="btn btn-primary" asp-controller="DataRecords" asp-action="Index" asp-route-importBatchId="@Model.Id"><svg class="ico"><use href="#i-rows" /></svg>رکوردهای ثبت‌شده</a>
                     }
                     else
                     {
-                        foreach (var r in rows.Items)
-                        {
-                            <tr>
-                                <td>@r.RowNumber</td>
-                                <td><span class="mode-badge">@r.Status.ToLabel()</span></td>
-                                <td style="white-space:normal;text-align:right;min-width:240px;@(r.ErrorCount > 0 ? errStyle : "")">
-                                    @if (r.Errors.Count == 0)
-                                    {
-                                        <text>—</text>
-                                    }
-                                    else
-                                    {
-                                        foreach (var e in r.Errors)
-                                        {
-                                            <div>@e</div>
-                                        }
-                                    }
-                                </td>
-                                <td style="white-space:normal;text-align:right;max-width:320px">@r.Preview</td>
-                            </tr>
-                        }
+                        <div class="dd-sep"></div>
+                        <button type="button" class="btn btn-danger-soft" data-delete-id="@Model.Id" data-delete-name="@Model.FileName"><svg class="ico"><use href="#i-trash" /></svg>حذف ایمپورت</button>
                     }
-                    </tbody>
-                </table>
+                </div>
             </div>
-
-            <div class="pagination">
-                @if (rows.HasPrevious)
-                {
-                    <a class="btn ghost" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@rowStatus"
-                       asp-route-pageSize="@rows.PageSize" asp-route-page="@(rows.Page - 1)">قبلی</a>
-                }
-                else
-                {
-                    <button type="button" class="btn ghost" disabled>قبلی</button>
-                }
-
-                <span>صفحه @rows.Page از @Math.Max(1, rows.TotalPages) (@rows.TotalCount سطر)</span>
-
-                @if (rows.HasNext)
-                {
-                    <a class="btn ghost" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@rowStatus"
-                       asp-route-pageSize="@rows.PageSize" asp-route-page="@(rows.Page + 1)">بعدی</a>
-                }
-                else
-                {
-                    <button type="button" class="btn ghost" disabled>بعدی</button>
-                }
-            </div>
-        </div>
-    }
-
-    </section>
-
-    <!-- ===== اطلاعات کلی (aside) ===== -->
-    <aside class="page-aside">
-        <div class="panel card">
-            <div class="aside-title" dir="ltr" style="text-align:right">@Model.FileName</div>
-            <span class="mode-badge">@Model.Status.ToLabel()</span>
-
-            <dl class="info-list">
-                <div>
-                    <dt>قالب</dt>
-                    <dd>
-                        <a asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a>
-                        — نسخه @Model.VersionNo
-                    </dd>
-                </div>
-                <div>
-                    <dt>پروفایل نگاشت</dt>
-                    <dd>@(Model.MappingProfileName ?? "—")</dd>
-                </div>
-                <div>
-                    <dt>سطرها</dt>
-                    <dd>@Model.TotalRows (معتبر @Model.ValidRows، نامعتبر @Model.InvalidRows)</dd>
-                </div>
-                <div>
-                    <dt>حجم فایل</dt>
-                    <dd dir="ltr" style="text-align:right">@(Model.FileSize.HasValue ? $"{Model.FileSize.Value / 1024.0:0.#} KB" : "—")</dd>
-                </div>
-                <div>
-                    <dt>تاریخ آپلود</dt>
-                    <dd dir="ltr" style="text-align:right">@Model.CreatedAt.ToJalali()</dd>
-                </div>
-                <div>
-                    <dt>پایان</dt>
-                    <dd dir="ltr" style="text-align:right">@Model.CompletedAt.ToJalali()</dd>
-                </div>
-            </dl>
-
-            <div class="aside-actions">
-                @if (Model.Status == ImportBatchStatus.Validated)
-                {
-                    @if (Model.ValidRows > 0)
-                    {
-                        <form id="commitForm" asp-action="Commit" method="post" style="display:none">
-                            <input type="hidden" name="id" value="@Model.Id" />
-                        </form>
-                        <button type="button" class="btn primary block"
-                                data-confirm-target="commitForm"
-                                data-confirm-message="@($"{Model.ValidRows} سطر معتبر به‌عنوان رکورد ثبت می‌شود و {Model.InvalidRows} سطر نامعتبر نادیده گرفته می‌شود. ثبت نهایی قابل بازگشت نیست. ادامه می‌دهید؟")">
-                            ثبت نهایی @Model.ValidRows رکورد
-                        </button>
-                    }
-
-                    <form asp-action="Reopen" method="post">
-                        <input type="hidden" name="id" value="@Model.Id" />
-                        <button type="submit" class="btn secondary block">تغییر تطبیق ستون‌ها</button>
-                    </form>
-                }
-
-                <a asp-action="Index" class="btn ghost block">بازگشت به فهرست</a>
-
-                @if (Model.Status != ImportBatchStatus.Imported)
-                {
-                    <button type="button" class="btn danger block"
-                            data-delete-id="@Model.Id" data-delete-name="@Model.FileName">حذف ایمپورت</button>
-                }
-            </div>
-        </div>
+        </article>
     </aside>
-
 </div>
 
 <partial name="_DeleteModal" />

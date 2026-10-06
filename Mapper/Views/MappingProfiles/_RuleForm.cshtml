@@ -1,0 +1,103 @@
+@model object
+@using Borc.DataMapper.Application.MappingProfiles.AddMappingRule
+@using Borc.DataMapper.Application.MappingProfiles.GetMappingProfile
+@using Borc.DataMapper.Application.MappingProfiles.GetMappingProfileLookups
+@using Borc.DataMapper.Application.MappingProfiles.UpdateMappingRule
+@*
+    فرم افزودن/ویرایش قاعدهٔ نگاشت — ریشهٔ آن یک .modal است.
+    مدل: AddMappingRuleCommand یا UpdateMappingRuleCommand. فیلدهایی که قاعده دارند غیرفعال‌اند.
+*@
+@{
+    var add = Model as AddMappingRuleCommand;
+    var update = Model as UpdateMappingRuleCommand;
+    var isEdit = update is not null;
+
+    var profile = (MappingProfileDetailDto)ViewData["Profile"]!;
+    var fields = (IReadOnlyList<ProfileFieldOption>)ViewData["Fields"]!;
+    var mapped = (HashSet<long>)ViewData["MappedFieldIds"]!;
+
+    var targetId = isEdit ? update!.TargetFieldId : add!.TargetFieldId;
+    var sortOrder = isEdit ? update!.SortOrder : add!.SortOrder;
+    var sourceColumn = isEdit ? ViewData["SourceColumn"] as string : add!.SourceColumn;
+    var cancelUrl = Url.Action("Detail", new { id = profile.Id });
+    var free = fields.Count(f => !mapped.Contains(f.Id));
+
+    var formErrors = ViewData.ModelState.Where(kv => string.IsNullOrEmpty(kv.Key))
+        .SelectMany(kv => kv.Value!.Errors).Select(e => e.ErrorMessage).Where(m => !string.IsNullOrWhiteSpace(m)).ToList();
+    string? ErrorOf(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string Invalid(string key) => ErrorOf(key) is null ? "" : " field-invalid";
+}
+
+<form class="modal" method="post" asp-controller="MappingProfiles" asp-action="@(isEdit ? "EditRule" : "AddRule")" data-mx-ajax novalidate>
+    <div class="modal-head">
+        <span class="modal-head-ico tone-warning"><svg class="ico"><use href="#i-arrow-left" /></svg></span>
+        <div>
+            <div class="modal-title">@(isEdit ? "ویرایش قاعده" : "قاعدهٔ جدید")</div>
+            <div class="modal-sub">پروفایل «@profile.Name» · @profile.TemplateName نسخهٔ @profile.VersionNo.ToPersianNumber()</div>
+        </div>
+        <a class="icon-btn plain close" href="@cancelUrl" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+    </div>
+
+    <div class="modal-body">
+        @if (formErrors.Count > 0)
+        {
+            <div class="callout tone-danger" role="alert" style="margin-bottom:1rem">
+                <svg class="ico"><use href="#i-alert" /></svg><div>@string.Join(" — ", formErrors)</div>
+            </div>
+        }
+
+        @if (isEdit)
+        {
+            <input type="hidden" name="Id" value="@update!.Id" />
+            <input type="hidden" name="profileId" value="@profile.Id" />
+        }
+        else
+        {
+            <input type="hidden" name="MappingProfileId" value="@add!.MappingProfileId" />
+        }
+
+        <div class="form-grid">
+            <div class="field span-2@(Invalid("SourceColumn"))">
+                @if (isEdit)
+                {
+                    <span class="label">عنوان ستون در فایل</span>
+                    <span class="code-chip" style="height:2.5rem;display:flex;align-items:center;padding-inline:.8rem">@sourceColumn</span>
+                    <span class="hint">عنوان ستون قابل تغییر نیست؛ برای ستون دیگر قاعدهٔ جدید بسازید.</span>
+                }
+                else
+                {
+                    <label class="label" for="SourceColumn">عنوان ستون در فایل<span class="req">*</span></label>
+                    <input class="input" id="SourceColumn" name="SourceColumn" value="@sourceColumn" autocomplete="off" placeholder="مثلاً: نام پیمانکار" autofocus />
+                    <span class="field-error">@ErrorOf("SourceColumn")</span>
+                    <span class="hint">مقایسه بدون توجه به فاصله‌ها، ی/ک عربی و ارقام فارسی/انگلیسی انجام می‌شود.</span>
+                }
+            </div>
+
+            <div class="field@(Invalid("TargetFieldId"))">
+                <label class="label" for="TargetFieldId">فیلد مقصد<span class="req">*</span></label>
+                <select class="select" id="TargetFieldId" name="TargetFieldId" autofocus="@isEdit">
+                    <option value="0">— انتخاب کنید —</option>
+                    @foreach (var f in fields)
+                    {
+                        var used = mapped.Contains(f.Id);
+                        <option value="@f.Id" disabled="@used" selected="@(targetId == f.Id)">@f.Label@(f.IsRequired ? " *" : "") — @f.Key@(used ? " (قاعده دارد)" : "")</option>
+                    }
+                </select>
+                <span class="field-error">@ErrorOf("TargetFieldId")</span>
+                <span class="hint">@free.ToPersianNumber() از @fields.Count.ToPersianNumber() فیلد هنوز قاعده ندارد؛ فیلدهای الزامی با * مشخص‌اند.</span>
+            </div>
+
+            <div class="field@(Invalid("SortOrder"))">
+                <label class="label" for="SortOrder">ترتیب</label>
+                <input class="input ltr" id="SortOrder" name="SortOrder" type="number" min="0" value="@sortOrder" />
+                <span class="field-error">@ErrorOf("SortOrder")</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-foot">
+        <span class="spacer"></span>
+        <a class="btn btn-quiet" href="@cancelUrl" data-close>انصراف</a>
+        <button type="submit" class="btn btn-primary"><svg class="ico"><use href="#i-check" /></svg>@(isEdit ? "ذخیره تغییرات" : "افزودن قاعده")</button>
+    </div>
+</form>

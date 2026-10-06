@@ -9,6 +9,7 @@ using Borc.DataMapper.Application.MappingProfiles.SetMappingProfileStatus;
 using Borc.DataMapper.Application.MappingProfiles.UpdateMappingProfile;
 using Borc.DataMapper.Application.MappingProfiles.UpdateMappingRule;
 using Borc.DataMapper.Domain.Mappings;
+using Borc.DataMapper.Web.Mvc;
 using Borc.DataMapper.Web.ViewModels.MappingProfiles;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +19,10 @@ namespace Borc.DataMapper.Web.Controllers;
 public sealed class MappingProfilesController : Controller
 {
     private readonly ISender _sender;
+
+    /// <summary>فرم‌های مشترک (مودال و صفحهٔ کامل).</summary>
+    private const string ProfilePartial = "_ProfileForm";
+    private const string RulePartial = "_RuleForm";
 
     public MappingProfilesController(ISender sender)
     {
@@ -56,7 +61,7 @@ public sealed class MappingProfilesController : Controller
     {
         await LoadVersionsAsync(cancellationToken);
 
-        return View(new CreateMappingProfileCommand(string.Empty, templateVersionId ?? 0, ImportSourceType.Excel));
+        return this.ModalOrView(ProfilePartial, new CreateMappingProfileCommand(string.Empty, templateVersionId ?? 0, ImportSourceType.Excel));
     }
 
     [HttpPost]
@@ -71,15 +76,15 @@ public sealed class MappingProfilesController : Controller
 
             if (result.Success)
             {
-                TempData["Success"] = result.Message ?? "پروفایل نگاشت ایجاد شد.";
-                return RedirectToAction(nameof(Detail), new { id = result.Data });
+                TempData["Success"] = result.Message ?? "پروفایل نگاشت ایجاد شد؛ حالا قاعده‌ها را اضافه کنید.";
+                return this.ModalOrRedirect(Url.Action(nameof(Detail), new { id = result.Data })!);
             }
 
             ModelState.AddModelError(string.Empty, result.Message ?? "ساخت پروفایل انجام نشد.");
         }
 
         await LoadVersionsAsync(cancellationToken);
-        return View(command);
+        return this.ModalOrView(ProfilePartial, command);
     }
 
     // ---------- جزئیات ----------
@@ -113,7 +118,7 @@ public sealed class MappingProfilesController : Controller
 
         ViewData["Target"] = $"{result.Data.TemplateName} — نسخه {result.Data.VersionNo}";
 
-        return View(new UpdateMappingProfileCommand(result.Data.Id, result.Data.Name, result.Data.SourceType));
+        return this.ModalOrView(ProfilePartial, new UpdateMappingProfileCommand(result.Data.Id, result.Data.Name, result.Data.SourceType));
     }
 
     [HttpPost]
@@ -129,7 +134,7 @@ public sealed class MappingProfilesController : Controller
             if (result.Success)
             {
                 TempData["Success"] = result.Message ?? "پروفایل ویرایش شد.";
-                return RedirectToAction(nameof(Detail), new { id = command.Id });
+                return this.ModalOrRedirect(Url.Action(nameof(Detail), new { id = command.Id })!);
             }
 
             ModelState.AddModelError(string.Empty, result.Message ?? "ویرایش پروفایل انجام نشد.");
@@ -140,7 +145,7 @@ public sealed class MappingProfilesController : Controller
             ? string.Empty
             : $"{current.Data.TemplateName} — نسخه {current.Data.VersionNo}";
 
-        return View(command);
+        return this.ModalOrView(ProfilePartial, command);
     }
 
     // ---------- وضعیت و حذف ----------
@@ -179,7 +184,7 @@ public sealed class MappingProfilesController : Controller
         if (!await LoadRuleFormAsync(profileId, null, cancellationToken))
             return RedirectToAction(nameof(Index));
 
-        return View(new AddMappingRuleCommand(profileId, string.Empty, 0, NextSortOrder()));
+        return this.ModalOrView(RulePartial, new AddMappingRuleCommand(profileId, string.Empty, 0, NextSortOrder()));
     }
 
     [HttpPost]
@@ -195,7 +200,7 @@ public sealed class MappingProfilesController : Controller
             if (result.Success)
             {
                 TempData["Success"] = result.Message ?? "قاعده اضافه شد.";
-                return RedirectToAction(nameof(Detail), new { id = command.MappingProfileId });
+                return this.ModalOrRedirect(Url.Action(nameof(Detail), new { id = command.MappingProfileId })!);
             }
 
             ModelState.AddModelError(string.Empty, result.Message ?? "افزودن قاعده انجام نشد.");
@@ -204,7 +209,7 @@ public sealed class MappingProfilesController : Controller
         if (!await LoadRuleFormAsync(command.MappingProfileId, null, cancellationToken))
             return RedirectToAction(nameof(Index));
 
-        return View(command);
+        return this.ModalOrView(RulePartial, command);
     }
 
     [HttpGet]
@@ -224,7 +229,7 @@ public sealed class MappingProfilesController : Controller
         ViewData["ProfileId"] = profileId;
         ViewData["SourceColumn"] = rule.SourceColumn;
 
-        return View(new UpdateMappingRuleCommand(rule.Id, rule.TargetFieldId, rule.SortOrder));
+        return this.ModalOrView(RulePartial, new UpdateMappingRuleCommand(rule.Id, rule.TargetFieldId, rule.SortOrder));
     }
 
     [HttpPost]
@@ -241,7 +246,7 @@ public sealed class MappingProfilesController : Controller
             if (result.Success)
             {
                 TempData["Success"] = result.Message ?? "قاعده ویرایش شد.";
-                return RedirectToAction(nameof(Detail), new { id = profileId });
+                return this.ModalOrRedirect(Url.Action(nameof(Detail), new { id = profileId })!);
             }
 
             ModelState.AddModelError(string.Empty, result.Message ?? "ویرایش قاعده انجام نشد.");
@@ -254,7 +259,7 @@ public sealed class MappingProfilesController : Controller
         ViewData["ProfileId"] = profileId;
         ViewData["SourceColumn"] = rule?.SourceColumn ?? string.Empty;
 
-        return View(command);
+        return this.ModalOrView(RulePartial, command);
     }
 
     [HttpPost]

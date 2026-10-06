@@ -1,140 +1,147 @@
 @model Borc.DataMapper.Application.MappingProfiles.GetMappingProfile.MappingProfileDetailDto
 @using Borc.DataMapper.Web.ViewModels.MappingProfiles
 @using Borc.DataMapper.Web.ViewModels.Imports
+@using Borc.DataMapper.Web.ViewModels.Dashboard
 @using Borc.DataMapper.Domain.Mappings
+@using System.Globalization
 @{
     ViewData["Title"] = Model.Name;
+    ViewData["Subtitle"] = $"پروفایل نگاشت · {Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}";
 
     var isActive = Model.Status == MappingProfileStatus.Active;
+    var coverage = Model.FieldCount == 0 ? 0 : (int)Math.Round(100.0 * Model.Rules.Count / Model.FieldCount);
+    var deleteRuleUrl = Url.Action("DeleteRule", "MappingProfiles");
 }
 
-<div class="page-grid">
+@section TopbarActions {
+    <a class="btn btn-ghost" asp-action="Index"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">همه پروفایل‌ها</span></a>
+}
 
-    <!-- ===== محتوای اصلی ===== -->
-    <section class="page-main">
-        <div class="panel card">
-            <div class="panel-header">
-                <h2>قاعده‌های نگاشت</h2>
-                <div class="summary-stats"><span>تعداد: <b>@Model.Rules.Count</b></span></div>
-
-                <a asp-action="AddRule" asp-route-profileId="@Model.Id" class="btn primary">+ قاعدهٔ جدید</a>
+<div class="split">
+    <section class="stack" style="min-width:0">
+        @if (Model.UnmappedRequiredFields.Count > 0)
+        {
+            <div class="callout tone-warning rise">
+                <svg class="ico"><use href="#i-alert" /></svg>
+                <div>
+                    <b>@Model.UnmappedRequiredFields.Count.ToPersianNumber() فیلد الزامی</b> قاعده ندارد؛ در ایمپورت باید دستی نگاشت شوند:
+                    <div class="req-list" style="margin-top:.45rem">
+                        @foreach (var f in Model.UnmappedRequiredFields)
+                        {
+                            <span class="tag tone-warning">@f</span>
+                        }
+                    </div>
+                </div>
             </div>
+        }
 
-            @if (Model.UnmappedRequiredFields.Count > 0)
+        <article class="card rise" style="--i:1">
+            <header class="card-head">
+                <div class="card-title">
+                    <span class="card-ico"><svg class="ico"><use href="#i-arrow-left" /></svg></span>
+                    <div>قاعده‌های نگاشت<div class="card-sub">هر قاعده: عنوان ستون در فایل ← فیلد قالب</div></div>
+                </div>
+                <a class="btn btn-primary btn-sm" asp-action="AddRule" asp-route-profileId="@Model.Id" data-modal><svg class="ico"><use href="#i-plus" /></svg>قاعدهٔ جدید</a>
+            </header>
+
+            @if (Model.Rules.Count == 0)
             {
-                <div class="status error show">
-                    فیلدهای الزامی بدون قاعده (در ایمپورت باید دستی نگاشت شوند):
-                    @string.Join("، ", Model.UnmappedRequiredFields)
+                <div class="empty">
+                    <p>هنوز قاعده‌ای ثبت نشده است.</p>
+                    <p class="hint" style="margin-top:.3rem">قاعده‌ها را دستی اضافه کنید یا هنگام تطبیق ستون‌های یک ایمپورت، نگاشت را به‌عنوان پروفایل ذخیره کنید.</p>
                 </div>
             }
-
-            <div class="tscroll results-table-container">
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th>ترتیب</th>
-                            <th>عنوان ستون در فایل</th>
-                            <th>فیلد مقصد</th>
-                            <th>کلید فیلد</th>
-                            <th>روش</th>
-                            <th>اطمینان</th>
-                            <th>عملیات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @if (Model.Rules.Count == 0)
-                    {
-                        <tr><td colspan="7" class="entries-empty">هنوز قاعده‌ای ثبت نشده است. قاعده‌ها را دستی اضافه کنید یا هنگام ایمپورت نگاشت را به‌عنوان پروفایل ذخیره کنید.</td></tr>
-                    }
-                    else
-                    {
-                        foreach (var r in Model.Rules)
-                        {
-                            <tr>
-                                <td>@r.SortOrder</td>
-                                <td>@r.SourceColumn</td>
-                                <td>@r.FieldLabel</td>
-                                <td dir="ltr"><code style="font-family:var(--mono)">@r.FieldKey</code></td>
-                                <td><span class="mode-badge">@r.Method.ToLabel()</span></td>
-                                <td>@(r.Confidence.HasValue ? r.Confidence.Value.ToString("0.#") + "٪" : "—")</td>
-                                <td>
-                                    <div class="row-actions">
-                                        <a asp-action="EditRule" asp-route-profileId="@Model.Id" asp-route-id="@r.Id"
-                                           class="btn primary low-padding" title="ویرایش" aria-label="ویرایش"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" /></svg></a>
-
-                                        <button type="button" class="btn danger low-padding" title="حذف" aria-label="حذف"
-                                                data-delete-id="@r.Id" data-delete-name="@r.SourceColumn"
-                                                data-delete-url="@Url.Action("DeleteRule", "MappingProfiles")"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" /></svg></button>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    }
-                    </tbody>
-                </table>
-            </div>
-        </div>
+            else
+            {
+                <div class="tbl-wrap">
+                    <table class="tbl">
+                        <thead><tr><th>#</th><th>ستون فایل</th><th></th><th>فیلد قالب</th><th>روش</th><th>اطمینان</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var r in Model.Rules)
+                            {
+                                <tr>
+                                    <td class="cell-sub nums">@r.SortOrder.ToPersianNumber()</td>
+                                    <td><span class="code-chip">@r.SourceColumn</span></td>
+                                    <td><svg class="ico faint"><use href="#i-arrow-left" /></svg></td>
+                                    <td><a class="cell-main" asp-action="EditRule" asp-route-profileId="@Model.Id" asp-route-id="@r.Id" data-modal>@r.FieldLabel</a><div class="code" style="font-size:.72rem">@r.FieldKey</div></td>
+                                    <td><span class="tag @r.Method.TagClass()">@r.Method.ToLabel()</span></td>
+                                    <td>
+                                        @if (r.Confidence is decimal c)
+                                        {
+                                            <div class="conf" style="min-width:6.5rem">
+                                                <span class="meter @DashboardUi.CoverageTone((int)c)"><i style="width:@(((double)c).ToString("0.##", CultureInfo.InvariantCulture))%"></i></span>
+                                                <span>@(((int)c).ToPersianNumber())٪</span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="cell-sub">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="row-actions">
+                                            <a class="icon-btn sm" asp-action="EditRule" asp-route-profileId="@Model.Id" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش قاعدهٔ @r.SourceColumn"><svg class="ico"><use href="#i-edit" /></svg></a>
+                                            <button class="icon-btn sm danger" type="button" title="حذف" aria-label="حذف قاعدهٔ @r.SourceColumn"
+                                                    data-delete-id="@r.Id" data-delete-name="قاعدهٔ «@r.SourceColumn»" data-delete-url="@deleteRuleUrl"><svg class="ico"><use href="#i-trash" /></svg></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </article>
     </section>
 
-    <!-- ===== اطلاعات کلی (aside سمت چپ) ===== -->
-    <aside class="page-aside">
-        <div class="panel card">
-            <div class="aside-title">@Model.Name</div>
-            <span class="mode-badge">@Model.Status.ToLabel()</span>
+    <aside class="split-side">
+        <article class="card rise" style="--i:2">
+            <div class="card-body">
+                <div class="row" style="justify-content:space-between;align-items:flex-start">
+                    <div class="hero-title">@Model.Name</div>
+                    <span class="badge @(isActive ? "st-active" : "st-inactive")">@Model.Status.ToLabel()</span>
+                </div>
+                <a class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a>
 
-            <dl class="info-list">
-                <div>
-                    <dt>قالب</dt>
-                    <dd><a asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a></dd>
+                <div style="margin-top:1rem">
+                    <div class="meter-head"><b>پوشش فیلدها</b><span>@Model.Rules.Count.ToPersianNumber() از @Model.FieldCount.ToPersianNumber()</span></div>
+                    <div class="meter @DashboardUi.CoverageTone(coverage)"><i style="width:@coverage%"></i></div>
                 </div>
-                <div>
-                    <dt>نسخه</dt>
-                    <dd>
-                        <a asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId">نسخه @Model.VersionNo</a>
-                        <span class="mode-badge">@Model.VersionStatus.ToLabel()</span>
-                    </dd>
-                </div>
-                <div>
-                    <dt>نوع فایل مبدأ</dt>
-                    <dd>@Model.SourceType.ToLabel()</dd>
-                </div>
-                <div>
-                    <dt>پوشش فیلدها</dt>
-                    <dd>@Model.Rules.Count از @Model.FieldCount فیلد</dd>
-                </div>
-                <div>
-                    <dt>ایمپورت‌های انجام‌شده با این پروفایل</dt>
-                    <dd>@Model.BatchCount</dd>
-                </div>
-                <div>
-                    <dt>تاریخ ایجاد</dt>
-                    <dd dir="ltr" style="text-align:right">@Model.CreatedAt.ToJalali()</dd>
-                </div>
-                <div>
-                    <dt>آخرین ویرایش</dt>
-                    <dd dir="ltr" style="text-align:right">@Model.UpdatedAt.ToJalali()</dd>
-                </div>
-            </dl>
 
-            <div class="aside-actions">
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn primary block">ویرایش پروفایل</a>
-
-                <form asp-action="SetStatus" method="post">
-                    <input type="hidden" name="id" value="@Model.Id" />
-                    <input type="hidden" name="isActive" value="@((!isActive).ToString().ToLowerInvariant())" />
-                    <input type="hidden" name="returnTo" value="detail" />
-                    <button type="submit" class="btn secondary block">@(isActive ? "غیرفعال‌سازی" : "فعال‌سازی")</button>
-                </form>
-
-                <a asp-controller="Imports" asp-action="Upload" class="btn ghost block">ایمپورت با این پروفایل</a>
-
-                <button type="button" class="btn danger block"
-                        data-delete-id="@Model.Id" data-delete-name="@Model.Name"
-                        data-delete-url="@Url.Action("Delete", "MappingProfiles")">حذف پروفایل</button>
-
-                <a asp-action="Index" class="btn ghost block">بازگشت به فهرست</a>
+                <dl class="dl stacked" style="margin-top:1rem">
+                    <div>
+                        <dt>نسخهٔ قالب</dt>
+                        <dd>
+                            <a class="link-btn" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId">نسخهٔ @Model.VersionNo.ToPersianNumber()</a>
+                            <span class="badge @Model.VersionStatus.BadgeClass()">@Model.VersionStatus.ToLabel()</span>
+                        </dd>
+                    </div>
+                    <div><dt>نوع فایل مبدأ</dt><dd>@Model.SourceType.ToLabel()</dd></div>
+                    <div><dt>ایمپورت‌های انجام‌شده</dt><dd class="nums">@Model.BatchCount.ToPersianNumber()</dd></div>
+                    <div><dt>تاریخ ایجاد</dt><dd class="nums">@Model.CreatedAt.ToJalali().ToPersianDigits()</dd></div>
+                    <div><dt>آخرین ویرایش</dt><dd class="nums">@(Model.UpdatedAt.HasValue ? Model.UpdatedAt.ToJalali().ToPersianDigits() : "—")</dd></div>
+                </dl>
             </div>
-        </div>
+
+            <div class="card-foot" style="display:block">
+                <div class="action-stack">
+                    @if (isActive && Model.VersionStatus == TemplateVersionStatus.Published)
+                    {
+                        <a class="btn btn-primary" asp-controller="Imports" asp-action="Upload" asp-route-versionId="@Model.TemplateVersionId" asp-route-profileId="@Model.Id" data-modal><svg class="ico"><use href="#i-upload" /></svg>ایمپورت با این پروفایل</a>
+                    }
+                    <a class="btn btn-ghost" asp-action="Edit" asp-route-id="@Model.Id" data-modal><svg class="ico"><use href="#i-edit" /></svg>ویرایش پروفایل</a>
+                    <form asp-action="SetStatus" method="post">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="isActive" value="@((!isActive).ToString().ToLowerInvariant())" />
+                        <input type="hidden" name="returnTo" value="detail" />
+                        <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#@(isActive ? "i-x" : "i-check")" /></svg>@(isActive ? "غیرفعال‌سازی" : "فعال‌سازی")</button>
+                    </form>
+                    <div class="dd-sep"></div>
+                    <button type="button" class="btn btn-danger-soft" data-delete-id="@Model.Id" data-delete-name="@Model.Name"
+                            data-delete-url="@Url.Action("Delete", "MappingProfiles")"><svg class="ico"><use href="#i-trash" /></svg>حذف پروفایل</button>
+                </div>
+            </div>
+        </article>
     </aside>
 </div>
 

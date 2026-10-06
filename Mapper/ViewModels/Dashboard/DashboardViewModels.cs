@@ -2,6 +2,7 @@ using Borc.DataMapper.Application.Dashboard.GetDashboard;
 using Borc.DataMapper.Application.Imports.ListImportBatches;
 using Borc.DataMapper.Domain.DataSources;
 using Borc.DataMapper.Domain.Imports;
+using Borc.DataMapper.Domain.Mappings;
 using Borc.DataMapper.Domain.Templates;
 using Borc.DataMapper.Web.ViewModels.DataSources;
 using Borc.DataMapper.Web.ViewModels.Imports;
@@ -93,6 +94,23 @@ public static class DashboardUi
         TemplateStatus.Inactive => "st-inactive",
         TemplateStatus.Archived => "st-archived",
         _ => ""
+    };
+
+    public static string BadgeClass(this ImportRowStatus status) => status switch
+    {
+        ImportRowStatus.Pending => "st-draft",
+        ImportRowStatus.Valid => "st-validated",
+        ImportRowStatus.Invalid => "st-failed",
+        ImportRowStatus.Imported => "st-imported",
+        _ => ""
+    };
+
+    public static string TagClass(this MappingMethod method) => method switch
+    {
+        MappingMethod.Auto => "tg-auto",
+        MappingMethod.Alias => "tg-alias",
+        MappingMethod.Regex => "tg-regex",
+        _ => "tg-manual"
     };
 
     public static string BadgeClass(this TemplateVersionStatus status) => status switch

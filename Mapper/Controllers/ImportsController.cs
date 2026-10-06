@@ -8,6 +8,7 @@ using Borc.DataMapper.Application.Imports.ListImportBatches;
 using Borc.DataMapper.Application.Imports.ReopenImportMapping;
 using Borc.DataMapper.Application.Imports.UploadImportBatch;
 using Borc.DataMapper.Domain.Imports;
+using Borc.DataMapper.Web.Mvc;
 using Borc.DataMapper.Web.ViewModels;
 using Borc.DataMapper.Web.ViewModels.Imports;
 using MediatR;
@@ -52,16 +53,12 @@ public sealed class ImportsController : Controller
 
     // ---------- آپلود ----------
 
+    /// <summary>فرم مشترک آپلود؛ هم در مودال (از هر صفحه) و هم در صفحهٔ کامل.</summary>
+    private const string UploadPartial = "_UploadForm";
+
     [HttpGet]
-    public async Task<IActionResult> Upload(CancellationToken cancellationToken)
-    {
-        var lookups = await _sender.Send(new GetImportLookupsQuery(), cancellationToken);
-
-        ViewData["Lookups"] = lookups.Data
-            ?? new ImportLookupsDto(Array.Empty<ImportVersionOption>(), Array.Empty<ImportProfileOption>());
-
-        return View();
-    }
+    public async Task<IActionResult> Upload(long? versionId, long? profileId, CancellationToken cancellationToken)
+        => await UploadFormAsync(versionId, profileId, cancellationToken);
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -72,44 +69,54 @@ public sealed class ImportsController : Controller
         long? mappingProfileId,
         CancellationToken cancellationToken)
     {
-        if (file is null || file.Length == 0)
+        string? error = null;
+
+        if (templateVersionId <= 0)
+            error = "قالب و نسخهٔ مقصد را انتخاب کنید.";
+        else if (file is null || file.Length == 0)
+            error = "فایلی انتخاب نشده است.";
+        else if (!string.Equals(Path.GetExtension(file.FileName), ".xlsx", StringComparison.OrdinalIgnoreCase))
+            error = "فقط فایل xlsx پشتیبانی می‌شود.";
+        else if (file.Length > ImportLimits.MaxFileBytes)
+            error = "حجم فایل بیش از حد مجاز (10 مگابایت) است.";
+
+        if (error is null)
         {
-            TempData["Error"] = "فایلی انتخاب نشده است.";
-            return RedirectToAction(nameof(Upload));
+            byte[] content;
+
+            await using (var ms = new MemoryStream())
+            {
+                await file!.CopyToAsync(ms, cancellationToken);
+                content = ms.ToArray();
+            }
+
+            var result = await _sender.Send(
+                new UploadImportBatchCommand(templateVersionId, file.FileName, content, mappingProfileId),
+                cancellationToken);
+
+            if (result.Success)
+            {
+                TempData["Success"] = result.Message ?? "فایل بارگذاری شد؛ ستون‌ها را تطبیق دهید.";
+                return this.ModalOrRedirect(Url.Action(nameof(Detail), new { id = result.Data })!);
+            }
+
+            error = result.Message ?? "بارگذاری فایل انجام نشد.";
         }
 
-        if (!string.Equals(Path.GetExtension(file.FileName), ".xlsx", StringComparison.OrdinalIgnoreCase))
-        {
-            TempData["Error"] = "فقط فایل xlsx پشتیبانی می‌شود.";
-            return RedirectToAction(nameof(Upload));
-        }
+        ModelState.AddModelError(string.Empty, error);
+        return await UploadFormAsync(templateVersionId, mappingProfileId, cancellationToken);
+    }
 
-        if (file.Length > ImportLimits.MaxFileBytes)
-        {
-            TempData["Error"] = "حجم فایل بیش از حد مجاز (10 مگابایت) است.";
-            return RedirectToAction(nameof(Upload));
-        }
+    private async Task<IActionResult> UploadFormAsync(long? versionId, long? profileId, CancellationToken ct)
+    {
+        var lookups = await _sender.Send(new GetImportLookupsQuery(), ct);
 
-        byte[] content;
+        var vm = new ImportUploadViewModel(
+            lookups.Data ?? new ImportLookupsDto(Array.Empty<ImportVersionOption>(), Array.Empty<ImportProfileOption>()),
+            versionId > 0 ? versionId : null,
+            profileId);
 
-        await using (var ms = new MemoryStream())
-        {
-            await file.CopyToAsync(ms, cancellationToken);
-            content = ms.ToArray();
-        }
-
-        var result = await _sender.Send(
-            new UploadImportBatchCommand(templateVersionId, file.FileName, content, mappingProfileId),
-            cancellationToken);
-
-        if (!result.Success)
-        {
-            TempData["Error"] = result.Message ?? "بارگذاری فایل انجام نشد.";
-            return RedirectToAction(nameof(Upload));
-        }
-
-        TempData["Success"] = result.Message ?? "فایل بارگذاری شد.";
-        return RedirectToAction(nameof(Detail), new { id = result.Data });
+        return this.ModalOrView(UploadPartial, vm, "Upload");
     }
 
     // ---------- جزئیات / تطبیق ----------

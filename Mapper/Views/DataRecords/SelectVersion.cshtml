@@ -2,32 +2,7 @@
 @{
     ViewData["Title"] = "ورود دستی داده";
 }
-
-<div class="panel card">
-    <div class="panel-header">
-        <h2>ورود دستی داده — انتخاب قالب</h2>
-    </div>
-
-    @if (Model.Count == 0)
-    {
-        <div class="status error show">هنوز نسخهٔ منتشرشده‌ای وجود ندارد. ورود داده فقط برای نسخهٔ منتشرشده ممکن است.</div>
-    }
-
-    <form method="get" asp-action="Create">
-        <div class="form-group">
-            <label for="versionId">قالب و نسخه (فقط نسخه‌های منتشرشده):</label>
-            <select id="versionId" name="versionId" required>
-                <option value="">— انتخاب کنید —</option>
-                @foreach (var v in Model)
-                {
-                    <option value="@v.Id">@v.Label</option>
-                }
-            </select>
-        </div>
-
-        <div class="actions">
-            <button type="submit" class="btn primary">ادامه</button>
-            <a asp-action="Index" class="btn ghost">انصراف</a>
-        </div>
-    </form>
+@* معمولاً در مودال باز می‌شود (data-modal)؛ این صفحه برای لینک مستقیم و حالت بدون JavaScript است. *@
+<div class="modal-page">
+    <partial name="_SelectVersion" model="Model" />
 </div>

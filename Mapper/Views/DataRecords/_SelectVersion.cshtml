@@ -1,0 +1,55 @@
+@model IReadOnlyList<Borc.DataMapper.Application.Imports.GetImportLookups.ImportVersionOption>
+@*
+    انتخاب قالب/نسخه برای ورود دستی داده — ریشهٔ آن یک .modal است.
+    فرم GET معمولی است: انتخاب و «ادامه» به صفحهٔ فرم ورود داده (DataRecords/Create?versionId=…) می‌رود.
+*@
+<form class="modal" method="get" asp-controller="DataRecords" asp-action="Create" data-mx-init="filter-list">
+    <div class="modal-head">
+        <span class="modal-head-ico tone-success"><svg class="ico"><use href="#i-pen" /></svg></span>
+        <div>
+            <div class="modal-title">ورود دستی داده</div>
+            <div class="modal-sub">قالبی را که می‌خواهید برایش رکورد ثبت کنید انتخاب کنید.</div>
+        </div>
+        <a class="icon-btn plain close" asp-controller="DataRecords" asp-action="Index" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+    </div>
+
+    <div class="modal-body">
+        @if (Model.Count == 0)
+        {
+            <div class="callout tone-warning">
+                <svg class="ico"><use href="#i-alert" /></svg>
+                <div>هنوز هیچ قالبی <b>نسخهٔ منتشرشده</b> ندارد؛ ورود داده فقط برای نسخهٔ منتشرشده ممکن است.
+                    <a class="link-btn" asp-controller="Templates" asp-action="Index">رفتن به قالب‌ها</a></div>
+            </div>
+        }
+        else
+        {
+            @if (Model.Count > 6)
+            {
+                <div class="input-wrap" style="margin-bottom:.8rem">
+                    <svg class="ico"><use href="#i-search" /></svg>
+                    <input class="input" type="search" data-filter-input placeholder="جستجوی قالب…" aria-label="جستجوی قالب" autocomplete="off" autofocus />
+                </div>
+            }
+            <div class="opt-grid" role="radiogroup" aria-label="قالب و نسخه" style="grid-template-columns:repeat(auto-fill, minmax(14rem, 1fr))">
+                @for (var i = 0; i < Model.Count; i++)
+                {
+                    var v = Model[i];
+                    <label class="opt" data-filter-item>
+                        <input type="radio" name="versionId" value="@v.Id" required checked="@(i == 0)" />
+                        <span class="opt-ico tone-violet"><svg class="ico"><use href="#i-template" /></svg></span>
+                        <span class="opt-body"><span class="opt-title">@v.Label</span><span class="opt-desc">نسخهٔ منتشرشده</span></span>
+                        <span class="opt-check"></span>
+                    </label>
+                }
+            </div>
+            <p class="empty" data-filter-empty hidden>قالبی با این نام پیدا نشد.</p>
+        }
+    </div>
+
+    <div class="modal-foot">
+        <span class="spacer"></span>
+        <a class="btn btn-quiet" asp-controller="DataRecords" asp-action="Index" data-close>انصراف</a>
+        <button type="submit" class="btn btn-primary" @(Model.Count == 0 ? "disabled" : null)>ادامه به فرم<svg class="ico"><use href="#i-chev-left" /></svg></button>
+    </div>
+</form>
