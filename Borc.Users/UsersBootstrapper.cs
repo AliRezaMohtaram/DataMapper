@@ -3,6 +3,8 @@ using Borc.Users.Persistence;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,6 +22,17 @@ internal sealed class UsersBootstrapper(IServiceProvider services, IOptions<User
         UsersDbContext db = scope.ServiceProvider.GetRequiredService<UsersDbContext>();
         if (options.Value.MigrateOnStartup)
         {
+            // The module only adds its own tables to the host's database; it never creates the database itself
+            // (a wrong connection string would otherwise leave the host on a new, empty database).
+            if (db.Database.IsRelational()
+                && db.GetService<IRelationalDatabaseCreator>() is { } creator
+                && !await creator.ExistsAsync(cancellationToken))
+            {
+                throw new InvalidOperationException(
+                    $"Users: database '{db.Database.GetDbConnection().Database}' does not exist. Check the connection string; "
+                    + "the Users module creates only its own tables (schema usr) in an existing database.");
+            }
+
             await db.Database.MigrateAsync(cancellationToken);
         }
 
