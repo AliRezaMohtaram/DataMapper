@@ -1,0 +1,8 @@
+@page
+@model Borc.Users.Web.Pages.Users.StatusModel
+@{
+    ViewData["Title"] = Model.Active ? "فعال‌سازی کاربر" : "غیرفعال‌سازی کاربر";
+}
+<div class="modal-page">
+    <partial name="@Borc.Users.Web.Pages.Users.StatusModel.FormPath" model="Model" />
+</div>

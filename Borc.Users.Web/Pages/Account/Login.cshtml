@@ -1,0 +1,30 @@
+@page
+@model Borc.Users.Web.Pages.Account.LoginModel
+@{
+    Layout = "_UsersAuthLayout";
+    ViewData["Title"] = "ورود";
+}
+<form class="card" method="post" asp-route-returnUrl="@Model.ReturnUrl" novalidate>
+    <div class="card-body">
+        <div class="usr-auth-brand">
+            <span class="card-ico tone-primary"><svg class="ico"><use href="#i-user" /></svg></span>
+            <div>
+                <div class="card-title">ورود به سامانه</div>
+                <div class="card-sub">با نام کاربری یا ایمیل وارد شوید.</div>
+            </div>
+        </div>
+
+        <partial name="_UsersFormErrors" model="Model.FormErrors" />
+
+        <div class="field">
+            <label class="label" for="Login">نام کاربری یا ایمیل</label>
+            <input class="input ltr" id="Login" name="Login" value="@Model.Login" autocomplete="username" spellcheck="false" autofocus required />
+        </div>
+        <div class="field">
+            <label class="label" for="Password">رمز عبور</label>
+            <input class="input ltr" id="Password" name="Password" type="password" autocomplete="current-password" required />
+        </div>
+        <label class="usr-check"><input type="checkbox" name="Remember" value="true" checked="@Model.Remember" />مرا به خاطر بسپار</label>
+        <button type="submit" class="btn btn-primary"><svg class="ico"><use href="#i-arrow-left" /></svg>ورود</button>
+    </div>
+</form>

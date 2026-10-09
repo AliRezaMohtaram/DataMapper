@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <RootNamespace>Borc.Users.Web</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    Pages of the Users module (Razor Pages, MX design system): sign-in/out, own password, account administration.
+    They render in the host's "_Layout" (which loads MX); the sign-in page has its own minimal shell.
+  -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Borc.Users\Borc.Users.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,49 @@
+@model Borc.Users.Web.Pages.Users.EditModel
+<form class="modal" method="post" asp-page="/Users/Edit" asp-route-id="@Model.Id" asp-route-returnUrl="@Model.ReturnUrl" data-mx-ajax novalidate>
+    <div class="modal-head">
+        <span class="modal-head-ico tone-primary"><svg class="ico"><use href="#i-user" /></svg></span>
+        <div>
+            <div class="modal-title">@(Model.IsEdit ? $"ویرایش «{Model.DisplayName}»" : "کاربر جدید")</div>
+            <div class="modal-sub">ورود با نام کاربری یا ایمیل انجام می‌شود.</div>
+        </div>
+        <a class="icon-btn plain close" href="@Model.BackUrl" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+    </div>
+    <div class="modal-body">
+        <partial name="_UsersFormErrors" model="Model.FormErrors" />
+        <div class="form-grid">
+            <div class="field">
+                <label class="label" for="DisplayName">نام نمایشی<span class="req">*</span></label>
+                <input class="input" id="DisplayName" name="DisplayName" value="@Model.DisplayName" maxlength="128" autofocus required />
+            </div>
+            <div class="field">
+                <label class="label" for="UserName">نام کاربری<span class="req">*</span></label>
+                <input class="input ltr" id="UserName" name="UserName" value="@Model.UserName" autocomplete="off" spellcheck="false" required />
+                <span class="hint">حروف انگلیسی، رقم و . - _ @@</span>
+            </div>
+            <div class="field span-2">
+                <label class="label" for="Email">ایمیل</label>
+                <input class="input ltr" id="Email" name="Email" type="email" value="@Model.Email" autocomplete="off" spellcheck="false" />
+            </div>
+            @if (!Model.IsEdit)
+            {
+                <div class="field">
+                    <label class="label" for="Password">رمز عبور<span class="req">*</span></label>
+                    <input class="input ltr" id="Password" name="Password" type="password" autocomplete="new-password" required />
+                    <span class="hint">دست‌کم ۸ حرف و یک رقم.</span>
+                </div>
+                <div class="field">
+                    <label class="label" for="Confirm">تکرار رمز عبور<span class="req">*</span></label>
+                    <input class="input ltr" id="Confirm" name="Confirm" type="password" autocomplete="new-password" required />
+                </div>
+            }
+            <div class="field span-2">
+                <label class="usr-check"><input type="checkbox" name="IsAdministrator" value="true" checked="@Model.IsAdministrator" />مدیر سامانه (مدیریت کاربران)</label>
+            </div>
+        </div>
+    </div>
+    <div class="modal-foot">
+        <span class="spacer"></span>
+        <a class="btn btn-quiet" href="@Model.BackUrl" data-close>انصراف</a>
+        <button type="submit" class="btn btn-primary"><svg class="ico"><use href="#i-check" /></svg>@(Model.IsEdit ? "ذخیره" : "ایجاد")</button>
+    </div>
+</form>

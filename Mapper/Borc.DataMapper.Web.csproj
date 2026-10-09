@@ -16,6 +16,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Borc.DataMapper.Application\Borc.DataMapper.Application.csproj" />
 		<ProjectReference Include="..\Borc.DataMapper.Infrastructure\Borc.DataMapper.Infrastructure.csproj" />
+		<ProjectReference Include="..\Borc.Users.Web\Borc.Users.Web.csproj" />
 	</ItemGroup>
 	
 

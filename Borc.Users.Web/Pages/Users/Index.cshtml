@@ -1,0 +1,90 @@
+@page
+@model Borc.Users.Web.Pages.Users.IndexModel
+@{
+    ViewData["Title"] = "کاربران";
+    ViewData["Subtitle"] = "حساب‌های کاربری سامانه";
+    var r = Model.Result;
+    var filters = new[] { ("", "همه"), ("active", "فعال"), ("inactive", "غیرفعال") };
+}
+<link rel="stylesheet" href="~/_content/Borc.Users.Web/css/users.css" asp-append-version="true" />
+
+<article class="card">
+    <header class="card-head">
+        <div class="card-title">
+            <span class="card-ico"><svg class="ico"><use href="#i-user" /></svg></span>
+            <div>کاربران<div class="card-sub">@UsersFormat.Number(r.TotalCount) حساب</div></div>
+        </div>
+        <a class="btn btn-primary" asp-page="/Users/Edit" asp-route-returnUrl="@Model.ReturnUrl" data-modal><svg class="ico"><use href="#i-plus" /></svg>کاربر جدید</a>
+    </header>
+
+    <form class="usr-toolbar" method="get" role="search">
+        <div class="input-wrap">
+            <svg class="ico"><use href="#i-search" /></svg>
+            <input class="input" type="search" name="q" value="@Model.Search" placeholder="نام، نام کاربری یا ایمیل…" aria-label="جستجو" autocomplete="off" />
+        </div>
+        <input type="hidden" name="status" value="@Model.Status" />
+        <button type="submit" class="btn btn-soft">جستجو</button>
+        <div class="fchips">
+            @foreach (var (value, label) in filters)
+            {
+                <a class="fchip@((Model.Status ?? "") == value ? " active" : "")" asp-page="/Users/Index" asp-route-q="@Model.Search" asp-route-status="@(value == "" ? null : value)">@label</a>
+            }
+        </div>
+    </form>
+
+    @if (r.Items.Count == 0)
+    {
+        <div class="empty">@(string.IsNullOrWhiteSpace(Model.Search) ? "کاربری نیست." : $"کاربری با «{Model.Search}» پیدا نشد.")</div>
+    }
+    else
+    {
+        <div class="tbl-wrap">
+            <table class="tbl">
+                <thead>
+                    <tr><th>نام</th><th>نام کاربری</th><th>ایمیل</th><th>وضعیت</th><th>آخرین ورود</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (UserSummary u in r.Items)
+                    {
+                        bool self = u.Id == Model.CurrentUserId;
+                        <tr>
+                            <td>
+                                <div class="cell-main">@u.DisplayName</div>
+                                @if (u.IsAdministrator) { <div class="cell-sub">مدیر سامانه</div> }
+                            </td>
+                            <td><span class="code ltr">@u.UserName</span></td>
+                            <td class="ltr cell-sub">@(u.Email ?? "—")</td>
+                            <td>
+                                <div class="usr-tags">
+                                    <span class="badge @(u.IsActive ? "st-active" : "st-inactive")">@(u.IsActive ? "فعال" : "غیرفعال")</span>
+                                    @if (u.IsLockedOut) { <span class="badge st-failed">قفل موقت</span> }
+                                </div>
+                            </td>
+                            <td class="cell-sub">@UsersFormat.Date(u.LastSignInAt, withTime: true)</td>
+                            <td>
+                                <div class="usr-actions">
+                                    <a class="icon-btn" asp-page="/Users/Edit" asp-route-id="@u.Id" asp-route-returnUrl="@Model.ReturnUrl" data-modal title="ویرایش" aria-label="ویرایش @u.DisplayName"><svg class="ico"><use href="#i-edit" /></svg></a>
+                                    <a class="icon-btn" asp-page="/Users/Password" asp-route-id="@u.Id" asp-route-returnUrl="@Model.ReturnUrl" data-modal title="تعیین رمز جدید" aria-label="تعیین رمز جدید برای @u.DisplayName"><svg class="ico"><use href="#i-refresh" /></svg></a>
+                                    @if (!self)
+                                    {
+                                        <a class="btn btn-quiet btn-sm" asp-page="/Users/Status" asp-route-id="@u.Id" asp-route-active="@(!u.IsActive)" asp-route-returnUrl="@Model.ReturnUrl" data-modal>@(u.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")</a>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (r.TotalPages > 1)
+        {
+            <footer class="usr-pager">
+                <span>صفحهٔ @UsersFormat.Number(r.Page) از @UsersFormat.Number(r.TotalPages)</span>
+                <nav aria-label="صفحه‌بندی">
+                    @if (r.Page > 1) { <a class="btn btn-soft btn-sm" asp-page="/Users/Index" asp-route-q="@Model.Search" asp-route-status="@Model.Status" asp-route-page="@(r.Page - 1)" rel="prev">قبلی</a> }
+                    @if (r.Page < r.TotalPages) { <a class="btn btn-soft btn-sm" asp-page="/Users/Index" asp-route-q="@Model.Search" asp-route-status="@Model.Status" asp-route-page="@(r.Page + 1)" rel="next">بعدی</a> }
+                </nav>
+            </footer>
+        }
+    }
+</article>

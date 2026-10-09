@@ -1,10 +1,14 @@
 ﻿using Borc.DataMapper.Application;
+using Borc.DataMapper.Application.Abstractions.Identity;
 using Borc.DataMapper.Application.Abstractions.Files;
 using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Infrastructure;
 using Borc.DataMapper.Infrastructure.Files;
 using Borc.DataMapper.Infrastructure.Http;
 using Borc.DataMapper.Infrastructure.Persistence;
+using Borc.DataMapper.Web.Mvc;
+using Borc.Users;
+using Borc.Users.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +23,13 @@ builder.Services.AddControllersWithViews(options =>
     messages.SetValueMustBeANumberAccessor(_ => "این فیلد باید عدد باشد.");
     messages.SetMissingBindRequiredValueAccessor(_ => "این فیلد الزامی است.");
 });
+
+// کاربران و ورود (ماژول Borc.Users): جدول‌ها در schema «usr» همان پایگاه داده؛ همهٔ صفحه‌ها نیاز به ورود دارند.
+builder.Services.AddBorcUsers(
+    builder.Configuration.GetConnectionString("BorcDataMapper")!,
+    options => builder.Configuration.GetSection("Users").Bind(options));
+builder.Services.AddBorcUsersUi();
+builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 
 builder.Services
     .AddApplication().AddScoped<IExcelReader, ClosedXmlExcelReader>()
@@ -46,10 +57,12 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Dashboard}/{action=Index}/{id?}");
+app.MapRazorPages();
 
 app.Run();

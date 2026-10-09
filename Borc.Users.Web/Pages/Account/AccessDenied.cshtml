@@ -1,0 +1,18 @@
+@page
+@model Borc.Users.Web.Pages.Account.AccessDeniedModel
+@{
+    Layout = "_UsersAuthLayout";
+    ViewData["Title"] = "دسترسی ندارید";
+}
+<div class="card">
+    <div class="card-body">
+        <div class="usr-auth-brand">
+            <span class="card-ico tone-warning"><svg class="ico"><use href="#i-alert" /></svg></span>
+            <div>
+                <div class="card-title">دسترسی ندارید</div>
+                <div class="card-sub">حساب شما اجازهٔ دیدن این صفحه را ندارد.</div>
+            </div>
+        </div>
+        <a class="btn btn-primary" href="~/">بازگشت به میز کار</a>
+    </div>
+</div>

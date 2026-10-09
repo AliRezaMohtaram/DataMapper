@@ -1,0 +1,32 @@
+@*
+    Minimal shell for the sign-in pages: the host's MX stylesheet and saved theme, no sidebar.
+*@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"]</title>
+    <script>
+        (function () {
+            try {
+                var t = JSON.parse(localStorage.getItem("app-theme") || "{}");
+                var r = document.documentElement;
+                r.dataset.theme  = t.mode   || "dark";
+                r.dataset.preset = t.preset || "ocean-dark";
+                r.dataset.accent = t.accent || "cyan";
+                r.dataset.size   = t.size   || "medium";
+                r.dataset.radius = t.radius || "medium";
+            } catch (e) { }
+        })();
+    </script>
+    <link rel="stylesheet" href="~/css/mx.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/_content/Borc.Users.Web/css/users.css" asp-append-version="true" />
+</head>
+<body>
+    <partial name="_Icons" />
+    <main class="usr-auth">
+        @RenderBody()
+    </main>
+</body>
+</html>

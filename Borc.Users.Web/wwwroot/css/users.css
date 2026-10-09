@@ -1,0 +1,12 @@
+/* Users module: only layout glue; colors, type and components come from MX (mx.css). */
+.usr-auth { min-height:100vh; display:grid; place-items:center; padding:1.5rem; background:var(--bg); }
+.usr-auth .card { width:min(100%, 26rem); }
+.usr-auth .card-body { display:grid; gap:1rem; }
+.usr-auth-brand { display:flex; align-items:center; gap:.75rem; margin-bottom:.25rem; }
+.usr-check { display:flex; align-items:center; gap:.5rem; font-size:.86rem; color:var(--text); cursor:pointer; }
+.usr-actions { display:flex; gap:.35rem; justify-content:flex-end; flex-wrap:nowrap; }
+.usr-pager { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.75rem 1rem; color:var(--muted); font-size:.82rem; flex-wrap:wrap; }
+.usr-pager nav { display:flex; align-items:center; gap:.5rem; }
+.usr-toolbar { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; padding:.75rem 1rem; }
+.usr-toolbar .input-wrap { flex:1 1 16rem; }
+.usr-tags { display:flex; gap:.35rem; flex-wrap:wrap; }

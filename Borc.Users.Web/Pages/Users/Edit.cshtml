@@ -1,0 +1,8 @@
+@page
+@model Borc.Users.Web.Pages.Users.EditModel
+@{
+    ViewData["Title"] = Model.IsEdit ? "ویرایش کاربر" : "کاربر جدید";
+}
+<div class="modal-page">
+    <partial name="@Borc.Users.Web.Pages.Users.EditModel.FormPath" model="Model" />
+</div>

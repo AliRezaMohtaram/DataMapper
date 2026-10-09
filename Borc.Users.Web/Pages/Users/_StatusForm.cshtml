@@ -1,0 +1,26 @@
+@model Borc.Users.Web.Pages.Users.StatusModel
+<form class="modal modal-sm" method="post" asp-page="/Users/Status" asp-route-id="@Model.Id" asp-route-active="@Model.Active" asp-route-returnUrl="@Model.ReturnUrl" data-mx-ajax novalidate>
+    <div class="modal-head">
+        <span class="modal-head-ico @(Model.Active ? "tone-success" : "tone-danger")"><svg class="ico"><use href="#i-user" /></svg></span>
+        <div><div class="modal-title">@(Model.Active ? "فعال‌سازی" : "غیرفعال‌سازی") «@Model.Subject.DisplayName»</div></div>
+        <a class="icon-btn plain close" href="@Model.BackUrl" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+    </div>
+    <div class="modal-body">
+        <partial name="_UsersFormErrors" model="Model.FormErrors" />
+        <p>
+            @if (Model.Active)
+            {
+                <text>این کاربر دوباره می‌تواند وارد سامانه شود.</text>
+            }
+            else
+            {
+                <text>این کاربر دیگر نمی‌تواند وارد شود و نشست‌های باز او تا یک دقیقه بعد بسته می‌شوند. حساب حذف نمی‌شود و اطلاعات ثبت‌شده با نام او باقی می‌ماند.</text>
+            }
+        </p>
+    </div>
+    <div class="modal-foot">
+        <span class="spacer"></span>
+        <a class="btn btn-quiet" href="@Model.BackUrl" data-close>انصراف</a>
+        <button type="submit" class="btn @(Model.Active ? "btn-primary" : "btn-danger")" autofocus>@(Model.Active ? "فعال‌سازی" : "غیرفعال‌سازی")</button>
+    </div>
+</form>

@@ -1,0 +1,7 @@
+@* Stand-in for the host's MX layout. *@
+<!DOCTYPE html>
+<html><head><title>@ViewData["Title"]</title></head>
+<body>
+    @if (TempData["Success"] is string ok) { <div id="toast">@ok</div> }
+    @RenderBody()
+</body></html>
