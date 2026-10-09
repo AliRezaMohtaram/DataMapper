@@ -22,7 +22,7 @@
 }
 
 @section TopbarActions {
-    <a class="btn btn-soft" asp-action="Create" data-modal><svg class="ico"><use href="#i-plus" /></svg><span class="lbl">قالب جدید</span></a>
+    <a acl-res="Mapper.Templates" acl-act="Create" class="btn btn-soft" asp-action="Create" data-modal><svg class="ico"><use href="#i-plus" /></svg><span class="lbl">قالب جدید</span></a>
 }
 
 @if (errors.Count > 0)
@@ -41,7 +41,7 @@
     </header>
 
     <div class="toolbar">
-        <form method="get" asp-action="Index" role="search">
+        <form acl-res="Mapper.Templates" acl-act="View" method="get" asp-action="Index" role="search">
             <input type="hidden" name="pageSize" value="@result.PageSize" />
             <div class="input-wrap">
                 <svg class="ico"><use href="#i-search" /></svg>
@@ -57,7 +57,7 @@
             <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#i-search" /></svg>جستجو</button>
             @if (filtering)
             {
-                <a class="btn btn-quiet" asp-action="Index" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
+                <a acl-res="Mapper.Templates" acl-act="View" class="btn btn-quiet" asp-action="Index" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
             }
         </form>
     </div>
@@ -68,12 +68,12 @@
             @if (filtering)
             {
                 <p>قالبی با این مشخصات پیدا نشد.</p>
-                <a class="btn btn-ghost btn-sm" style="margin-top:.8rem" asp-action="Index">پاک کردن فیلتر</a>
+                <a acl-res="Mapper.Templates" acl-act="View" class="btn btn-ghost btn-sm" style="margin-top:.8rem" asp-action="Index">پاک کردن فیلتر</a>
             }
             else
             {
                 <p>هنوز قالبی ساخته نشده است.</p>
-                <a class="btn btn-primary btn-sm" style="margin-top:.8rem" asp-action="Create" data-modal><svg class="ico"><use href="#i-plus" /></svg>ساخت اولین قالب</a>
+                <a acl-res="Mapper.Templates" acl-act="Create" class="btn btn-primary btn-sm" style="margin-top:.8rem" asp-action="Create" data-modal><svg class="ico"><use href="#i-plus" /></svg>ساخت اولین قالب</a>
             }
         </div>
     }
@@ -89,7 +89,7 @@
                     {
                         <tr>
                             <td>
-                                <a class="cell-main" asp-action="Detail" asp-route-id="@t.Id">@t.Name</a>
+                                <a acl-res="Mapper.Templates" acl-act="View" class="cell-main" asp-action="Detail" asp-route-id="@t.Id">@t.Name</a>
                                 <div class="code">@t.Code</div>
                             </td>
                             <td class="cell-sub" style="max-width:24rem;white-space:normal">@(string.IsNullOrWhiteSpace(t.Description) ? "—" : t.Description)</td>
@@ -98,8 +98,8 @@
                             <td class="cell-sub">@((t.UpdatedAt ?? t.CreatedAt).ToRelative())</td>
                             <td>
                                 <div class="row-actions">
-                                    <a class="icon-btn sm primary" asp-action="Detail" asp-route-id="@t.Id" title="جزئیات و نسخه‌ها" aria-label="جزئیات @t.Name"><svg class="ico"><use href="#i-eye" /></svg></a>
-                                    <a class="icon-btn sm" asp-action="Edit" asp-route-id="@t.Id" asp-route-returnUrl="@here" data-modal title="ویرایش" aria-label="ویرایش @t.Name"><svg class="ico"><use href="#i-edit" /></svg></a>
+                                    <a acl-res="Mapper.Templates" acl-act="View" class="icon-btn sm primary" asp-action="Detail" asp-route-id="@t.Id" title="جزئیات و نسخه‌ها" aria-label="جزئیات @t.Name"><svg class="ico"><use href="#i-eye" /></svg></a>
+                                    <a acl-res="Mapper.Templates" acl-act="Edit" class="icon-btn sm" asp-action="Edit" asp-route-id="@t.Id" asp-route-returnUrl="@here" data-modal title="ویرایش" aria-label="ویرایش @t.Name"><svg class="ico"><use href="#i-edit" /></svg></a>
                                     <button class="icon-btn sm danger" type="button" data-delete-id="@t.Id" data-delete-name="@t.Name" title="حذف" aria-label="حذف @t.Name"><svg class="ico"><use href="#i-trash" /></svg></button>
                                 </div>
                             </td>
@@ -118,7 +118,7 @@
             <nav class="pager" aria-label="صفحه‌بندی">
                 @if (result.HasPrevious)
                 {
-                    <a asp-action="Index" asp-route-search="@filter.Search" asp-route-status="@filter.Status" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
+                    <a acl-res="Mapper.Templates" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-status="@filter.Status" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
                 }
                 else
                 {
@@ -127,7 +127,7 @@
                 <span class="pager-now" aria-current="page">صفحه @result.Page.ToPersianNumber() از @Math.Max(1, result.TotalPages).ToPersianNumber()</span>
                 @if (result.HasNext)
                 {
-                    <a asp-action="Index" asp-route-search="@filter.Search" asp-route-status="@filter.Status" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
+                    <a acl-res="Mapper.Templates" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-status="@filter.Status" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
                 }
                 else
                 {
@@ -135,7 +135,7 @@
                 }
             </nav>
 
-            <form method="get" asp-action="Index" class="page-size">
+            <form acl-res="Mapper.Templates" acl-act="View" method="get" asp-action="Index" class="page-size">
                 <input type="hidden" name="search" value="@filter.Search" />
                 <input type="hidden" name="status" value="@filter.Status" />
                 <label for="pageSize">ردیف در صفحه</label>

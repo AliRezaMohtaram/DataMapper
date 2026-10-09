@@ -60,6 +60,7 @@ builder.Services.AddAccessControl(o =>
     .AddSqlServerStore(connectionString)
     .AddUserDirectory<MapperUserDirectory>()
     .AddAdminUi();
+builder.Services.AddHostedService<MapperAccessBootstrapper>(); // after AddAccessControl: needs the synced resources
 
 builder.Services
     .AddApplication().AddScoped<IExcelReader, ClosedXmlExcelReader>()

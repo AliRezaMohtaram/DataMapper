@@ -55,7 +55,10 @@ public sealed partial class MapperApp : WebApplicationFactory<Program>
     }
 
     /// <summary>A browser-like client signed in as the bootstrap administrator (id 1, Acl super admin).</summary>
-    public async Task<HttpClient> AdminAsync()
+    public Task<HttpClient> AdminAsync() => SignInAsync("admin", AdminPassword);
+
+    /// <summary>A browser-like client (cookies kept, redirects not followed) signed in as the given user.</summary>
+    public async Task<HttpClient> SignInAsync(string userName, string password)
     {
         HttpClient client = CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = true });
         HttpResponseMessage login = await client.GetAsync("/Account/Login");
@@ -63,7 +66,7 @@ public sealed partial class MapperApp : WebApplicationFactory<Program>
         string token = Token().Match(html).Groups[1].Value;
         HttpResponseMessage response = await client.PostAsync("/Account/Login", new FormUrlEncodedContent(
         [
-            new("Login", "admin"), new("Password", AdminPassword), new("__RequestVerificationToken", token),
+            new("Login", userName), new("Password", password), new("__RequestVerificationToken", token),
         ]));
         Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
         return client;

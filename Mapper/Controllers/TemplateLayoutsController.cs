@@ -1,3 +1,6 @@
+using Acl.AspNetCore.Authorization;
+using Acl.Core.Model;
+using Borc.DataMapper.Web.Modules;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Application.TemplateLayouts.DeleteTemplateLayout;
 using Borc.DataMapper.Application.TemplateLayouts.GetTemplateLayout;
@@ -14,6 +17,7 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Borc.DataMapper.Web.Controllers;
 
+[RequirePermission(MapperResources.Templates, WellKnownActions.Edit)]
 public sealed class TemplateLayoutsController : Controller
 {
     private readonly ISender _sender;

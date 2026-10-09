@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Borc.DataMapper.Web.Controllers;
 
+// Landing page after sign-in: open to every signed-in user; its shortcuts are filtered by permission.
 public sealed class DashboardController : Controller
 {
     private readonly ISender _sender;

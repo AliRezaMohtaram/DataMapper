@@ -13,7 +13,7 @@
 }
 
 @section TopbarActions {
-    <a class="btn btn-ghost" asp-action="Index" asp-route-templateVersionId="@Model.TemplateVersionId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">رکوردهای این نسخه</span></a>
+    <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-ghost" asp-action="Index" asp-route-templateVersionId="@Model.TemplateVersionId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">رکوردهای این نسخه</span></a>
 }
 
 <div class="split">
@@ -72,7 +72,7 @@
                 <div class="row" style="justify-content:space-between;align-items:flex-start">
                     <div>
                         <div class="hero-title">رکورد <span class="code" style="font-size:1rem">@Model.Id</span></div>
-                        <a class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a>
+                        <a acl-res="Mapper.Templates" acl-act="View" class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a>
                     </div>
                     <span class="badge @(Model.Source == RecordSource.Import ? "st-uploaded" : "st-validated")">@Model.Source.ToLabel()</span>
                 </div>
@@ -81,7 +81,7 @@
                     <div>
                         <dt>نسخهٔ قالب</dt>
                         <dd>
-                            <a class="link-btn" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId">نسخهٔ @Model.VersionNo.ToPersianNumber()</a>
+                            <a acl-res="Mapper.Templates" acl-act="View" class="link-btn" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId">نسخهٔ @Model.VersionNo.ToPersianNumber()</a>
                             <span class="badge @Model.VersionStatus.BadgeClass()">@Model.VersionStatus.ToLabel()</span>
                         </dd>
                     </div>
@@ -90,7 +90,7 @@
                         <div>
                             <dt>ایمپورت مبدأ</dt>
                             <dd>
-                                <a class="link-btn" asp-controller="Imports" asp-action="Detail" asp-route-id="@Model.ImportBatchId">@(Model.ImportFileName ?? $"IMP-{Model.ImportBatchId:0000}")</a>
+                                <a acl-res="Mapper.Imports" acl-act="View" class="link-btn" asp-controller="Imports" asp-action="Detail" asp-route-id="@Model.ImportBatchId">@(Model.ImportFileName ?? $"IMP-{Model.ImportBatchId:0000}")</a>
                                 @if (Model.ImportRowNumber.HasValue)
                                 {
                                     <div class="cell-sub">سطر @((int)Model.ImportRowNumber.Value).ToPersianNumber() فایل</div>
@@ -107,7 +107,7 @@
                 <div class="action-stack">
                     @if (canEdit)
                     {
-                        <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Id"><svg class="ico"><use href="#i-edit" /></svg>ویرایش رکورد</a>
+                        <a acl-res="Mapper.DataRecords" acl-act="Edit" class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Id"><svg class="ico"><use href="#i-edit" /></svg>ویرایش رکورد</a>
                     }
                     else
                     {

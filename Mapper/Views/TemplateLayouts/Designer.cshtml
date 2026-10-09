@@ -14,7 +14,7 @@
         </h2>
 
         <div class="row-actions">
-            <a asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId"
+            <a acl-res="Mapper.Templates" acl-act="View" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId"
                class="btn ghost">بازگشت به نسخه</a>
         </div>
     </div>

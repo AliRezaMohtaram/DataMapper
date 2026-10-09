@@ -29,7 +29,7 @@
     <article class="kpi tone-primary rise" style="--i:0">
         <div class="kpi-top">
             <span class="kpi-ico"><svg class="ico"><use href="#i-template" /></svg></span>
-            <a class="link-btn" asp-controller="Templates" asp-action="Index">همه قالب‌ها</a>
+            <a acl-res="Mapper.Templates" acl-act="View" class="link-btn" asp-controller="Templates" asp-action="Index">همه قالب‌ها</a>
         </div>
         <div class="kpi-value">@Fa(k.TemplatesActive)<small>از @Fa(k.TemplatesTotal)</small></div>
         <div class="kpi-label">قالب‌های فعال</div>
@@ -167,7 +167,7 @@
                             </td>
                             <td>
                                 <div class="row-actions">
-                                    <a class="icon-btn sm primary" asp-controller="Imports" asp-action="Detail" asp-route-id="@b.Id" title="جزئیات" aria-label="جزئیات IMP-@b.Id">
+                                    <a acl-res="Mapper.Imports" acl-act="View" class="icon-btn sm primary" asp-controller="Imports" asp-action="Detail" asp-route-id="@b.Id" title="جزئیات" aria-label="جزئیات IMP-@b.Id">
                                         <svg class="ico"><use href="#i-eye" /></svg>
                                     </a>
                                 </div>
@@ -179,7 +179,7 @@
                             @if (d.RecentImports.Count == 0)
                             {
                                 <div>هنوز فایلی ایمپورت نشده است.</div>
-                                <a class="btn btn-soft btn-sm" style="margin-top:.75rem" asp-controller="Imports" asp-action="Upload" data-modal><svg class="ico"><use href="#i-upload" /></svg>اولین ایمپورت</a>
+                                <a acl-res="Mapper.Imports" acl-act="Create" class="btn btn-soft btn-sm" style="margin-top:.75rem" asp-controller="Imports" asp-action="Upload" data-modal><svg class="ico"><use href="#i-upload" /></svg>اولین ایمپورت</a>
                             }
                             else
                             {
@@ -193,7 +193,7 @@
 
         <footer class="card-foot">
             <span>نمایش <b id="importsCount">@Fa(d.RecentImports.Count)</b> ایمپورت اخیر</span>
-            <a class="link-btn" asp-controller="Imports" asp-action="Index">همه ایمپورت‌ها<svg class="ico"><use href="#i-chev-left" /></svg></a>
+            <a acl-res="Mapper.Imports" acl-act="View" class="link-btn" asp-controller="Imports" asp-action="Index">همه ایمپورت‌ها<svg class="ico"><use href="#i-chev-left" /></svg></a>
         </footer>
     </article>
 
@@ -204,11 +204,11 @@
                 <span class="kbd" title="کلید میان‌بر جستجو و فرمان‌ها">/</span>
             </header>
             <div class="quick-grid">
-                <a class="quick tone-primary" asp-controller="Imports" asp-action="Upload" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-upload" /></svg></span><span class="quick-label">ایمپورت فایل</span></a>
-                <a class="quick tone-success" asp-controller="DataRecords" asp-action="Create" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-pen" /></svg></span><span class="quick-label">ثبت دستی رکورد</span></a>
-                <a class="quick tone-violet" asp-controller="Templates" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-template" /></svg></span><span class="quick-label">قالب جدید</span></a>
-                <a class="quick tone-info" asp-controller="DataSources" asp-action="Create" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-db" /></svg></span><span class="quick-label">منبع داده</span></a>
-                <a class="quick tone-warning" asp-controller="MappingProfiles" asp-action="Create" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-map" /></svg></span><span class="quick-label">پروفایل نگاشت</span></a>
+                <a acl-res="Mapper.Imports" acl-act="Create" class="quick tone-primary" asp-controller="Imports" asp-action="Upload" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-upload" /></svg></span><span class="quick-label">ایمپورت فایل</span></a>
+                <a acl-res="Mapper.DataRecords" acl-act="Create" class="quick tone-success" asp-controller="DataRecords" asp-action="Create" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-pen" /></svg></span><span class="quick-label">ثبت دستی رکورد</span></a>
+                <a acl-res="Mapper.Templates" acl-act="Create" class="quick tone-violet" asp-controller="Templates" asp-action="Create"><span class="quick-ico"><svg class="ico"><use href="#i-template" /></svg></span><span class="quick-label">قالب جدید</span></a>
+                <a acl-res="Mapper.DataSources" acl-act="Create" class="quick tone-info" asp-controller="DataSources" asp-action="Create" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-db" /></svg></span><span class="quick-label">منبع داده</span></a>
+                <a acl-res="Mapper.MappingProfiles" acl-act="Create" class="quick tone-warning" asp-controller="MappingProfiles" asp-action="Create" data-modal><span class="quick-ico"><svg class="ico"><use href="#i-map" /></svg></span><span class="quick-label">پروفایل نگاشت</span></a>
                 <button class="quick tone-danger" type="button" data-open="cmdk"><span class="quick-ico"><svg class="ico"><use href="#i-search" /></svg></span><span class="quick-label">جستجو و فرمان</span></button>
             </div>
         </article>
@@ -228,7 +228,7 @@
                     @foreach (var t in coverage)
                     {
                         var pct = (int)Math.Round(100.0 * t.AliasedFieldCount / t.FieldCount);
-                        <a asp-controller="Templates" asp-action="Detail" asp-route-id="@t.Id" title="@t.Name — @pct٪">
+                        <a acl-res="Mapper.Templates" acl-act="View" asp-controller="Templates" asp-action="Detail" asp-route-id="@t.Id" title="@t.Name — @pct٪">
                             <div class="meter-head"><b>@t.Name</b><span>@Fa(t.AliasedFieldCount) از @Fa(t.FieldCount)</span></div>
                             <div class="meter @DashboardUi.CoverageTone(pct)"><i style="width:@pct%"></i></div>
                         </a>
@@ -244,7 +244,7 @@
     <article class="card rise" style="--i:7">
         <header class="card-head">
             <div class="card-title"><span class="card-ico"><svg class="ico"><use href="#i-template" /></svg></span>قالب‌های پرکاربرد</div>
-            <a class="btn btn-soft btn-sm" asp-controller="Templates" asp-action="Create"><svg class="ico"><use href="#i-plus" /></svg>قالب جدید</a>
+            <a acl-res="Mapper.Templates" acl-act="Create" class="btn btn-soft btn-sm" asp-controller="Templates" asp-action="Create"><svg class="ico"><use href="#i-plus" /></svg>قالب جدید</a>
         </header>
         @if (d.Templates.Count == 0)
         {
@@ -265,7 +265,7 @@
                                 <td class="nums">
                                     @if (t.VersionId is long rv && t.RecordCount > 0)
                                     {
-                                        <a class="link-btn" asp-controller="DataRecords" asp-action="Index" asp-route-templateVersionId="@rv" title="رکوردهای نسخه جاری">@Fa(t.RecordCount)</a>
+                                        <a acl-res="Mapper.DataRecords" acl-act="View" class="link-btn" asp-controller="DataRecords" asp-action="Index" asp-route-templateVersionId="@rv" title="رکوردهای نسخه جاری">@Fa(t.RecordCount)</a>
                                     }
                                     else
                                     {
@@ -275,10 +275,10 @@
                                 <td><span class="badge @t.Status.BadgeClass()">@t.Status.ToLabel()</span></td>
                                 <td>
                                     <div class="row-actions">
-                                        <a class="icon-btn sm primary" asp-controller="Templates" asp-action="Detail" asp-route-id="@t.Id" title="جزئیات"><svg class="ico"><use href="#i-eye" /></svg></a>
+                                        <a acl-res="Mapper.Templates" acl-act="View" class="icon-btn sm primary" asp-controller="Templates" asp-action="Detail" asp-route-id="@t.Id" title="جزئیات"><svg class="ico"><use href="#i-eye" /></svg></a>
                                         @if (t.VersionId is long vid)
                                         {
-                                            <a class="icon-btn sm" asp-controller="DataRecords" asp-action="Create" asp-route-versionId="@vid" title="ثبت رکورد"><svg class="ico"><use href="#i-plus" /></svg></a>
+                                            <a acl-res="Mapper.DataRecords" acl-act="Create" class="icon-btn sm" asp-controller="DataRecords" asp-action="Create" asp-route-versionId="@vid" title="ثبت رکورد"><svg class="ico"><use href="#i-plus" /></svg></a>
                                         }
                                     </div>
                                 </td>
@@ -293,7 +293,7 @@
     <article class="card rise" style="--i:8">
         <header class="card-head">
             <div class="card-title"><span class="card-ico"><svg class="ico"><use href="#i-db" /></svg></span>منابع داده</div>
-            <a class="btn btn-soft btn-sm" asp-controller="DataSources" asp-action="Create" data-modal><svg class="ico"><use href="#i-plus" /></svg>منبع جدید</a>
+            <a acl-res="Mapper.DataSources" acl-act="Create" class="btn btn-soft btn-sm" asp-controller="DataSources" asp-action="Create" data-modal><svg class="ico"><use href="#i-plus" /></svg>منبع جدید</a>
         </header>
         @if (d.DataSources.Count == 0)
         {
@@ -304,7 +304,7 @@
             <div>
                 @foreach (var s in d.DataSources)
                 {
-                    <a class="src" asp-controller="DataSources" asp-action="Detail" asp-route-id="@s.Id">
+                    <a acl-res="Mapper.DataSources" acl-act="View" class="src" asp-controller="DataSources" asp-action="Detail" asp-route-id="@s.Id">
                         <span class="src-ico @DashboardUi.Tone(s.SourceType)"><svg class="ico"><use href="#@DashboardUi.Icon(s.SourceType)" /></svg></span>
                         <span class="src-main">
                             <span class="src-name" style="display:block">@s.Name</span>

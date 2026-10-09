@@ -3,14 +3,14 @@
     انتخاب قالب/نسخه برای ورود دستی داده — ریشهٔ آن یک .modal است.
     فرم GET معمولی است: انتخاب و «ادامه» به صفحهٔ فرم ورود داده (DataRecords/Create?versionId=…) می‌رود.
 *@
-<form class="modal" method="get" asp-controller="DataRecords" asp-action="Create" data-mx-init="filter-list">
+<form acl-res="Mapper.DataRecords" acl-act="Create" class="modal" method="get" asp-controller="DataRecords" asp-action="Create" data-mx-init="filter-list">
     <div class="modal-head">
         <span class="modal-head-ico tone-success"><svg class="ico"><use href="#i-pen" /></svg></span>
         <div>
             <div class="modal-title">ورود دستی داده</div>
             <div class="modal-sub">قالبی را که می‌خواهید برایش رکورد ثبت کنید انتخاب کنید.</div>
         </div>
-        <a class="icon-btn plain close" asp-controller="DataRecords" asp-action="Index" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+        <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn plain close" asp-controller="DataRecords" asp-action="Index" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
     </div>
 
     <div class="modal-body">
@@ -19,7 +19,7 @@
             <div class="callout tone-warning">
                 <svg class="ico"><use href="#i-alert" /></svg>
                 <div>هنوز هیچ قالبی <b>نسخهٔ منتشرشده</b> ندارد؛ ورود داده فقط برای نسخهٔ منتشرشده ممکن است.
-                    <a class="link-btn" asp-controller="Templates" asp-action="Index">رفتن به قالب‌ها</a></div>
+                    <a acl-res="Mapper.Templates" acl-act="View" class="link-btn" asp-controller="Templates" asp-action="Index">رفتن به قالب‌ها</a></div>
             </div>
         }
         else
@@ -49,7 +49,7 @@
 
     <div class="modal-foot">
         <span class="spacer"></span>
-        <a class="btn btn-quiet" asp-controller="DataRecords" asp-action="Index" data-close>انصراف</a>
+        <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-quiet" asp-controller="DataRecords" asp-action="Index" data-close>انصراف</a>
         <button type="submit" class="btn btn-primary" @(Model.Count == 0 ? "disabled" : null)>ادامه به فرم<svg class="ico"><use href="#i-chev-left" /></svg></button>
     </div>
 </form>

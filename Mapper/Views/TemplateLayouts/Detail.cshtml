@@ -14,15 +14,15 @@
         </h2>
 
         <div class="row-actions">
-            <a asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId" class="btn ghost">بازگشت به قالب</a>
-            <a asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@Model.Id"
+            <a acl-res="Mapper.Templates" acl-act="View" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId" class="btn ghost">بازگشت به قالب</a>
+            <a acl-res="Mapper.Templates" acl-act="Edit" asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@Model.Id"
                class="btn secondary">"مشاهده Layout</a>
-            <a asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@Model.Id"
+            <a acl-res="Mapper.Templates" acl-act="Edit" asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@Model.Id"
                class="btn secondary">"طراحی Layout"</a>
 
             @if (isDraft)
             {
-                <form id="publishForm" asp-action="Publish" method="post" style="display:none">
+                <form acl-res="Mapper.Templates" acl-act="Edit" id="publishForm" asp-action="Publish" method="post" style="display:none">
                     <input type="hidden" name="id" value="@Model.Id" />
                 </form>
                 <button type="button" class="btn primary"
@@ -34,7 +34,7 @@
 
             @if (!isArchived)
             {
-                <form id="archiveForm" asp-action="Archive" method="post" style="display:none">
+                <form acl-res="Mapper.Templates" acl-act="Edit" id="archiveForm" asp-action="Archive" method="post" style="display:none">
                     <input type="hidden" name="id" value="@Model.Id" />
                 </form>
                 <button type="button" class="btn secondary"
@@ -73,7 +73,7 @@
 
         @if (isDraft)
         {
-            <a asp-controller="TemplateFields" asp-action="Create"
+            <a acl-res="Mapper.Templates" acl-act="Edit" asp-controller="TemplateFields" asp-action="Create"
                asp-route-templateVersionId="@Model.Id" class="btn primary">+ فیلد جدید</a>
         }
     </div>
@@ -113,7 +113,7 @@
                                 @if (isDraft)
                                 {
                                     <div class="row-actions">
-                                        <a asp-controller="TemplateFields" asp-action="Edit" asp-route-id="@f.Id"
+                                        <a acl-res="Mapper.Templates" acl-act="Edit" asp-controller="TemplateFields" asp-action="Edit" asp-route-id="@f.Id"
                                            class="btn primary low-padding" title="ویرایش" aria-label="ویرایش">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
                                                  fill="none" stroke="currentColor" stroke-width="2"

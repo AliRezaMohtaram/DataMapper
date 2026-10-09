@@ -38,7 +38,7 @@
     </header>
 
     <div class="toolbar">
-        <form method="get" asp-action="Index" role="search">
+        <form acl-res="Mapper.Imports" acl-act="View" method="get" asp-action="Index" role="search">
             <input type="hidden" name="pageSize" value="@result.PageSize" />
             <div class="input-wrap">
                 <svg class="ico"><use href="#i-search" /></svg>
@@ -54,7 +54,7 @@
             <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#i-search" /></svg>جستجو</button>
             @if (filtering)
             {
-                <a class="btn btn-quiet" asp-action="Index" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
+                <a acl-res="Mapper.Imports" acl-act="View" class="btn btn-quiet" asp-action="Index" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
             }
         </form>
     </div>
@@ -65,12 +65,12 @@
             @if (filtering)
             {
                 <p>ایمپورتی با این مشخصات پیدا نشد.</p>
-                <a class="btn btn-ghost btn-sm" style="margin-top:.8rem" asp-action="Index">پاک کردن فیلتر</a>
+                <a acl-res="Mapper.Imports" acl-act="View" class="btn btn-ghost btn-sm" style="margin-top:.8rem" asp-action="Index">پاک کردن فیلتر</a>
             }
             else
             {
                 <p>هنوز فایلی ایمپورت نشده است.</p>
-                <a class="btn btn-primary btn-sm" style="margin-top:.8rem" asp-action="Upload" data-modal><svg class="ico"><use href="#i-upload" /></svg>اولین ایمپورت</a>
+                <a acl-res="Mapper.Imports" acl-act="Create" class="btn btn-primary btn-sm" style="margin-top:.8rem" asp-action="Upload" data-modal><svg class="ico"><use href="#i-upload" /></svg>اولین ایمپورت</a>
             }
         </div>
     }
@@ -90,7 +90,7 @@
                                 <div class="file-cell">
                                     <span class="file-ico@(kind == "CSV" ? " csv" : "")">@kind</span>
                                     <div>
-                                        <a class="cell-main" asp-action="Detail" asp-route-id="@b.Id">@b.FileName</a>
+                                        <a acl-res="Mapper.Imports" acl-act="View" class="cell-main" asp-action="Detail" asp-route-id="@b.Id">@b.FileName</a>
                                         <div class="cell-sub"><span class="code">IMP-@b.Id.ToString("0000")</span></div>
                                     </div>
                                 </div>
@@ -122,7 +122,7 @@
                             <td class="cell-sub">@b.CreatedAt.ToRelative()</td>
                             <td>
                                 <div class="row-actions">
-                                    <a class="icon-btn sm primary" asp-action="Detail" asp-route-id="@b.Id" title="جزئیات" aria-label="جزئیات @b.FileName"><svg class="ico"><use href="#i-eye" /></svg></a>
+                                    <a acl-res="Mapper.Imports" acl-act="View" class="icon-btn sm primary" asp-action="Detail" asp-route-id="@b.Id" title="جزئیات" aria-label="جزئیات @b.FileName"><svg class="ico"><use href="#i-eye" /></svg></a>
                                     @if (b.Status != ImportBatchStatus.Imported)
                                     {
                                         <button class="icon-btn sm danger" type="button" data-delete-id="@b.Id" data-delete-name="@b.FileName" title="حذف" aria-label="حذف @b.FileName"><svg class="ico"><use href="#i-trash" /></svg></button>
@@ -143,7 +143,7 @@
             <nav class="pager" aria-label="صفحه‌بندی">
                 @if (result.HasPrevious)
                 {
-                    <a asp-action="Index" asp-route-search="@filter.Search" asp-route-status="@filter.Status" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
+                    <a acl-res="Mapper.Imports" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-status="@filter.Status" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
                 }
                 else
                 {
@@ -152,14 +152,14 @@
                 <span class="pager-now" aria-current="page">صفحه @result.Page.ToPersianNumber() از @Math.Max(1, result.TotalPages).ToPersianNumber()</span>
                 @if (result.HasNext)
                 {
-                    <a asp-action="Index" asp-route-search="@filter.Search" asp-route-status="@filter.Status" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
+                    <a acl-res="Mapper.Imports" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-status="@filter.Status" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
                 }
                 else
                 {
                     <span aria-disabled="true"><svg class="ico"><use href="#i-chev-left" /></svg></span>
                 }
             </nav>
-            <form method="get" asp-action="Index" class="page-size">
+            <form acl-res="Mapper.Imports" acl-act="View" method="get" asp-action="Index" class="page-size">
                 <input type="hidden" name="search" value="@filter.Search" />
                 <input type="hidden" name="status" value="@filter.Status" />
                 <label for="pageSize">ردیف در صفحه</label>

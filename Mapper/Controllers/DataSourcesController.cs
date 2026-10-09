@@ -1,3 +1,6 @@
+using Acl.AspNetCore.Authorization;
+using Acl.Core.Model;
+using Borc.DataMapper.Web.Modules;
 using Borc.DataMapper.Application.DataSources.CreateDataSource;
 using Borc.DataMapper.Application.DataSources.DeleteDataSource;
 using Borc.DataMapper.Application.DataSources.GetDataSource;
@@ -32,6 +35,7 @@ public sealed class DataSourcesController : Controller
     // ---------- فهرست ----------
 
     [HttpGet]
+    [RequirePermission(MapperResources.DataSources, WellKnownActions.View)]
     public async Task<IActionResult> Index(
         string? search,
         int page = 1,
@@ -57,6 +61,7 @@ public sealed class DataSourcesController : Controller
     // ---------- ایجاد ----------
 
     [HttpGet]
+    [RequirePermission(MapperResources.DataSources, WellKnownActions.Create)]
     public async Task<IActionResult> Create(DataSourceType? type, CancellationToken cancellationToken)
     {
         var vm = new DataSourceFormViewModel { SourceType = type ?? DataSourceType.StaticList };
@@ -67,6 +72,7 @@ public sealed class DataSourcesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.DataSources, WellKnownActions.Create)]
     public async Task<IActionResult> CreateAsync(
         DataSourceFormViewModel model,
         CancellationToken cancellationToken)
@@ -98,6 +104,7 @@ public sealed class DataSourcesController : Controller
     // ---------- جزئیات ----------
 
     [HttpGet]
+    [RequirePermission(MapperResources.DataSources, WellKnownActions.View)]
     public async Task<IActionResult> Detail(long id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new GetDataSourceQuery(id), cancellationToken);
@@ -114,6 +121,7 @@ public sealed class DataSourcesController : Controller
     // ---------- ویرایش ----------
 
     [HttpGet]
+    [RequirePermission(MapperResources.DataSources, WellKnownActions.Edit)]
     public async Task<IActionResult> Edit(long id, string? returnUrl, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new GetDataSourceQuery(id), cancellationToken);
@@ -151,6 +159,7 @@ public sealed class DataSourcesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.DataSources, WellKnownActions.Edit)]
     public async Task<IActionResult> EditAsync(
         DataSourceFormViewModel model,
         CancellationToken cancellationToken)
@@ -191,6 +200,7 @@ public sealed class DataSourcesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.DataSources, WellKnownActions.Edit)]
     public async Task<IActionResult> SetActive(
         long id,
         bool isActive,
@@ -209,6 +219,7 @@ public sealed class DataSourcesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.DataSources, WellKnownActions.Delete)]
     public async Task<IActionResult> Delete(
         long id,
         CancellationToken cancellationToken)
@@ -224,6 +235,7 @@ public sealed class DataSourcesController : Controller
     // ---------- بارگذاری فایل (Excel / CSV) ----------
 
     [HttpGet]
+    [RequirePermission(MapperResources.DataSources, WellKnownActions.Edit)]
     public async Task<IActionResult> UploadFile(long id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new GetDataSourceQuery(id), cancellationToken);
@@ -246,6 +258,7 @@ public sealed class DataSourcesController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(ImportLimits.MaxFileBytes + 1024 * 64)]
+    [RequirePermission(MapperResources.DataSources, WellKnownActions.Edit)]
     public async Task<IActionResult> UploadFileAsync(
         long id,
         IFormFile? file,
@@ -286,6 +299,7 @@ public sealed class DataSourcesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.DataSources, WellKnownActions.Edit)]
     public async Task<IActionResult> ImportFile(
         long id,
         string token,

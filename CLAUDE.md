@@ -34,5 +34,19 @@ Cloud container: the clones are /home/user/acl and /home/user/organization; a sy
 - `_Layout`: section "سازمان" (chart via `acl-res`, my delegations, Acl via `acl-res="Acl.Admin"`); controller links carry
   `asp-area=""` so they work from area pages. Module pages render in this layout (no `@section`s).
 - No shared menu contract (decided to keep modules independent): the host lists module pages in its layout.
+
+## Access control of Mapper's own pages
+
+- Acl resources (`Modules/MapperResources.cs`): module `Mapper` with pages `Mapper.Templates` (templates, versions, fields,
+  layouts), `Mapper.DataSources`, `Mapper.MappingProfiles`, `Mapper.Imports`, `Mapper.DataRecords`, and module
+  `Mapper.OrgChart`. A grant on `Mapper` is inherited by everything below it.
+- Controllers: `[RequirePermission]` — class = View; Create/Edit/Delete actions as named; Approve = publish/archive a
+  template version, commit an import; template fields/layouts and new versions = Edit on Templates; DataSources has no
+  class-level check so `Options` (used by record forms) only needs sign-in; `DataRecords.Save` checks Create or Edit in code.
+  The dashboard is open to every signed-in user (landing page).
+- Views: links/forms to protected actions carry `acl-res`/`acl-act` (hidden when denied); `_Layout` filters the menu
+  with `IAccessService` (UI hiding is cosmetic; the controllers enforce).
+- `MapperAccessBootstrapper` (first run only): role "مدیر Mapper" with every action on `Mapper`, given to
+  `Acl:SuperAdminUserIds`; left alone once it exists.
 - Tests: `Mapper.Tests` (WebApplicationFactory, every DbContext on its own SQLite connection, startup migrations off).
   Manual checklist: `docs/modules-test-checklist.md`.

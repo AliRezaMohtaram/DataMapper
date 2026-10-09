@@ -1,4 +1,7 @@
 ﻿using Borc.DataMapper.Application.TemplateVersions.ArchiveTemplateVersion;
+using Acl.AspNetCore.Authorization;
+using Acl.Core.Model;
+using Borc.DataMapper.Web.Modules;
 using Borc.DataMapper.Application.TemplateVersions.CreateTemplateVersion;
 using Borc.DataMapper.Application.TemplateVersions.DeleteTemplateVersion;
 using Borc.DataMapper.Application.TemplateVersions.GetTemplateVersion;
@@ -8,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Borc.DataMapper.Web.Controllers;
 
+[RequirePermission(MapperResources.Templates, WellKnownActions.View)]
 public sealed class TemplateVersionsController : Controller
 {
     private readonly ISender _sender;
@@ -35,6 +39,7 @@ public sealed class TemplateVersionsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.Templates, WellKnownActions.Edit)]
     public async Task<IActionResult> Create(
         long templateId,
         CancellationToken cancellationToken)
@@ -55,6 +60,7 @@ public sealed class TemplateVersionsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.Templates, WellKnownActions.Approve)]
     public async Task<IActionResult> Publish(
         long id,
         CancellationToken cancellationToken)
@@ -69,6 +75,7 @@ public sealed class TemplateVersionsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.Templates, WellKnownActions.Approve)]
     public async Task<IActionResult> Archive(
         long id,
         CancellationToken cancellationToken)
@@ -83,6 +90,7 @@ public sealed class TemplateVersionsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.Templates, WellKnownActions.Delete)]
     public async Task<IActionResult> Delete(
         long id,
         CancellationToken cancellationToken)

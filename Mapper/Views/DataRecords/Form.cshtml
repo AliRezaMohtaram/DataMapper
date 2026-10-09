@@ -10,11 +10,11 @@
 @section TopbarActions {
     @if (isEdit)
     {
-        <a class="btn btn-ghost" asp-action="Detail" asp-route-id="@Model.RecordId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">بازگشت به رکورد</span></a>
+        <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-ghost" asp-action="Detail" asp-route-id="@Model.RecordId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">بازگشت به رکورد</span></a>
     }
     else
     {
-        <a class="btn btn-ghost" asp-action="Index" asp-route-templateVersionId="@Model.TemplateVersionId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">رکوردهای این نسخه</span></a>
+        <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-ghost" asp-action="Index" asp-route-templateVersionId="@Model.TemplateVersionId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">رکوردهای این نسخه</span></a>
     }
 }
 
@@ -37,7 +37,7 @@
     <footer class="card-foot" style="justify-content:flex-end">
         @if (isEdit)
         {
-            <a class="btn btn-quiet" asp-action="Detail" asp-route-id="@Model.RecordId">انصراف</a>
+            <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-quiet" asp-action="Detail" asp-route-id="@Model.RecordId">انصراف</a>
         }
         else
         {

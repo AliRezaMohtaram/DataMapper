@@ -16,7 +16,7 @@
 
                 @if (Model.SourceType == DataSourceType.File)
                 {
-                    <a asp-action="UploadFile" asp-route-id="@Model.Id" class="btn primary">
+                    <a acl-res="Mapper.DataSources" acl-act="Edit" asp-action="UploadFile" asp-route-id="@Model.Id" class="btn primary">
                         @(Model.ItemCount == 0 ? "بارگذاری فایل" : "بارگذاری فایل جدید")
                     </a>
                 }
@@ -78,7 +78,7 @@
                         <dd>
                             @if (Model.TemplateId.HasValue)
                             {
-                                <a asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@(Model.TemplateName ?? $"#{Model.TemplateId}")</a>
+                                <a acl-res="Mapper.Templates" acl-act="View" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@(Model.TemplateName ?? $"#{Model.TemplateId}")</a>
                             }
                             else
                             {
@@ -139,9 +139,9 @@
             </dl>
 
             <div class="aside-actions">
-                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn primary block" data-modal>ویرایش</a>
+                <a acl-res="Mapper.DataSources" acl-act="Edit" asp-action="Edit" asp-route-id="@Model.Id" class="btn primary block" data-modal>ویرایش</a>
 
-                <form asp-action="SetActive" method="post">
+                <form acl-res="Mapper.DataSources" acl-act="Edit" asp-action="SetActive" method="post">
                     <input type="hidden" name="id" value="@Model.Id" />
                     <input type="hidden" name="isActive" value="@((!Model.IsActive).ToString().ToLowerInvariant())" />
                     <input type="hidden" name="returnTo" value="detail" />
@@ -151,7 +151,7 @@
                 <button type="button" class="btn danger block"
                         data-delete-id="@Model.Id" data-delete-name="@Model.Name">حذف منبع داده</button>
 
-                <a asp-action="Index" class="btn ghost block">بازگشت به فهرست</a>
+                <a acl-res="Mapper.DataSources" acl-act="View" asp-action="Index" class="btn ghost block">بازگشت به فهرست</a>
             </div>
         </div>
     </aside>

@@ -25,11 +25,11 @@
 @section TopbarActions {
     @if (filter.TemplateVersionId.HasValue)
     {
-        <a class="btn btn-soft" asp-action="Create" asp-route-versionId="@filter.TemplateVersionId"><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>
+        <a acl-res="Mapper.DataRecords" acl-act="Create" class="btn btn-soft" asp-action="Create" asp-route-versionId="@filter.TemplateVersionId"><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>
     }
     else
     {
-        <a class="btn btn-soft" asp-action="Create" data-modal><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>
+        <a acl-res="Mapper.DataRecords" acl-act="Create" class="btn btn-soft" asp-action="Create" data-modal><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>
     }
 }
 
@@ -49,14 +49,14 @@
         @if (filter.ImportBatchId.HasValue)
         {
             <span class="fchip active">
-                فقط ایمپورت <a class="code" asp-controller="Imports" asp-action="Detail" asp-route-id="@filter.ImportBatchId">IMP-@filter.ImportBatchId.Value.ToString("0000")</a>
-                <a asp-action="Index" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-search="@filter.Search" aria-label="حذف فیلتر ایمپورت"><svg class="ico" style="width:.85rem;height:.85rem"><use href="#i-x" /></svg></a>
+                فقط ایمپورت <a acl-res="Mapper.Imports" acl-act="View" class="code" asp-controller="Imports" asp-action="Detail" asp-route-id="@filter.ImportBatchId">IMP-@filter.ImportBatchId.Value.ToString("0000")</a>
+                <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Index" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-search="@filter.Search" aria-label="حذف فیلتر ایمپورت"><svg class="ico" style="width:.85rem;height:.85rem"><use href="#i-x" /></svg></a>
             </span>
         }
     </header>
 
     <div class="toolbar">
-        <form method="get" asp-action="Index" role="search">
+        <form acl-res="Mapper.DataRecords" acl-act="View" method="get" asp-action="Index" role="search">
             <input type="hidden" name="pageSize" value="@result.PageSize" />
             <input type="hidden" name="importBatchId" value="@filter.ImportBatchId" />
             <div class="input-wrap">
@@ -78,7 +78,7 @@
             <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#i-search" /></svg>جستجو</button>
             @if (hasFilter)
             {
-                <a class="btn btn-quiet" asp-action="Index" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
+                <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-quiet" asp-action="Index" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
             }
         </form>
     </div>
@@ -90,8 +90,8 @@
             @if (!hasFilter)
             {
                 <div class="row" style="justify-content:center;margin-top:.8rem">
-                    <a class="btn btn-primary btn-sm" asp-controller="Imports" asp-action="Upload" data-modal><svg class="ico"><use href="#i-upload" /></svg>ایمپورت فایل</a>
-                    <a class="btn btn-ghost btn-sm" asp-action="Create" data-modal><svg class="ico"><use href="#i-pen" /></svg>ورود دستی</a>
+                    <a acl-res="Mapper.Imports" acl-act="Create" class="btn btn-primary btn-sm" asp-controller="Imports" asp-action="Upload" data-modal><svg class="ico"><use href="#i-upload" /></svg>ایمپورت فایل</a>
+                    <a acl-res="Mapper.DataRecords" acl-act="Create" class="btn btn-ghost btn-sm" asp-action="Create" data-modal><svg class="ico"><use href="#i-pen" /></svg>ورود دستی</a>
                 </div>
             }
         </div>
@@ -105,7 +105,7 @@
                     @foreach (var r in result.Items)
                     {
                         <tr>
-                            <td><a class="code" asp-action="Detail" asp-route-id="@r.Id">@r.Id</a></td>
+                            <td><a acl-res="Mapper.DataRecords" acl-act="View" class="code" asp-action="Detail" asp-route-id="@r.Id">@r.Id</a></td>
                             <td><div class="cell-main">@r.TemplateName</div><div class="cell-sub">نسخهٔ @r.VersionNo.ToPersianNumber()</div></td>
                             <td>
                                 @if (r.Source == RecordSource.Import)
@@ -113,7 +113,7 @@
                                     <span class="badge st-uploaded">ایمپورت</span>
                                     @if (r.ImportBatchId.HasValue)
                                     {
-                                        <div class="cell-sub"><a class="code" asp-controller="Imports" asp-action="Detail" asp-route-id="@r.ImportBatchId">IMP-@r.ImportBatchId.Value.ToString("0000")</a></div>
+                                        <div class="cell-sub"><a acl-res="Mapper.Imports" acl-act="View" class="code" asp-controller="Imports" asp-action="Detail" asp-route-id="@r.ImportBatchId">IMP-@r.ImportBatchId.Value.ToString("0000")</a></div>
                                     }
                                 }
                                 else
@@ -125,8 +125,8 @@
                             <td class="cell-sub">@((r.UpdatedAt ?? r.CreatedAt).ToRelative())</td>
                             <td>
                                 <div class="row-actions">
-                                    <a class="icon-btn sm primary" asp-action="Detail" asp-route-id="@r.Id" title="مشاهده" aria-label="مشاهدهٔ رکورد @r.Id"><svg class="ico"><use href="#i-eye" /></svg></a>
-                                    <a class="icon-btn sm" asp-action="Edit" asp-route-id="@r.Id" title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
+                                    <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-action="Detail" asp-route-id="@r.Id" title="مشاهده" aria-label="مشاهدهٔ رکورد @r.Id"><svg class="ico"><use href="#i-eye" /></svg></a>
+                                    <a acl-res="Mapper.DataRecords" acl-act="Edit" class="icon-btn sm" asp-action="Edit" asp-route-id="@r.Id" title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
                                     <button class="icon-btn sm danger" type="button" data-delete-id="@r.Id" data-delete-name="رکورد @r.Id" title="حذف" aria-label="حذف رکورد @r.Id"><svg class="ico"><use href="#i-trash" /></svg></button>
                                 </div>
                             </td>
@@ -144,7 +144,7 @@
             <nav class="pager" aria-label="صفحه‌بندی">
                 @if (result.HasPrevious)
                 {
-                    <a asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
+                    <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
                 }
                 else
                 {
@@ -153,14 +153,14 @@
                 <span class="pager-now" aria-current="page">صفحه @result.Page.ToPersianNumber() از @Math.Max(1, result.TotalPages).ToPersianNumber()</span>
                 @if (result.HasNext)
                 {
-                    <a asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
+                    <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
                 }
                 else
                 {
                     <span aria-disabled="true"><svg class="ico"><use href="#i-chev-left" /></svg></span>
                 }
             </nav>
-            <form method="get" asp-action="Index" class="page-size">
+            <form acl-res="Mapper.DataRecords" acl-act="View" method="get" asp-action="Index" class="page-size">
                 <input type="hidden" name="search" value="@filter.Search" />
                 <input type="hidden" name="templateVersionId" value="@filter.TemplateVersionId" />
                 <input type="hidden" name="source" value="@filter.Source" />

@@ -13,7 +13,7 @@
         .SelectMany(kv => kv.Value!.Errors).Select(e => e.ErrorMessage).Where(m => !string.IsNullOrWhiteSpace(m)).ToList();
 }
 
-<form class="modal modal-lg" method="post" asp-controller="Imports" asp-action="Upload" enctype="multipart/form-data"
+<form acl-res="Mapper.Imports" acl-act="Create" class="modal modal-lg" method="post" asp-controller="Imports" asp-action="Upload" enctype="multipart/form-data"
       data-mx-ajax data-mx-init="import-upload" data-mx-src="@FileVersions.AddFileVersionToPath(Context.Request.PathBase, "/js/import-upload.js")" novalidate>
 
     <div class="modal-head">
@@ -22,7 +22,7 @@
             <div class="modal-title">ایمپورت فایل Excel</div>
             <div class="modal-sub">فایل بارگذاری می‌شود، ستون‌هایش را با فیلدهای قالب تطبیق می‌دهید و بعد اعتبارسنجی و ثبت می‌شود.</div>
         </div>
-        <a class="icon-btn plain close" asp-controller="Imports" asp-action="Index" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+        <a acl-res="Mapper.Imports" acl-act="View" class="icon-btn plain close" asp-controller="Imports" asp-action="Index" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
     </div>
 
     <div class="steps" aria-label="مراحل ایمپورت">
@@ -45,7 +45,7 @@
             <div class="callout tone-warning" style="margin-bottom:1rem">
                 <svg class="ico"><use href="#i-alert" /></svg>
                 <div>هنوز هیچ قالبی <b>نسخهٔ منتشرشده</b> ندارد؛ ایمپورت فقط روی نسخهٔ منتشرشده ممکن است.
-                    <a class="link-btn" asp-controller="Templates" asp-action="Index">رفتن به قالب‌ها</a></div>
+                    <a acl-res="Mapper.Templates" acl-act="View" class="link-btn" asp-controller="Templates" asp-action="Index">رفتن به قالب‌ها</a></div>
             </div>
         }
 
@@ -87,7 +87,7 @@
 
     <div class="modal-foot">
         <span class="spacer"></span>
-        <a class="btn btn-quiet" asp-controller="Imports" asp-action="Index" data-close>انصراف</a>
+        <a acl-res="Mapper.Imports" acl-act="View" class="btn btn-quiet" asp-controller="Imports" asp-action="Index" data-close>انصراف</a>
         <button type="submit" class="btn btn-primary" @(versions.Count == 0 ? "disabled" : null)><svg class="ico"><use href="#i-upload" /></svg>بارگذاری و تطبیق ستون‌ها</button>
     </div>
 </form>

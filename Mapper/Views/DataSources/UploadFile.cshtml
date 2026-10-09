@@ -8,7 +8,7 @@
 }
 
 <div class="modal-page">
-    <form class="modal modal-lg" asp-action="UploadFile" method="post" enctype="multipart/form-data">
+    <form acl-res="Mapper.DataSources" acl-act="Edit" class="modal modal-lg" asp-action="UploadFile" method="post" enctype="multipart/form-data">
         <input type="hidden" name="id" value="@Model.Id" />
 
         <div class="modal-head">
@@ -17,7 +17,7 @@
                 <div class="modal-title">بارگذاری فایل گزینه‌ها</div>
                 <div class="modal-sub">منبع داده «@Model.Name» · <span class="code">@Model.Code</span></div>
             </div>
-            <a class="icon-btn plain close" asp-action="Detail" asp-route-id="@Model.Id" aria-label="بازگشت به جزئیات"><svg class="ico"><use href="#i-x" /></svg></a>
+            <a acl-res="Mapper.DataSources" acl-act="View" class="icon-btn plain close" asp-action="Detail" asp-route-id="@Model.Id" aria-label="بازگشت به جزئیات"><svg class="ico"><use href="#i-x" /></svg></a>
         </div>
 
         @* مسیر کامل منبع فایل: مشخصات → فایل → انتخاب ستون‌ها → آماده *@
@@ -61,7 +61,7 @@
 
         <div class="modal-foot">
             <span class="spacer"></span>
-            <a class="btn btn-quiet" asp-action="Detail" asp-route-id="@Model.Id">انصراف</a>
+            <a acl-res="Mapper.DataSources" acl-act="View" class="btn btn-quiet" asp-action="Detail" asp-route-id="@Model.Id">انصراف</a>
             <button type="submit" class="btn btn-primary"><svg class="ico"><use href="#i-upload" /></svg>بارگذاری و ادامه</button>
         </div>
     </form>

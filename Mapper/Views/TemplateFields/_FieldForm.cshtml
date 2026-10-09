@@ -140,7 +140,7 @@
                     <div class="alias-list" aria-label="نام‌های مستعار">
                         @foreach (var a in info.Aliases)
                         {
-                            <form class="alias-chip" method="post" asp-controller="TemplateFields" asp-action="DeleteAlias" data-mx-ajax>
+                            <form acl-res="Mapper.Templates" acl-act="Edit" class="alias-chip" method="post" asp-controller="TemplateFields" asp-action="DeleteAlias" data-mx-ajax>
                                 <input type="hidden" name="id" value="@a.Id" />
                                 <input type="hidden" name="fieldId" value="@info.Id" />
                                 <span>@a.Alias</span>
@@ -152,7 +152,7 @@
                     </div>
                 }
 
-                <form class="alias-add" method="post" asp-controller="TemplateFields" asp-action="AddAlias" data-mx-ajax>
+                <form acl-res="Mapper.Templates" acl-act="Edit" class="alias-add" method="post" asp-controller="TemplateFields" asp-action="AddAlias" data-mx-ajax>
                     <input type="hidden" name="templateFieldId" value="@info.Id" />
                     <div class="input-wrap" style="flex:1">
                         <svg class="ico"><use href="#i-link" /></svg>

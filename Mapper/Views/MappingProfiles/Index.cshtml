@@ -22,7 +22,7 @@
 }
 
 @section TopbarActions {
-    <a class="btn btn-soft" asp-action="Create" asp-route-templateVersionId="@filter.TemplateVersionId" data-modal><svg class="ico"><use href="#i-plus" /></svg><span class="lbl">پروفایل جدید</span></a>
+    <a acl-res="Mapper.MappingProfiles" acl-act="Create" class="btn btn-soft" asp-action="Create" asp-route-templateVersionId="@filter.TemplateVersionId" data-modal><svg class="ico"><use href="#i-plus" /></svg><span class="lbl">پروفایل جدید</span></a>
 }
 
 @if (errors.Count > 0)
@@ -41,7 +41,7 @@
     </header>
 
     <div class="toolbar">
-        <form method="get" asp-action="Index" role="search">
+        <form acl-res="Mapper.MappingProfiles" acl-act="View" method="get" asp-action="Index" role="search">
             <input type="hidden" name="pageSize" value="@result.PageSize" />
             <input type="hidden" name="templateVersionId" value="@filter.TemplateVersionId" />
             <div class="input-wrap">
@@ -51,7 +51,7 @@
             <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#i-search" /></svg>جستجو</button>
             @if (filtering)
             {
-                <a class="btn btn-quiet" asp-action="Index" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
+                <a acl-res="Mapper.MappingProfiles" acl-act="View" class="btn btn-quiet" asp-action="Index" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
             }
         </form>
     </div>
@@ -67,7 +67,7 @@
             {
                 <p>هنوز پروفایل نگاشتی ساخته نشده است.</p>
                 <p class="hint" style="margin-top:.3rem">می‌توانید پروفایل را دستی بسازید یا هنگام تطبیق ستون‌های یک ایمپورت، نگاشت را به‌عنوان پروفایل ذخیره کنید.</p>
-                <a class="btn btn-primary btn-sm" style="margin-top:.8rem" asp-action="Create" data-modal><svg class="ico"><use href="#i-plus" /></svg>ساخت پروفایل</a>
+                <a acl-res="Mapper.MappingProfiles" acl-act="Create" class="btn btn-primary btn-sm" style="margin-top:.8rem" asp-action="Create" data-modal><svg class="ico"><use href="#i-plus" /></svg>ساخت پروفایل</a>
             }
         </div>
     }
@@ -83,7 +83,7 @@
                         var statusForm = $"mpStatus_{p.Id}";
                         <tr>
                             <td>
-                                <a class="cell-main" asp-action="Detail" asp-route-id="@p.Id">@p.Name</a>
+                                <a acl-res="Mapper.MappingProfiles" acl-act="View" class="cell-main" asp-action="Detail" asp-route-id="@p.Id">@p.Name</a>
                                 <div class="cell-sub">فایل @p.SourceType.ToLabel()</div>
                             </td>
                             <td><div class="cell-main">@p.TemplateName</div><div class="cell-sub">نسخهٔ @p.VersionNo.ToPersianNumber()</div></td>
@@ -100,13 +100,13 @@
                             <td><span class="badge @(active ? "st-active" : "st-inactive")">@p.Status.ToLabel()</span></td>
                             <td class="cell-sub nums">@p.CreatedAt.ToJalali().ToPersianDigits()</td>
                             <td>
-                                <form id="@statusForm" asp-action="SetStatus" method="post" hidden>
+                                <form acl-res="Mapper.MappingProfiles" acl-act="Edit" id="@statusForm" asp-action="SetStatus" method="post" hidden>
                                     <input type="hidden" name="id" value="@p.Id" />
                                     <input type="hidden" name="isActive" value="@((!active).ToString().ToLowerInvariant())" />
                                 </form>
                                 <div class="row-actions">
-                                    <a class="icon-btn sm primary" asp-action="Detail" asp-route-id="@p.Id" title="جزئیات و قاعده‌ها" aria-label="جزئیات @p.Name"><svg class="ico"><use href="#i-eye" /></svg></a>
-                                    <a class="icon-btn sm" asp-action="Edit" asp-route-id="@p.Id" data-modal title="ویرایش" aria-label="ویرایش @p.Name"><svg class="ico"><use href="#i-edit" /></svg></a>
+                                    <a acl-res="Mapper.MappingProfiles" acl-act="View" class="icon-btn sm primary" asp-action="Detail" asp-route-id="@p.Id" title="جزئیات و قاعده‌ها" aria-label="جزئیات @p.Name"><svg class="ico"><use href="#i-eye" /></svg></a>
+                                    <a acl-res="Mapper.MappingProfiles" acl-act="Edit" class="icon-btn sm" asp-action="Edit" asp-route-id="@p.Id" data-modal title="ویرایش" aria-label="ویرایش @p.Name"><svg class="ico"><use href="#i-edit" /></svg></a>
                                     <button class="icon-btn sm" type="submit" form="@statusForm" title="@(active ? "غیرفعال‌سازی" : "فعال‌سازی")" aria-label="@(active ? "غیرفعال‌سازی" : "فعال‌سازی") @p.Name">
                                         <svg class="ico"><use href="#@(active ? "i-x" : "i-check")" /></svg>
                                     </button>
@@ -127,7 +127,7 @@
             <nav class="pager" aria-label="صفحه‌بندی">
                 @if (result.HasPrevious)
                 {
-                    <a asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
+                    <a acl-res="Mapper.MappingProfiles" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
                 }
                 else
                 {
@@ -136,14 +136,14 @@
                 <span class="pager-now" aria-current="page">صفحه @result.Page.ToPersianNumber() از @Math.Max(1, result.TotalPages).ToPersianNumber()</span>
                 @if (result.HasNext)
                 {
-                    <a asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
+                    <a acl-res="Mapper.MappingProfiles" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
                 }
                 else
                 {
                     <span aria-disabled="true"><svg class="ico"><use href="#i-chev-left" /></svg></span>
                 }
             </nav>
-            <form method="get" asp-action="Index" class="page-size">
+            <form acl-res="Mapper.MappingProfiles" acl-act="View" method="get" asp-action="Index" class="page-size">
                 <input type="hidden" name="search" value="@filter.Search" />
                 <input type="hidden" name="templateVersionId" value="@filter.TemplateVersionId" />
                 <label for="pageSize">ردیف در صفحه</label>

@@ -19,7 +19,7 @@
         مقدار تکراری یا خالی نادیده گرفته می‌شود.
     </div>
 
-    <form asp-action="ImportFile" method="post">
+    <form acl-res="Mapper.DataSources" acl-act="Edit" asp-action="ImportFile" method="post">
         <input type="hidden" name="id" value="@id" />
         <input type="hidden" name="token" value="@Model.Token" />
 
@@ -71,7 +71,7 @@
 
         <div class="actions">
             <button type="submit" class="btn primary">ثبت گزینه‌ها</button>
-            <a asp-action="Detail" asp-route-id="@id" class="btn ghost">انصراف</a>
+            <a acl-res="Mapper.DataSources" acl-act="View" asp-action="Detail" asp-route-id="@id" class="btn ghost">انصراف</a>
         </div>
     </form>
 </div>

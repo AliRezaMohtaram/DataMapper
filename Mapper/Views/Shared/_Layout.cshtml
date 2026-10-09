@@ -1,3 +1,4 @@
+@inject Acl.Core.Abstractions.IAccessService AccessService
 @using Borc.DataMapper.Web.ViewModels
 @{
     var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
@@ -14,6 +15,9 @@
         new NavItem("داده", "Imports", "ایمپورت داده", "i-upload", new[] { "Imports" }),
         new NavItem("داده", "DataRecords", "داده‌های ثبت‌شده", "i-rows", new[] { "DataRecords" }),
     };
+    // فقط صفحه‌هایی که کاربر اجازهٔ دیدنشان را دارد (داشبورد برای همه).
+    var access = await AccessService.GetCurrentUserAccessAsync();
+    nav = nav.Where(n => n.Controller == "Dashboard" || access.IsAllowed("Mapper." + n.Controller, "View")).ToArray();
     bool IsActive(NavItem item) => item.Controllers.Contains(controller, StringComparer.OrdinalIgnoreCase);
 
     // کاربر واردشده (ماژول Borc.Users)
@@ -152,7 +156,7 @@
                         <svg class="ico"><use href="#i-palette" /></svg>
                     </button>
                     @await RenderSectionAsync("TopbarActions", required: false)
-                    <a class="btn btn-primary" asp-area="" asp-controller="Imports" asp-action="Upload" data-modal>
+                    <a acl-res="Mapper.Imports" acl-act="Create" class="btn btn-primary" asp-area="" asp-controller="Imports" asp-action="Upload" data-modal>
                         <svg class="ico"><use href="#i-upload" /></svg><span class="lbl">ایمپورت جدید</span>
                     </a>
                 </div>
@@ -188,11 +192,11 @@
                 <a class="cmdk-item" data-search-href="@Url.Action("Index", "DataSources")?search="><span class="src-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span><span>جستجوی «<b data-q></b>» در منابع داده</span></a>
 
                 <div class="cmdk-group">اقدامات سریع</div>
-                <a class="cmdk-item" asp-area="" asp-controller="Imports" asp-action="Upload" data-modal data-k="import upload excel csv آپلود فایل"><span class="src-ico tone-primary"><svg class="ico"><use href="#i-upload" /></svg></span>ایمپورت فایل جدید</a>
-                <a class="cmdk-item" asp-area="" asp-controller="DataRecords" asp-action="Create" data-modal data-k="record manual entry رکورد"><span class="src-ico tone-success"><svg class="ico"><use href="#i-pen" /></svg></span>ثبت دستی رکورد</a>
-                <a class="cmdk-item" asp-area="" asp-controller="Templates" asp-action="Create" data-k="template new"><span class="src-ico tone-violet"><svg class="ico"><use href="#i-template" /></svg></span>قالب جدید</a>
-                <a class="cmdk-item" asp-area="" asp-controller="DataSources" asp-action="Create" data-modal data-k="datasource api list"><span class="src-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span>منبع داده جدید</a>
-                <a class="cmdk-item" asp-area="" asp-controller="MappingProfiles" asp-action="Create" data-modal data-k="mapping profile"><span class="src-ico tone-warning"><svg class="ico"><use href="#i-map" /></svg></span>پروفایل نگاشت جدید</a>
+                <a acl-res="Mapper.Imports" acl-act="Create" class="cmdk-item" asp-area="" asp-controller="Imports" asp-action="Upload" data-modal data-k="import upload excel csv آپلود فایل"><span class="src-ico tone-primary"><svg class="ico"><use href="#i-upload" /></svg></span>ایمپورت فایل جدید</a>
+                <a acl-res="Mapper.DataRecords" acl-act="Create" class="cmdk-item" asp-area="" asp-controller="DataRecords" asp-action="Create" data-modal data-k="record manual entry رکورد"><span class="src-ico tone-success"><svg class="ico"><use href="#i-pen" /></svg></span>ثبت دستی رکورد</a>
+                <a acl-res="Mapper.Templates" acl-act="Create" class="cmdk-item" asp-area="" asp-controller="Templates" asp-action="Create" data-k="template new"><span class="src-ico tone-violet"><svg class="ico"><use href="#i-template" /></svg></span>قالب جدید</a>
+                <a acl-res="Mapper.DataSources" acl-act="Create" class="cmdk-item" asp-area="" asp-controller="DataSources" asp-action="Create" data-modal data-k="datasource api list"><span class="src-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span>منبع داده جدید</a>
+                <a acl-res="Mapper.MappingProfiles" acl-act="Create" class="cmdk-item" asp-area="" asp-controller="MappingProfiles" asp-action="Create" data-modal data-k="mapping profile"><span class="src-ico tone-warning"><svg class="ico"><use href="#i-map" /></svg></span>پروفایل نگاشت جدید</a>
 
                 <div class="cmdk-group">صفحات</div>
                 @foreach (var item in nav)

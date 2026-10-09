@@ -19,7 +19,7 @@ public sealed class SmokeTests(MapperApp app) : IClassFixture<MapperApp>
     }
 
     [Fact]
-    public async Task Dashboard_shows_the_user_and_the_module_menu()
+    public async Task Bootstrap_role_gives_the_admin_every_mapper_page()
     {
         HttpClient client = await app.AdminAsync();
 
@@ -28,10 +28,77 @@ public sealed class SmokeTests(MapperApp app) : IClassFixture<MapperApp>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         string html = await TextAsync(response);
         Assert.Contains("مدیر سامانه", html);
-        Assert.Contains("href=\"/Users\"", html);
-        Assert.Contains("href=\"/Acl/Roles\"", html);       // super admin: Acl.Admin
+        foreach (string link in new[] { "/Users", "/Acl/Roles", "/OrgChart/My", "/OrgChart", "/Templates", "/DataSources", "/MappingProfiles", "/Imports", "/DataRecords" })
+        {
+            Assert.Contains($"href=\"{link}\"", html);
+        }
+
+        await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
+        RoleListItem role = Assert.Single((await scope.ServiceProvider.GetRequiredService<IRoleAdministration>().ListRolesAsync()),
+            r => r.Name == Borc.DataMapper.Web.Modules.MapperAccessBootstrapper.RoleName);
+        Assert.Equal(1, role.DirectUserCount);
+    }
+
+    [Fact]
+    public async Task A_user_without_roles_sees_only_the_dashboard_and_is_denied_elsewhere()
+    {
+        HttpClient client = await NewUserAsync("plain");
+
+        string html = await TextAsync(await client.GetAsync("/"));
         Assert.Contains("href=\"/OrgChart/My\"", html);
-        Assert.DoesNotContain("href=\"/OrgChart\"", html);  // no role with Mapper.OrgChart yet
+        foreach (string link in new[] { "/Templates", "/DataSources", "/Imports", "/DataRecords", "/OrgChart", "/Acl/Roles", "/Users", "/Imports/Upload" })
+        {
+            Assert.DoesNotContain($"href=\"{link}\"", html);
+        }
+
+        foreach (string path in new[] { "/Templates", "/DataSources", "/MappingProfiles", "/Imports", "/DataRecords", "/OrgChart" })
+        {
+            HttpResponseMessage response = await client.GetAsync(path);
+            Assert.True(response.StatusCode == HttpStatusCode.Redirect && response.Headers.Location!.PathAndQuery.StartsWith("/Account/AccessDenied"),
+                $"{path}: {response.StatusCode} {response.Headers.Location}");
+        }
+    }
+
+    [Fact]
+    public async Task View_only_role_opens_the_list_but_not_the_forms()
+    {
+        await GrantAsync("viewer", "DataSourceViewers", ("Mapper.DataSources", WellKnownActions.View));
+        HttpClient client = await app.SignInAsync("viewer", "Secret123");
+
+        HttpResponseMessage list = await client.GetAsync("/DataSources");
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        Assert.DoesNotContain("href=\"/DataSources/Create\"", await TextAsync(list));
+
+        HttpResponseMessage form = await client.GetAsync("/DataSources/Create");
+        Assert.Equal(HttpStatusCode.Redirect, form.StatusCode);
+        Assert.StartsWith("/Account/AccessDenied", form.Headers.Location!.PathAndQuery);
+    }
+
+    /// <summary>Creates a user (password Secret123) and returns a client signed in as them.</summary>
+    private async Task<HttpClient> NewUserAsync(string userName)
+    {
+        await using (AsyncServiceScope scope = app.Services.CreateAsyncScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<Borc.Users.Services.IUserAdministration>()
+                .CreateAsync(new Borc.Users.Services.UserInput(userName, "کاربر " + userName, null, false, "Secret123"));
+        }
+
+        return await app.SignInAsync(userName, "Secret123");
+    }
+
+    /// <summary>Creates the user and a role allowing the given (resource, action) pairs, and gives it to them.</summary>
+    private async Task GrantAsync(string userName, string roleName, params (string Resource, string Action)[] grants)
+    {
+        await using AsyncServiceScope scope = app.Services.CreateAsyncScope();
+        long id = await scope.ServiceProvider.GetRequiredService<Borc.Users.Services.IUserAdministration>()
+            .CreateAsync(new Borc.Users.Services.UserInput(userName, "کاربر " + userName, null, false, "Secret123"));
+        IRoleAdministration roles = scope.ServiceProvider.GetRequiredService<IRoleAdministration>();
+        IAssignmentAdministration assignments = scope.ServiceProvider.GetRequiredService<IAssignmentAdministration>();
+        IReadOnlyList<ResourceOption> resources = await assignments.GetResourceOptionsAsync();
+        int role = await roles.CreateRoleAsync(new RoleInput { Name = roleName, IsActive = true });
+        await roles.SetPermissionsAsync(role, grants
+            .Select(g => new PermissionChange(resources.Single(r => r.Key == g.Resource).Id, g.Action, PermissionEffect.Allow)).ToList());
+        await assignments.AddUserRoleAsync(id.ToString(System.Globalization.CultureInfo.InvariantCulture), new UserRoleInput { RoleId = role });
     }
 
     [Theory]
@@ -53,33 +120,10 @@ public sealed class SmokeTests(MapperApp app) : IClassFixture<MapperApp>
     }
 
     [Fact]
-    public async Task Org_chart_needs_the_mapper_orgchart_permission()
-    {
-        HttpClient client = await app.AdminAsync();
-
-        HttpResponseMessage response = await client.GetAsync("/OrgChart");
-
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.StartsWith("/Account/AccessDenied", response.Headers.Location!.PathAndQuery);
-    }
-
-    [Fact]
     public async Task A_role_with_the_org_chart_permission_opens_the_chart_and_its_forms()
     {
-        HttpClient client = await app.AdminAsync(); // signs in once, so Acl has synced its resources by now
-        await using (AsyncServiceScope scope = app.Services.CreateAsyncScope())
-        {
-            IRoleAdministration roles = scope.ServiceProvider.GetRequiredService<IRoleAdministration>();
-            IAssignmentAdministration assignments = scope.ServiceProvider.GetRequiredService<IAssignmentAdministration>();
-            int resource = (await assignments.GetResourceOptionsAsync()).Single(r => r.Key == "Mapper.OrgChart").Id;
-            int role = await roles.CreateRoleAsync(new RoleInput { Name = "OrgEditors", IsActive = true });
-            await roles.SetPermissionsAsync(role,
-            [
-                new PermissionChange(resource, WellKnownActions.View, PermissionEffect.Allow),
-                new PermissionChange(resource, WellKnownActions.Edit, PermissionEffect.Allow),
-            ]);
-            await assignments.AddUserRoleAsync("1", new UserRoleInput { RoleId = role });
-        }
+        await GrantAsync("charter", "OrgEditors", ("Mapper.OrgChart", WellKnownActions.View), ("Mapper.OrgChart", WellKnownActions.Edit));
+        HttpClient client = await app.SignInAsync("charter", "Secret123");
 
         string dashboard = await TextAsync(await client.GetAsync("/"));
         Assert.Contains("href=\"/OrgChart\"", dashboard);

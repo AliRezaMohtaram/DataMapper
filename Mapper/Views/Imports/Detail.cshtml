@@ -29,7 +29,7 @@
 }
 
 @section TopbarActions {
-    <a class="btn btn-ghost" asp-action="Index"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">همه ایمپورت‌ها</span></a>
+    <a acl-res="Mapper.Imports" acl-act="View" class="btn btn-ghost" asp-action="Index"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">همه ایمپورت‌ها</span></a>
 }
 
 <article class="card rise" style="margin-bottom:1rem">
@@ -61,7 +61,7 @@
         {
             var required = Model.Fields.Where(f => f.IsRequired).ToList();
 
-            <form class="card rise" asp-action="Map" method="post"
+            <form acl-res="Mapper.Imports" acl-act="Edit" class="card rise" asp-action="Map" method="post"
                   data-mx-init="import-map" data-mx-src="@FileVersions.AddFileVersionToPath(Context.Request.PathBase, "/js/import-map.js")">
                 <input type="hidden" name="id" value="@Model.Id" />
 
@@ -184,15 +184,15 @@
                         <div>سطرها<div class="card-sub">@rows.TotalCount.ToPersianNumber() سطر با فیلتر فعلی</div></div>
                     </div>
                     <nav class="fchips" aria-label="فیلتر سطرها">
-                        <a class="fchip@(rowStatus is null ? " active" : "")" asp-action="Detail" asp-route-id="@Model.Id">همه <span class="n">@Model.TotalRows.ToPersianNumber()</span></a>
-                        <a class="fchip@(rowStatus == ImportRowStatus.Invalid ? " active" : "")" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@ImportRowStatus.Invalid">نامعتبر <span class="n">@Model.InvalidRows.ToPersianNumber()</span></a>
+                        <a acl-res="Mapper.Imports" acl-act="View" class="fchip@(rowStatus is null ? " active" : "")" asp-action="Detail" asp-route-id="@Model.Id">همه <span class="n">@Model.TotalRows.ToPersianNumber()</span></a>
+                        <a acl-res="Mapper.Imports" acl-act="View" class="fchip@(rowStatus == ImportRowStatus.Invalid ? " active" : "")" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@ImportRowStatus.Invalid">نامعتبر <span class="n">@Model.InvalidRows.ToPersianNumber()</span></a>
                         @if (imported)
                         {
-                            <a class="fchip@(rowStatus == ImportRowStatus.Imported ? " active" : "")" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@ImportRowStatus.Imported">ثبت‌شده <span class="n">@Model.ValidRows.ToPersianNumber()</span></a>
+                            <a acl-res="Mapper.Imports" acl-act="View" class="fchip@(rowStatus == ImportRowStatus.Imported ? " active" : "")" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@ImportRowStatus.Imported">ثبت‌شده <span class="n">@Model.ValidRows.ToPersianNumber()</span></a>
                         }
                         else
                         {
-                            <a class="fchip@(rowStatus == ImportRowStatus.Valid ? " active" : "")" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@ImportRowStatus.Valid">معتبر <span class="n">@Model.ValidRows.ToPersianNumber()</span></a>
+                            <a acl-res="Mapper.Imports" acl-act="View" class="fchip@(rowStatus == ImportRowStatus.Valid ? " active" : "")" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@ImportRowStatus.Valid">معتبر <span class="n">@Model.ValidRows.ToPersianNumber()</span></a>
                         }
                     </nav>
                 </header>
@@ -242,7 +242,7 @@
                         <nav class="pager" aria-label="صفحه‌بندی سطرها">
                             @if (rows.HasPrevious)
                             {
-                                <a asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@rowStatus" asp-route-pageSize="@rows.PageSize" asp-route-page="@(rows.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
+                                <a acl-res="Mapper.Imports" acl-act="View" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@rowStatus" asp-route-pageSize="@rows.PageSize" asp-route-page="@(rows.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
                             }
                             else
                             {
@@ -250,7 +250,7 @@
                             }
                             @if (rows.HasNext)
                             {
-                                <a asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@rowStatus" asp-route-pageSize="@rows.PageSize" asp-route-page="@(rows.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
+                                <a acl-res="Mapper.Imports" acl-act="View" asp-action="Detail" asp-route-id="@Model.Id" asp-route-rowStatus="@rowStatus" asp-route-pageSize="@rows.PageSize" asp-route-page="@(rows.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
                             }
                             else
                             {
@@ -285,7 +285,7 @@
                 }
 
                 <dl class="dl stacked" style="margin-top:1rem">
-                    <div><dt>قالب</dt><dd><a class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a> · نسخهٔ @Model.VersionNo.ToPersianNumber()</dd></div>
+                    <div><dt>قالب</dt><dd><a acl-res="Mapper.Templates" acl-act="View" class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a> · نسخهٔ @Model.VersionNo.ToPersianNumber()</dd></div>
                     <div><dt>پروفایل نگاشت</dt><dd>@(Model.MappingProfileName ?? "تطبیق خودکار")</dd></div>
                     <div><dt>حجم فایل</dt><dd>@(Model.FileSize.HasValue ? $"{(Model.FileSize.Value / 1024.0).ToString("0.#", CultureInfo.InvariantCulture)} KB".ToPersianDigits() : "—")</dd></div>
                     <div><dt>آپلود</dt><dd class="nums">@Model.CreatedAt.ToJalali().ToPersianDigits()</dd></div>
@@ -299,7 +299,7 @@
                     {
                         @if (Model.ValidRows > 0)
                         {
-                            <form id="commitForm" asp-action="Commit" method="post" hidden>
+                            <form acl-res="Mapper.Imports" acl-act="Approve" id="commitForm" asp-action="Commit" method="post" hidden>
                                 <input type="hidden" name="id" value="@Model.Id" />
                             </form>
                             <button type="button" class="btn btn-primary" data-confirm-target="commitForm" data-confirm-title="ثبت نهایی"
@@ -312,7 +312,7 @@
                             <p class="hint">هیچ سطر معتبری برای ثبت وجود ندارد؛ نگاشت را تغییر دهید یا فایل را اصلاح کنید.</p>
                         }
 
-                        <form asp-action="Reopen" method="post">
+                        <form acl-res="Mapper.Imports" acl-act="Edit" asp-action="Reopen" method="post">
                             <input type="hidden" name="id" value="@Model.Id" />
                             <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#i-map" /></svg>تغییر تطبیق ستون‌ها</button>
                         </form>
@@ -320,7 +320,7 @@
 
                     @if (imported)
                     {
-                        <a class="btn btn-primary" asp-controller="DataRecords" asp-action="Index" asp-route-importBatchId="@Model.Id"><svg class="ico"><use href="#i-rows" /></svg>رکوردهای ثبت‌شده</a>
+                        <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-primary" asp-controller="DataRecords" asp-action="Index" asp-route-importBatchId="@Model.Id"><svg class="ico"><use href="#i-rows" /></svg>رکوردهای ثبت‌شده</a>
                     }
                     else
                     {

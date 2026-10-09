@@ -1,3 +1,6 @@
+using Acl.AspNetCore.Authorization;
+using Acl.Core.Model;
+using Borc.DataMapper.Web.Modules;
 using Borc.DataMapper.Application.MappingProfiles.AddMappingRule;
 using Borc.DataMapper.Application.MappingProfiles.CreateMappingProfile;
 using Borc.DataMapper.Application.MappingProfiles.DeleteMappingProfile;
@@ -16,6 +19,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Borc.DataMapper.Web.Controllers;
 
+[RequirePermission(MapperResources.MappingProfiles, WellKnownActions.View)]
 public sealed class MappingProfilesController : Controller
 {
     private readonly ISender _sender;
@@ -57,6 +61,7 @@ public sealed class MappingProfilesController : Controller
     // ---------- ایجاد ----------
 
     [HttpGet]
+    [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Create)]
     public async Task<IActionResult> Create(long? templateVersionId, CancellationToken cancellationToken)
     {
         await LoadVersionsAsync(cancellationToken);
@@ -66,6 +71,7 @@ public sealed class MappingProfilesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Create)]
     public async Task<IActionResult> CreateAsync(
         CreateMappingProfileCommand command,
         CancellationToken cancellationToken)
@@ -106,6 +112,7 @@ public sealed class MappingProfilesController : Controller
     // ---------- ویرایش ----------
 
     [HttpGet]
+    [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Edit)]
     public async Task<IActionResult> Edit(long id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new GetMappingProfileQuery(id), cancellationToken);
@@ -123,6 +130,7 @@ public sealed class MappingProfilesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Edit)]
     public async Task<IActionResult> EditAsync(
         UpdateMappingProfileCommand command,
         CancellationToken cancellationToken)
@@ -152,6 +160,7 @@ public sealed class MappingProfilesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Edit)]
     public async Task<IActionResult> SetStatus(long id, bool isActive, string? returnTo, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new SetMappingProfileStatusCommand(id, isActive), cancellationToken);
@@ -166,6 +175,7 @@ public sealed class MappingProfilesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Delete)]
     public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new DeleteMappingProfileCommand(id), cancellationToken);
@@ -179,6 +189,7 @@ public sealed class MappingProfilesController : Controller
     // ---------- قاعده‌ها ----------
 
     [HttpGet]
+    [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Edit)]
     public async Task<IActionResult> AddRule(long profileId, CancellationToken cancellationToken)
     {
         if (!await LoadRuleFormAsync(profileId, null, cancellationToken))
@@ -189,6 +200,7 @@ public sealed class MappingProfilesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Edit)]
     public async Task<IActionResult> AddRuleAsync(
         AddMappingRuleCommand command,
         CancellationToken cancellationToken)
@@ -213,6 +225,7 @@ public sealed class MappingProfilesController : Controller
     }
 
     [HttpGet]
+    [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Edit)]
     public async Task<IActionResult> EditRule(long profileId, long id, CancellationToken cancellationToken)
     {
         if (!await LoadRuleFormAsync(profileId, id, cancellationToken))
@@ -234,6 +247,7 @@ public sealed class MappingProfilesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Edit)]
     public async Task<IActionResult> EditRuleAsync(
         long profileId,
         UpdateMappingRuleCommand command,
@@ -264,6 +278,7 @@ public sealed class MappingProfilesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Edit)]
     public async Task<IActionResult> DeleteRule(long id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new DeleteMappingRuleCommand(id), cancellationToken);

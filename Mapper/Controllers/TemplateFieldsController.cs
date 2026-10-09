@@ -1,4 +1,7 @@
 ﻿using Borc.DataMapper.Application.TemplateFields.AddFieldAlias;
+using Acl.AspNetCore.Authorization;
+using Acl.Core.Model;
+using Borc.DataMapper.Web.Modules;
 using Borc.DataMapper.Application.TemplateFields.CreateTemplateField;
 using Borc.DataMapper.Application.TemplateFields.DeleteFieldAlias;
 using Borc.DataMapper.Application.TemplateFields.DeleteTemplateField;
@@ -14,6 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Borc.DataMapper.Web.Controllers;
 
+[RequirePermission(MapperResources.Templates, WellKnownActions.Edit)]
 public sealed class TemplateFieldsController : Controller
 {
     private readonly ISender _sender;

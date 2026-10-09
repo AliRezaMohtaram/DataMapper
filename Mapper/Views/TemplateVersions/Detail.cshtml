@@ -12,7 +12,7 @@
 }
 
 @section TopbarActions {
-    <a class="btn btn-ghost" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">بازگشت به قالب</span></a>
+    <a acl-res="Mapper.Templates" acl-act="View" class="btn btn-ghost" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">بازگشت به قالب</span></a>
 }
 
 @if (!isDraft)
@@ -36,7 +36,7 @@
             </div>
             @if (isDraft)
             {
-                <a class="btn btn-primary btn-sm" asp-controller="TemplateFields" asp-action="Create" asp-route-templateVersionId="@Model.Id" data-modal>
+                <a acl-res="Mapper.Templates" acl-act="Edit" class="btn btn-primary btn-sm" asp-controller="TemplateFields" asp-action="Create" asp-route-templateVersionId="@Model.Id" data-modal>
                     <svg class="ico"><use href="#i-plus" /></svg>فیلد جدید
                 </a>
             }
@@ -48,7 +48,7 @@
                 <p>این نسخه هنوز فیلدی ندارد.</p>
                 @if (isDraft)
                 {
-                    <a class="btn btn-soft btn-sm" style="margin-top:.8rem" asp-controller="TemplateFields" asp-action="Create" asp-route-templateVersionId="@Model.Id" data-modal><svg class="ico"><use href="#i-plus" /></svg>اولین فیلد</a>
+                    <a acl-res="Mapper.Templates" acl-act="Edit" class="btn btn-soft btn-sm" style="margin-top:.8rem" asp-controller="TemplateFields" asp-action="Create" asp-route-templateVersionId="@Model.Id" data-modal><svg class="ico"><use href="#i-plus" /></svg>اولین فیلد</a>
                 }
             </div>
         }
@@ -65,7 +65,7 @@
                                 <td>
                                     @if (isDraft)
                                     {
-                                        <a class="cell-main" asp-controller="TemplateFields" asp-action="Edit" asp-route-id="@f.Id" data-modal>@f.Label</a>
+                                        <a acl-res="Mapper.Templates" acl-act="Edit" class="cell-main" asp-controller="TemplateFields" asp-action="Edit" asp-route-id="@f.Id" data-modal>@f.Label</a>
                                     }
                                     else
                                     {
@@ -98,7 +98,7 @@
                                     @if (isDraft)
                                     {
                                         <div class="row-actions">
-                                            <a class="icon-btn sm" asp-controller="TemplateFields" asp-action="Edit" asp-route-id="@f.Id" data-modal title="ویرایش" aria-label="ویرایش @f.FieldKey"><svg class="ico"><use href="#i-edit" /></svg></a>
+                                            <a acl-res="Mapper.Templates" acl-act="Edit" class="icon-btn sm" asp-controller="TemplateFields" asp-action="Edit" asp-route-id="@f.Id" data-modal title="ویرایش" aria-label="ویرایش @f.FieldKey"><svg class="ico"><use href="#i-edit" /></svg></a>
                                             <button class="icon-btn sm danger" type="button" title="حذف" aria-label="حذف @f.FieldKey"
                                                     data-delete-id="@f.Id" data-delete-name="فیلد @f.FieldKey" data-delete-url="@deleteFieldUrl">
                                                 <svg class="ico"><use href="#i-trash" /></svg>
@@ -120,7 +120,7 @@
                 <div class="row" style="justify-content:space-between;align-items:flex-start">
                     <div>
                         <div class="hero-title">نسخهٔ @Model.VersionNo.ToPersianNumber()</div>
-                        <a class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a>
+                        <a acl-res="Mapper.Templates" acl-act="View" class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a>
                     </div>
                     <span class="badge @Model.Status.BadgeClass()">@Model.Status.ToLabel()</span>
                 </div>
@@ -137,7 +137,7 @@
                 <div class="action-stack">
                     @if (isDraft)
                     {
-                        <form id="publishForm" asp-action="Publish" method="post" hidden>
+                        <form acl-res="Mapper.Templates" acl-act="Approve" id="publishForm" asp-action="Publish" method="post" hidden>
                             <input type="hidden" name="id" value="@Model.Id" />
                         </form>
                         <button type="button" class="btn btn-primary" @(Model.Fields.Count == 0 ? "disabled" : null)
@@ -150,12 +150,12 @@
 
                     @if (!isArchived)
                     {
-                        <a class="btn btn-ghost" asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@Model.Id"><svg class="ico"><use href="#i-layout" /></svg>طراح چیدمان فرم</a>
+                        <a acl-res="Mapper.Templates" acl-act="Edit" class="btn btn-ghost" asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@Model.Id"><svg class="ico"><use href="#i-layout" /></svg>طراح چیدمان فرم</a>
                     }
 
                     @if (!isArchived)
                     {
-                        <form id="archiveForm" asp-action="Archive" method="post" hidden>
+                        <form acl-res="Mapper.Templates" acl-act="Approve" id="archiveForm" asp-action="Archive" method="post" hidden>
                             <input type="hidden" name="id" value="@Model.Id" />
                         </form>
                         <button type="button" class="btn btn-ghost" data-confirm-target="archiveForm" data-confirm-title="بایگانی نسخه"

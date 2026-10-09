@@ -10,7 +10,7 @@
 }
 
 @section TopbarActions {
-    <a class="btn btn-ghost" asp-action="Index"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">همه قالب‌ها</span></a>
+    <a acl-res="Mapper.Templates" acl-act="View" class="btn btn-ghost" asp-action="Index"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">همه قالب‌ها</span></a>
 }
 
 @if (published is null)
@@ -21,7 +21,7 @@
             این قالب هنوز <b>نسخهٔ منتشرشده</b> ندارد؛ ایمپورت فایل و ثبت رکورد فقط روی نسخهٔ منتشرشده ممکن است.
             @if (draft is not null)
             {
-                <text>فیلدهای <a class="link-btn" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@draft.Id">نسخهٔ @draft.VersionNo.ToPersianNumber() (پیش‌نویس)</a> را کامل و منتشر کنید.</text>
+                <text>فیلدهای <a acl-res="Mapper.Templates" acl-act="View" class="link-btn" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@draft.Id">نسخهٔ @draft.VersionNo.ToPersianNumber() (پیش‌نویس)</a> را کامل و منتشر کنید.</text>
             }
             else
             {
@@ -39,7 +39,7 @@
                 <span class="card-ico"><svg class="ico"><use href="#i-layout" /></svg></span>
                 <div>نسخه‌ها<div class="card-sub">هر تغییر در فیلدها در یک نسخهٔ پیش‌نویس انجام و سپس منتشر می‌شود.</div></div>
             </div>
-            <form asp-controller="TemplateVersions" asp-action="Create" method="post">
+            <form acl-res="Mapper.Templates" acl-act="Edit" asp-controller="TemplateVersions" asp-action="Create" method="post">
                 <input type="hidden" name="templateId" value="@Model.Id" />
                 <button type="submit" class="btn btn-soft btn-sm"><svg class="ico"><use href="#i-plus" /></svg>نسخهٔ جدید</button>
             </form>
@@ -58,7 +58,7 @@
                         @foreach (var v in Model.Versions)
                         {
                             <tr>
-                                <td><a class="cell-main" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@v.Id">نسخهٔ @v.VersionNo.ToPersianNumber()</a></td>
+                                <td><a acl-res="Mapper.Templates" acl-act="View" class="cell-main" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@v.Id">نسخهٔ @v.VersionNo.ToPersianNumber()</a></td>
                                 <td><span class="badge @v.Status.BadgeClass()">@v.Status.ToLabel()</span></td>
                                 <td class="nums">@v.FieldCount.ToPersianNumber()</td>
                                 <td>
@@ -75,8 +75,8 @@
                                 <td class="cell-sub nums">@(v.PublishedAt.HasValue ? v.PublishedAt.ToJalali().ToPersianDigits() : "—")</td>
                                 <td>
                                     <div class="row-actions">
-                                        <a class="icon-btn sm primary" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@v.Id" title="فیلدهای نسخه" aria-label="فیلدهای نسخهٔ @v.VersionNo"><svg class="ico"><use href="#i-eye" /></svg></a>
-                                        <a class="icon-btn sm" asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@v.Id" title="طراح چیدمان فرم" aria-label="طراح چیدمان نسخهٔ @v.VersionNo"><svg class="ico"><use href="#i-layout" /></svg></a>
+                                        <a acl-res="Mapper.Templates" acl-act="View" class="icon-btn sm primary" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@v.Id" title="فیلدهای نسخه" aria-label="فیلدهای نسخهٔ @v.VersionNo"><svg class="ico"><use href="#i-eye" /></svg></a>
+                                        <a acl-res="Mapper.Templates" acl-act="Edit" class="icon-btn sm" asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@v.Id" title="طراح چیدمان فرم" aria-label="طراح چیدمان نسخهٔ @v.VersionNo"><svg class="ico"><use href="#i-layout" /></svg></a>
                                     </div>
                                 </td>
                             </tr>
@@ -109,12 +109,12 @@
 
             <div class="card-foot" style="display:block">
                 <div class="action-stack">
-                    <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Id" asp-route-returnUrl="@here" data-modal><svg class="ico"><use href="#i-edit" /></svg>ویرایش مشخصات</a>
+                    <a acl-res="Mapper.Templates" acl-act="Edit" class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Id" asp-route-returnUrl="@here" data-modal><svg class="ico"><use href="#i-edit" /></svg>ویرایش مشخصات</a>
 
                     @foreach (var target in Model.AllowedStatuses)
                     {
                         var formId = $"statusForm_{target}";
-                        <form id="@formId" asp-action="ChangeStatus" method="post" hidden>
+                        <form acl-res="Mapper.Templates" acl-act="Edit" id="@formId" asp-action="ChangeStatus" method="post" hidden>
                             <input type="hidden" name="id" value="@Model.Id" />
                             <input type="hidden" name="status" value="@target" />
                         </form>

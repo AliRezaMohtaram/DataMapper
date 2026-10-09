@@ -14,7 +14,7 @@
 }
 
 @section TopbarActions {
-    <a class="btn btn-ghost" asp-action="Index"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">همه پروفایل‌ها</span></a>
+    <a acl-res="Mapper.MappingProfiles" acl-act="View" class="btn btn-ghost" asp-action="Index"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">همه پروفایل‌ها</span></a>
 }
 
 <div class="split">
@@ -41,7 +41,7 @@
                     <span class="card-ico"><svg class="ico"><use href="#i-arrow-left" /></svg></span>
                     <div>قاعده‌های نگاشت<div class="card-sub">هر قاعده: عنوان ستون در فایل ← فیلد قالب</div></div>
                 </div>
-                <a class="btn btn-primary btn-sm" asp-action="AddRule" asp-route-profileId="@Model.Id" data-modal><svg class="ico"><use href="#i-plus" /></svg>قاعدهٔ جدید</a>
+                <a acl-res="Mapper.MappingProfiles" acl-act="Edit" class="btn btn-primary btn-sm" asp-action="AddRule" asp-route-profileId="@Model.Id" data-modal><svg class="ico"><use href="#i-plus" /></svg>قاعدهٔ جدید</a>
             </header>
 
             @if (Model.Rules.Count == 0)
@@ -63,7 +63,7 @@
                                     <td class="cell-sub nums">@r.SortOrder.ToPersianNumber()</td>
                                     <td><span class="code-chip">@r.SourceColumn</span></td>
                                     <td><svg class="ico faint"><use href="#i-arrow-left" /></svg></td>
-                                    <td><a class="cell-main" asp-action="EditRule" asp-route-profileId="@Model.Id" asp-route-id="@r.Id" data-modal>@r.FieldLabel</a><div class="code" style="font-size:.72rem">@r.FieldKey</div></td>
+                                    <td><a acl-res="Mapper.MappingProfiles" acl-act="Edit" class="cell-main" asp-action="EditRule" asp-route-profileId="@Model.Id" asp-route-id="@r.Id" data-modal>@r.FieldLabel</a><div class="code" style="font-size:.72rem">@r.FieldKey</div></td>
                                     <td><span class="tag @r.Method.TagClass()">@r.Method.ToLabel()</span></td>
                                     <td>
                                         @if (r.Confidence is decimal c)
@@ -80,7 +80,7 @@
                                     </td>
                                     <td>
                                         <div class="row-actions">
-                                            <a class="icon-btn sm" asp-action="EditRule" asp-route-profileId="@Model.Id" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش قاعدهٔ @r.SourceColumn"><svg class="ico"><use href="#i-edit" /></svg></a>
+                                            <a acl-res="Mapper.MappingProfiles" acl-act="Edit" class="icon-btn sm" asp-action="EditRule" asp-route-profileId="@Model.Id" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش قاعدهٔ @r.SourceColumn"><svg class="ico"><use href="#i-edit" /></svg></a>
                                             <button class="icon-btn sm danger" type="button" title="حذف" aria-label="حذف قاعدهٔ @r.SourceColumn"
                                                     data-delete-id="@r.Id" data-delete-name="قاعدهٔ «@r.SourceColumn»" data-delete-url="@deleteRuleUrl"><svg class="ico"><use href="#i-trash" /></svg></button>
                                         </div>
@@ -101,7 +101,7 @@
                     <div class="hero-title">@Model.Name</div>
                     <span class="badge @(isActive ? "st-active" : "st-inactive")">@Model.Status.ToLabel()</span>
                 </div>
-                <a class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a>
+                <a acl-res="Mapper.Templates" acl-act="View" class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a>
 
                 <div style="margin-top:1rem">
                     <div class="meter-head"><b>پوشش فیلدها</b><span>@Model.Rules.Count.ToPersianNumber() از @Model.FieldCount.ToPersianNumber()</span></div>
@@ -112,7 +112,7 @@
                     <div>
                         <dt>نسخهٔ قالب</dt>
                         <dd>
-                            <a class="link-btn" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId">نسخهٔ @Model.VersionNo.ToPersianNumber()</a>
+                            <a acl-res="Mapper.Templates" acl-act="View" class="link-btn" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId">نسخهٔ @Model.VersionNo.ToPersianNumber()</a>
                             <span class="badge @Model.VersionStatus.BadgeClass()">@Model.VersionStatus.ToLabel()</span>
                         </dd>
                     </div>
@@ -127,10 +127,10 @@
                 <div class="action-stack">
                     @if (isActive && Model.VersionStatus == TemplateVersionStatus.Published)
                     {
-                        <a class="btn btn-primary" asp-controller="Imports" asp-action="Upload" asp-route-versionId="@Model.TemplateVersionId" asp-route-profileId="@Model.Id" data-modal><svg class="ico"><use href="#i-upload" /></svg>ایمپورت با این پروفایل</a>
+                        <a acl-res="Mapper.Imports" acl-act="Create" class="btn btn-primary" asp-controller="Imports" asp-action="Upload" asp-route-versionId="@Model.TemplateVersionId" asp-route-profileId="@Model.Id" data-modal><svg class="ico"><use href="#i-upload" /></svg>ایمپورت با این پروفایل</a>
                     }
-                    <a class="btn btn-ghost" asp-action="Edit" asp-route-id="@Model.Id" data-modal><svg class="ico"><use href="#i-edit" /></svg>ویرایش پروفایل</a>
-                    <form asp-action="SetStatus" method="post">
+                    <a acl-res="Mapper.MappingProfiles" acl-act="Edit" class="btn btn-ghost" asp-action="Edit" asp-route-id="@Model.Id" data-modal><svg class="ico"><use href="#i-edit" /></svg>ویرایش پروفایل</a>
+                    <form acl-res="Mapper.MappingProfiles" acl-act="Edit" asp-action="SetStatus" method="post">
                         <input type="hidden" name="id" value="@Model.Id" />
                         <input type="hidden" name="isActive" value="@((!isActive).ToString().ToLowerInvariant())" />
                         <input type="hidden" name="returnTo" value="detail" />

@@ -1,4 +1,7 @@
 ﻿using Borc.DataMapper.Application.Templates.ChangeTemplateStatus;
+using Acl.AspNetCore.Authorization;
+using Acl.Core.Model;
+using Borc.DataMapper.Web.Modules;
 using Borc.DataMapper.Application.Templates.CreateTemplate;
 using Borc.DataMapper.Application.Templates.DeleteTemplate;
 using Borc.DataMapper.Application.Templates.GetTemplate;
@@ -12,6 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Borc.DataMapper.Web.Controllers;
 
+[RequirePermission(MapperResources.Templates, WellKnownActions.View)]
 public sealed class TemplatesController : Controller
 {
     private readonly ISender _sender;
@@ -51,6 +55,7 @@ public sealed class TemplatesController : Controller
     }
 
     [HttpGet]
+    [RequirePermission(MapperResources.Templates, WellKnownActions.Create)]
     public IActionResult Create()
     {
         return this.ModalOrView(FormPartial, new TemplateFormViewModel());
@@ -58,6 +63,7 @@ public sealed class TemplatesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.Templates, WellKnownActions.Create)]
     public async Task<IActionResult> CreateAsync(
         TemplateFormViewModel model,
         CancellationToken cancellationToken)
@@ -84,6 +90,7 @@ public sealed class TemplatesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.Templates, WellKnownActions.Delete)]
     public async Task<IActionResult> Delete(
         long id,
         CancellationToken cancellationToken)
@@ -115,6 +122,7 @@ public sealed class TemplatesController : Controller
     }
 
     [HttpGet]
+    [RequirePermission(MapperResources.Templates, WellKnownActions.Edit)]
     public async Task<IActionResult> Edit(
         long id,
         string? returnUrl,
@@ -140,6 +148,7 @@ public sealed class TemplatesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.Templates, WellKnownActions.Edit)]
     public async Task<IActionResult> EditAsync(
         TemplateFormViewModel model,
         CancellationToken cancellationToken)
@@ -169,6 +178,7 @@ public sealed class TemplatesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.Templates, WellKnownActions.Edit)]
     public async Task<IActionResult> ChangeStatus(
         long id,
         TemplateStatus status,

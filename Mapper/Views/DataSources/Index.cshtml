@@ -30,7 +30,7 @@
             <h1 class="vx-title">منابع داده</h1>
             <p class="vx-sub">گزینه‌های فیلدهای قالب از فایل Excel/CSV، قالب‌های داخلی یا API خارجی تأمین می‌شود.</p>
         </div>
-        <a asp-action="Create" class="vx-btn vx-btn--primary" data-modal>منبع داده جدید</a>
+        <a acl-res="Mapper.DataSources" acl-act="Create" asp-action="Create" class="vx-btn vx-btn--primary" data-modal>منبع داده جدید</a>
     </header>
 
     @if (errors.Count > 0)
@@ -41,7 +41,7 @@
     <section class="vx-card" aria-label="فهرست منابع داده">
 
         <div class="vx-toolbar">
-            <form method="get" asp-action="Index" role="search">
+            <form acl-res="Mapper.DataSources" acl-act="View" method="get" asp-action="Index" role="search">
                 <input type="hidden" name="pageSize" value="@result.PageSize" />
 
                 <div class="vx-search">
@@ -59,7 +59,7 @@
 
                 @if (searching)
                 {
-                    <a asp-action="Index" asp-route-pageSize="@result.PageSize" class="vx-btn">پاک کردن فیلتر</a>
+                    <a acl-res="Mapper.DataSources" acl-act="View" asp-action="Index" asp-route-pageSize="@result.PageSize" class="vx-btn">پاک کردن فیلتر</a>
                 }
             </form>
         </div>
@@ -77,13 +77,13 @@
                 {
                     <strong>نتیجه‌ای پیدا نشد</strong>
                     <p>منبع داده‌ای با «@filter.Search» وجود ندارد. عبارت دیگری را امتحان کنید یا فیلتر را پاک کنید.</p>
-                    <a asp-action="Index" asp-route-pageSize="@result.PageSize" class="vx-btn">پاک کردن فیلتر</a>
+                    <a acl-res="Mapper.DataSources" acl-act="View" asp-action="Index" asp-route-pageSize="@result.PageSize" class="vx-btn">پاک کردن فیلتر</a>
                 }
                 else
                 {
                     <strong>هنوز منبع داده‌ای ندارید</strong>
                     <p>یک منبع داده بسازید تا فیلدهای قالب بتوانند گزینه‌هایشان را از آن بگیرند.</p>
-                    <a asp-action="Create" class="vx-btn vx-btn--primary" data-modal>ساخت اولین منبع داده</a>
+                    <a acl-res="Mapper.DataSources" acl-act="Create" asp-action="Create" class="vx-btn vx-btn--primary" data-modal>ساخت اولین منبع داده</a>
                 }
             </div>
         }
@@ -107,7 +107,7 @@
                         {
                             <tr>
                                 <td class="vx-num">@d.Id</td>
-                                <td><a asp-action="Detail" asp-route-id="@d.Id" class="vx-link">@d.Name</a></td>
+                                <td><a acl-res="Mapper.DataSources" acl-act="View" asp-action="Detail" asp-route-id="@d.Id" class="vx-link">@d.Name</a></td>
                                 <td data-label="کد"><span class="vx-code">@d.Code</span></td>
                                 <td data-label="نوع"><span class="vx-tag">@d.SourceType.ToLabel()</span></td>
                                 <td data-label="وضعیت">
@@ -116,7 +116,7 @@
                                 <td data-label="ایجاد" class="vx-muted" dir="ltr" style="text-align:start">@d.CreatedAt.ToJalali()</td>
                                 <td class="vx-end">
                                     <div class="vx-actions">
-                                        <a asp-action="Edit" asp-route-id="@d.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="vx-btn vx-btn--icon" data-modal
+                                        <a acl-res="Mapper.DataSources" acl-act="Edit" asp-action="Edit" asp-route-id="@d.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="vx-btn vx-btn--icon" data-modal
                                            title="ویرایش @d.Name" aria-label="ویرایش @d.Name">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -125,7 +125,7 @@
                                             </svg>
                                         </a>
 
-                                        <form asp-action="SetActive" method="post">
+                                        <form acl-res="Mapper.DataSources" acl-act="Edit" asp-action="SetActive" method="post">
                                             <input type="hidden" name="id" value="@d.Id" />
                                             <input type="hidden" name="isActive" value="@((!d.IsActive).ToString().ToLowerInvariant())" />
                                             <button type="submit" class="vx-btn">@(d.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")</button>
@@ -157,7 +157,7 @@
                 <nav class="vx-pager" aria-label="صفحه‌بندی">
                     @if (result.HasPrevious)
                     {
-                        <a class="vx-btn" asp-action="Index" asp-route-search="@filter.Search"
+                        <a acl-res="Mapper.DataSources" acl-act="View" class="vx-btn" asp-action="Index" asp-route-search="@filter.Search"
                            asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev">قبلی</a>
                     }
                     else
@@ -169,7 +169,7 @@
 
                     @if (result.HasNext)
                     {
-                        <a class="vx-btn" asp-action="Index" asp-route-search="@filter.Search"
+                        <a acl-res="Mapper.DataSources" acl-act="View" class="vx-btn" asp-action="Index" asp-route-search="@filter.Search"
                            asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next">بعدی</a>
                     }
                     else
@@ -178,7 +178,7 @@
                     }
                 </nav>
 
-                <form method="get" asp-action="Index">
+                <form acl-res="Mapper.DataSources" acl-act="View" method="get" asp-action="Index">
                     <input type="hidden" name="search" value="@filter.Search" />
                     <label>
                         ردیف در صفحه

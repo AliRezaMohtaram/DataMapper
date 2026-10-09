@@ -1,4 +1,7 @@
 ﻿using System.Text.Json;
+using Acl.AspNetCore.Authorization;
+using Acl.Core.Model;
+using Borc.DataMapper.Web.Modules;
 using Borc.DataMapper.Application.DataRecords.CreateDataRecord;
 using Borc.DataMapper.Application.DataRecords.DeleteDataRecord;
 using Borc.DataMapper.Application.DataRecords.GetDataRecord;
@@ -14,6 +17,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Borc.DataMapper.Web.Controllers;
 
+[RequirePermission(MapperResources.DataRecords, WellKnownActions.View)]
 public sealed class DataRecordsController : Controller
 {
     private readonly ISender _sender;
@@ -54,6 +58,7 @@ public sealed class DataRecordsController : Controller
 
     /// <summary>بدون versionId: انتخاب قالب؛ با versionId: فرم ورود داده.</summary>
     [HttpGet]
+    [RequirePermission(MapperResources.DataRecords, WellKnownActions.Create)]
     public async Task<IActionResult> Create(long? versionId, CancellationToken cancellationToken)
     {
         if (!versionId.HasValue)
@@ -77,6 +82,7 @@ public sealed class DataRecordsController : Controller
     }
 
     [HttpGet]
+    [RequirePermission(MapperResources.DataRecords, WellKnownActions.Edit)]
     public async Task<IActionResult> Edit(long id, CancellationToken cancellationToken)
     {
         var form = await _sender.Send(new GetRecordFormQuery(RecordId: id), cancellationToken);
@@ -99,6 +105,12 @@ public sealed class DataRecordsController : Controller
     {
         if (request?.Values is null)
             return Json(new { success = false, message = "درخواست نامعتبر است." });
+
+        // ثبت جدید = Create، ویرایش = Edit (هر دو از همین اکشن می‌آیند).
+        var action = request.RecordId.HasValue ? WellKnownActions.Edit : WellKnownActions.Create;
+        var authorization = HttpContext.RequestServices.GetRequiredService<Microsoft.AspNetCore.Authorization.IAuthorizationService>();
+        if (!(await authorization.AuthorizeAsync(User, null, [new PermissionRequirement(MapperResources.DataRecords, action)])).Succeeded)
+            return Forbid();
 
         var result = request.RecordId.HasValue
             ? await _sender.Send(new UpdateDataRecordCommand(request.RecordId.Value, request.Values), cancellationToken)
@@ -138,6 +150,7 @@ public sealed class DataRecordsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.DataRecords, WellKnownActions.Delete)]
     public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
     {
         var result = await _sender.Send(new DeleteDataRecordCommand(id), cancellationToken);

@@ -1,3 +1,6 @@
+using Acl.AspNetCore.Authorization;
+using Acl.Core.Model;
+using Borc.DataMapper.Web.Modules;
 using Borc.DataMapper.Application.Imports.ApplyImportMapping;
 using Borc.DataMapper.Application.Imports.CommitImportBatch;
 using Borc.DataMapper.Application.Imports.Common;
@@ -16,6 +19,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Borc.DataMapper.Web.Controllers;
 
+[RequirePermission(MapperResources.Imports, WellKnownActions.View)]
 public sealed class ImportsController : Controller
 {
     private readonly ISender _sender;
@@ -57,12 +61,14 @@ public sealed class ImportsController : Controller
     private const string UploadPartial = "_UploadForm";
 
     [HttpGet]
+    [RequirePermission(MapperResources.Imports, WellKnownActions.Create)]
     public async Task<IActionResult> Upload(long? versionId, long? profileId, CancellationToken cancellationToken)
         => await UploadFormAsync(versionId, profileId, cancellationToken);
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(ImportLimits.MaxFileBytes + 1_048_576)]
+    [RequirePermission(MapperResources.Imports, WellKnownActions.Create)]
     public async Task<IActionResult> UploadAsync(
         IFormFile? file,
         long templateVersionId,
@@ -146,6 +152,7 @@ public sealed class ImportsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.Imports, WellKnownActions.Edit)]
     public async Task<IActionResult> Map(
         long id,
         List<ColumnMappingInput>? mappings,
@@ -164,6 +171,7 @@ public sealed class ImportsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.Imports, WellKnownActions.Edit)]
     public async Task<IActionResult> Reopen(
         long id,
         CancellationToken cancellationToken)
@@ -178,6 +186,7 @@ public sealed class ImportsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.Imports, WellKnownActions.Approve)]
     public async Task<IActionResult> Commit(
         long id,
         CancellationToken cancellationToken)
@@ -192,6 +201,7 @@ public sealed class ImportsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [RequirePermission(MapperResources.Imports, WellKnownActions.Delete)]
     public async Task<IActionResult> Delete(
         long id,
         CancellationToken cancellationToken)
