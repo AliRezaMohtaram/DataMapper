@@ -13,6 +13,9 @@ public sealed class UsersDbContext(DbContextOptions<UsersDbContext> options) : I
 
     public const string MigrationsHistoryTable = "__EFMigrationsHistory";
 
+    /// <summary>Length of the string parts of the login and token keys (2 × 128 × 2 bytes + 8 &lt; 900).</summary>
+    private const int KeyPartLength = 128;
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -34,7 +37,18 @@ public sealed class UsersDbContext(DbContextOptions<UsersDbContext> options) : I
         });
 
         builder.Entity<IdentityUserClaim<long>>().ToTable("UserClaims");
-        builder.Entity<IdentityUserLogin<long>>().ToTable("UserLogins");
-        builder.Entity<IdentityUserToken<long>>().ToTable("UserTokens");
+        // SQL Server: a clustered key may hold at most 900 bytes; Identity's default nvarchar(450) pairs need 1800.
+        builder.Entity<IdentityUserLogin<long>>(login =>
+        {
+            login.ToTable("UserLogins");
+            login.Property(l => l.LoginProvider).HasMaxLength(KeyPartLength);
+            login.Property(l => l.ProviderKey).HasMaxLength(KeyPartLength);
+        });
+        builder.Entity<IdentityUserToken<long>>(token =>
+        {
+            token.ToTable("UserTokens");
+            token.Property(t => t.LoginProvider).HasMaxLength(KeyPartLength);
+            token.Property(t => t.Name).HasMaxLength(KeyPartLength);
+        });
     }
 }

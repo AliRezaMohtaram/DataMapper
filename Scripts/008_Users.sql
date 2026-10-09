@@ -145,6 +145,103 @@ BEGIN
     VALUES (N'20261009062211_InitialUsers', N'9.0.0');
 END;
 
+IF NOT EXISTS (
+    SELECT * FROM [usr].[__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261009063953_IdentityKeyLengths'
+)
+BEGIN
+    ALTER TABLE [usr].[UserTokens] DROP CONSTRAINT [PK_UserTokens];
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [usr].[__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261009063953_IdentityKeyLengths'
+)
+BEGIN
+    ALTER TABLE [usr].[UserLogins] DROP CONSTRAINT [PK_UserLogins];
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [usr].[__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261009063953_IdentityKeyLengths'
+)
+BEGIN
+    DECLARE @var0 sysname;
+    SELECT @var0 = [d].[name]
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[usr].[UserTokens]') AND [c].[name] = N'Name');
+    IF @var0 IS NOT NULL EXEC(N'ALTER TABLE [usr].[UserTokens] DROP CONSTRAINT [' + @var0 + '];');
+    ALTER TABLE [usr].[UserTokens] ALTER COLUMN [Name] nvarchar(128) NOT NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [usr].[__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261009063953_IdentityKeyLengths'
+)
+BEGIN
+    DECLARE @var1 sysname;
+    SELECT @var1 = [d].[name]
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[usr].[UserTokens]') AND [c].[name] = N'LoginProvider');
+    IF @var1 IS NOT NULL EXEC(N'ALTER TABLE [usr].[UserTokens] DROP CONSTRAINT [' + @var1 + '];');
+    ALTER TABLE [usr].[UserTokens] ALTER COLUMN [LoginProvider] nvarchar(128) NOT NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [usr].[__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261009063953_IdentityKeyLengths'
+)
+BEGIN
+    DECLARE @var2 sysname;
+    SELECT @var2 = [d].[name]
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[usr].[UserLogins]') AND [c].[name] = N'ProviderKey');
+    IF @var2 IS NOT NULL EXEC(N'ALTER TABLE [usr].[UserLogins] DROP CONSTRAINT [' + @var2 + '];');
+    ALTER TABLE [usr].[UserLogins] ALTER COLUMN [ProviderKey] nvarchar(128) NOT NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [usr].[__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261009063953_IdentityKeyLengths'
+)
+BEGIN
+    DECLARE @var3 sysname;
+    SELECT @var3 = [d].[name]
+    FROM [sys].[default_constraints] [d]
+    INNER JOIN [sys].[columns] [c] ON [d].[parent_column_id] = [c].[column_id] AND [d].[parent_object_id] = [c].[object_id]
+    WHERE ([d].[parent_object_id] = OBJECT_ID(N'[usr].[UserLogins]') AND [c].[name] = N'LoginProvider');
+    IF @var3 IS NOT NULL EXEC(N'ALTER TABLE [usr].[UserLogins] DROP CONSTRAINT [' + @var3 + '];');
+    ALTER TABLE [usr].[UserLogins] ALTER COLUMN [LoginProvider] nvarchar(128) NOT NULL;
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [usr].[__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261009063953_IdentityKeyLengths'
+)
+BEGIN
+    ALTER TABLE [usr].[UserLogins] ADD CONSTRAINT [PK_UserLogins] PRIMARY KEY ([LoginProvider], [ProviderKey]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [usr].[__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261009063953_IdentityKeyLengths'
+)
+BEGIN
+    ALTER TABLE [usr].[UserTokens] ADD CONSTRAINT [PK_UserTokens] PRIMARY KEY ([UserId], [LoginProvider], [Name]);
+END;
+
+IF NOT EXISTS (
+    SELECT * FROM [usr].[__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261009063953_IdentityKeyLengths'
+)
+BEGIN
+    INSERT INTO [usr].[__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261009063953_IdentityKeyLengths', N'9.0.0');
+END;
+
 COMMIT;
 GO
 
