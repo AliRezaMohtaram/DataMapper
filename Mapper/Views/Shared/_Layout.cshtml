@@ -20,7 +20,11 @@
     var userName = User.FindFirst(Borc.Users.UserClaimTypes.DisplayName)?.Value ?? User.Identity?.Name ?? "";
     var isAdmin = User.HasClaim(Borc.Users.UserClaimTypes.Administrator, "true");
     var page = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
-    var usersActive = page.StartsWith("/Users/", StringComparison.OrdinalIgnoreCase);
+    var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+    var usersActive = area == "" && page.StartsWith("/Users/", StringComparison.OrdinalIgnoreCase);
+    var chartActive = area == "OrgChart" && !page.StartsWith("/My", StringComparison.OrdinalIgnoreCase);
+    var myActive = area == "OrgChart" && page.StartsWith("/My", StringComparison.OrdinalIgnoreCase);
+    var aclActive = area == "Acl";
 }
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -57,7 +61,7 @@
 
         <!-- ═════ SIDEBAR ═════ -->
         <aside class="sidebar" aria-label="ناوبری اصلی">
-            <a class="sb-brand" asp-controller="Dashboard" asp-action="Index">
+            <a class="sb-brand" asp-area="" asp-controller="Dashboard" asp-action="Index">
                 <span class="sb-logo">M<small>v2.2</small></span>
                 <span class="brand-text">
                     <span class="brand-name">Data Mapper</span>
@@ -73,16 +77,29 @@
                     {
                         <a class="nav-item@(IsActive(item) ? " active" : "")" title="@item.Label"
                            aria-current="@(IsActive(item) ? "page" : null)"
-                           asp-controller="@item.Controller" asp-action="Index">
+                           asp-area="" asp-controller="@item.Controller" asp-action="Index">
                             <svg class="ico"><use href="#@item.Icon" /></svg><span class="nav-label">@item.Label</span>
                         </a>
                     }
                 }
 
+                <div class="nav-section">سازمان</div>
+                <a class="nav-item@(chartActive ? " active" : "")" title="چارت سازمانی" aria-current="@(chartActive ? "page" : null)"
+                   acl-res="@Borc.DataMapper.Web.Modules.MapperResources.OrgChart" asp-area="OrgChart" asp-page="/Index">
+                    <svg class="ico"><use href="#i-layout" /></svg><span class="nav-label">چارت سازمانی</span>
+                </a>
+                <a class="nav-item@(myActive ? " active" : "")" title="تفویض‌های من" aria-current="@(myActive ? "page" : null)" asp-area="OrgChart" asp-page="/My/Index">
+                    <svg class="ico"><use href="#i-link" /></svg><span class="nav-label">تفویض‌های من</span>
+                </a>
+                <a class="nav-item@(aclActive ? " active" : "")" title="نقش‌ها و دسترسی‌ها" aria-current="@(aclActive ? "page" : null)"
+                   acl-res="Acl.Admin" asp-area="Acl" asp-page="/Roles/Index">
+                    <svg class="ico"><use href="#i-check" /></svg><span class="nav-label">نقش‌ها و دسترسی‌ها</span>
+                </a>
+
                 <div class="nav-section">سیستم</div>
                 @if (isAdmin)
                 {
-                    <a class="nav-item@(usersActive ? " active" : "")" title="کاربران" aria-current="@(usersActive ? "page" : null)" asp-page="/Users/Index">
+                    <a class="nav-item@(usersActive ? " active" : "")" title="کاربران" aria-current="@(usersActive ? "page" : null)" asp-area="" asp-page="/Users/Index">
                         <svg class="ico"><use href="#i-user" /></svg><span class="nav-label">کاربران</span>
                     </a>
                 }
@@ -101,8 +118,8 @@
                     <svg class="ico faint"><use href="#i-chev-down" /></svg>
                 </button>
                 <div class="dd-menu up start">
-                    <a class="dd-item" asp-page="/Account/Password" data-modal><svg class="ico"><use href="#i-user" /></svg>تغییر رمز عبور</a>
-                    <form method="post" asp-page="/Account/Logout">
+                    <a class="dd-item" asp-area="" asp-page="/Account/Password" data-modal><svg class="ico"><use href="#i-user" /></svg>تغییر رمز عبور</a>
+                    <form method="post" asp-area="" asp-page="/Account/Logout">
                         <button class="dd-item" type="submit"><svg class="ico"><use href="#i-logout" /></svg>خروج</button>
                     </form>
                     <button class="dd-item" type="button" data-action="theme-open"><svg class="ico"><use href="#i-palette" /></svg>تنظیمات ظاهر</button>
@@ -135,7 +152,7 @@
                         <svg class="ico"><use href="#i-palette" /></svg>
                     </button>
                     @await RenderSectionAsync("TopbarActions", required: false)
-                    <a class="btn btn-primary" asp-controller="Imports" asp-action="Upload" data-modal>
+                    <a class="btn btn-primary" asp-area="" asp-controller="Imports" asp-action="Upload" data-modal>
                         <svg class="ico"><use href="#i-upload" /></svg><span class="lbl">ایمپورت جدید</span>
                     </a>
                 </div>
@@ -171,21 +188,21 @@
                 <a class="cmdk-item" data-search-href="@Url.Action("Index", "DataSources")?search="><span class="src-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span><span>جستجوی «<b data-q></b>» در منابع داده</span></a>
 
                 <div class="cmdk-group">اقدامات سریع</div>
-                <a class="cmdk-item" asp-controller="Imports" asp-action="Upload" data-modal data-k="import upload excel csv آپلود فایل"><span class="src-ico tone-primary"><svg class="ico"><use href="#i-upload" /></svg></span>ایمپورت فایل جدید</a>
-                <a class="cmdk-item" asp-controller="DataRecords" asp-action="Create" data-modal data-k="record manual entry رکورد"><span class="src-ico tone-success"><svg class="ico"><use href="#i-pen" /></svg></span>ثبت دستی رکورد</a>
-                <a class="cmdk-item" asp-controller="Templates" asp-action="Create" data-k="template new"><span class="src-ico tone-violet"><svg class="ico"><use href="#i-template" /></svg></span>قالب جدید</a>
-                <a class="cmdk-item" asp-controller="DataSources" asp-action="Create" data-modal data-k="datasource api list"><span class="src-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span>منبع داده جدید</a>
-                <a class="cmdk-item" asp-controller="MappingProfiles" asp-action="Create" data-modal data-k="mapping profile"><span class="src-ico tone-warning"><svg class="ico"><use href="#i-map" /></svg></span>پروفایل نگاشت جدید</a>
+                <a class="cmdk-item" asp-area="" asp-controller="Imports" asp-action="Upload" data-modal data-k="import upload excel csv آپلود فایل"><span class="src-ico tone-primary"><svg class="ico"><use href="#i-upload" /></svg></span>ایمپورت فایل جدید</a>
+                <a class="cmdk-item" asp-area="" asp-controller="DataRecords" asp-action="Create" data-modal data-k="record manual entry رکورد"><span class="src-ico tone-success"><svg class="ico"><use href="#i-pen" /></svg></span>ثبت دستی رکورد</a>
+                <a class="cmdk-item" asp-area="" asp-controller="Templates" asp-action="Create" data-k="template new"><span class="src-ico tone-violet"><svg class="ico"><use href="#i-template" /></svg></span>قالب جدید</a>
+                <a class="cmdk-item" asp-area="" asp-controller="DataSources" asp-action="Create" data-modal data-k="datasource api list"><span class="src-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span>منبع داده جدید</a>
+                <a class="cmdk-item" asp-area="" asp-controller="MappingProfiles" asp-action="Create" data-modal data-k="mapping profile"><span class="src-ico tone-warning"><svg class="ico"><use href="#i-map" /></svg></span>پروفایل نگاشت جدید</a>
 
                 <div class="cmdk-group">صفحات</div>
                 @foreach (var item in nav)
                 {
-                    <a class="cmdk-item" asp-controller="@item.Controller" asp-action="Index" data-k="@item.Controller"><span class="src-ico"><svg class="ico"><use href="#@item.Icon" /></svg></span>@item.Label<span class="hint faint">@item.Section</span></a>
+                    <a class="cmdk-item" asp-area="" asp-controller="@item.Controller" asp-action="Index" data-k="@item.Controller"><span class="src-ico"><svg class="ico"><use href="#@item.Icon" /></svg></span>@item.Label<span class="hint faint">@item.Section</span></a>
                 }
 
                 @if (isAdmin)
                 {
-                    <a class="cmdk-item" asp-page="/Users/Index" data-k="users کاربران"><span class="src-ico"><svg class="ico"><use href="#i-user" /></svg></span>کاربران<span class="hint faint">سیستم</span></a>
+                    <a class="cmdk-item" asp-area="" asp-page="/Users/Index" data-k="users کاربران"><span class="src-ico"><svg class="ico"><use href="#i-user" /></svg></span>کاربران<span class="hint faint">سیستم</span></a>
                 }
 
                 <div class="cmdk-group">ظاهر</div>

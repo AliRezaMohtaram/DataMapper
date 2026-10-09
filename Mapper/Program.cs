@@ -6,7 +6,11 @@ using Borc.DataMapper.Infrastructure;
 using Borc.DataMapper.Infrastructure.Files;
 using Borc.DataMapper.Infrastructure.Http;
 using Borc.DataMapper.Infrastructure.Persistence;
+using Acl.AspNetCore.Authorization;
+using Acl.Core.Model;
+using Borc.DataMapper.Web.Modules;
 using Borc.DataMapper.Web.Mvc;
+using OrgChart.Acl;
 using Borc.Users;
 using Borc.Users.Web;
 
@@ -30,6 +34,32 @@ builder.Services.AddBorcUsers(
     options => builder.Configuration.GetSection("Users").Bind(options));
 builder.Services.AddBorcUsersUi();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
+
+// چارت سازمانی و دسترسی‌ها (ماژول‌های OrgChart و Acl): جدول‌ها در schemaهای org و acl همان پایگاه داده.
+var connectionString = builder.Configuration.GetConnectionString("BorcDataMapper")!;
+builder.Services.AddHostedService<ModuleDatabaseMigrator>(); // before AddAccessControl: Acl's startup work needs its tables
+builder.Services.AddUserStatusListener<EndOrgChartRolesOnDeactivation>();
+builder.Services.AddOrgChart()
+    .AddSqlServerStore(connectionString)
+    .AddHttpContextUser()
+    .AddUserDirectory<MapperUserDirectory>()
+    .AddAcl() // Acl reads positions (with delegations) from the chart; chart changes refresh Acl's cache
+    .AddAdminUi(ui =>
+    {
+        ui.ViewPolicy = p => p.AddRequirements(new PermissionRequirement(MapperResources.OrgChart, WellKnownActions.View));
+        ui.EditPolicy = p => p.AddRequirements(new PermissionRequirement(MapperResources.OrgChart, WellKnownActions.Edit));
+    });
+builder.Services.AddAccessControl(o =>
+    {
+        o.ApplicationKey = "Mapper";
+        foreach (var id in builder.Configuration.GetSection("Acl:SuperAdminUserIds").Get<string[]>() ?? [])
+        {
+            o.SuperAdminUserIds.Add(id);
+        }
+    })
+    .AddSqlServerStore(connectionString)
+    .AddUserDirectory<MapperUserDirectory>()
+    .AddAdminUi();
 
 builder.Services
     .AddApplication().AddScoped<IExcelReader, ClosedXmlExcelReader>()
@@ -58,6 +88,7 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthentication();
+app.UseAccessControl();
 app.UseAuthorization();
 
 app.MapControllerRoute(
@@ -66,3 +97,5 @@ app.MapControllerRoute(
 app.MapRazorPages();
 
 app.Run();
+// Lets integration tests start the app (WebApplicationFactory<Program>).
+public partial class Program;
