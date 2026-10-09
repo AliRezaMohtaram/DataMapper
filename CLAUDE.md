@@ -17,10 +17,11 @@ User ids are `long`; other modules (OrgChart, Acl) store them as strings. Manual
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.1.0) and /Acl (0.3.0) as NuGet packages restored from local
-folders: `OrgChartPackages` / `AclPackages` (default `../../organization/artifacts/packages`, `../../Acl/artifacts/packages`
-from `Mapper/`; pack Acl first, then OrgChart). Bump the module version when repacking (NuGet caches by version).
-Cloud container: `OrgChartPackages=/home/user/organization/artifacts/packages AclPackages=/home/user/acl/artifacts/packages`.
+From github.com/AliRezaMohtaram/organization (OrgChart 0.1.0) and /Acl (0.3.0) as NuGet packages from local folders,
+configured in `nuget.config`: `../organization/artifacts/packages` and `../Acl/artifacts/packages` (pack Acl first, then
+OrgChart). Package source mapping pins `OrgChart.*`/`Acl.*` to those folders — nuget.org has unrelated packages with the
+same names (e.g. Acl.Core 3.x). Bump the module version when repacking (NuGet caches by version).
+Cloud container: the clones are /home/user/acl and /home/user/organization; a symlink /home/user/Acl → acl makes the paths work.
 
 - `Program.cs`: `AddOrgChart().AddSqlServerStore().AddHttpContextUser().AddUserDirectory<MapperUserDirectory>().AddAcl()
   .AddAdminUi(view/edit policies = Acl permission on Mapper.OrgChart)`, `AddAccessControl(ApplicationKey "Mapper",

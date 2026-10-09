@@ -3,7 +3,8 @@
 ## آماده‌سازی (یک بار)
 1. مخزن‌های `Acl` و `organization` کنار پوشهٔ DataMapper باشند (هم‌سطح؛ نام پوشه‌ها `Acl` و `organization`).
    در `organization` شاخهٔ `claude/elegant-bohr-qnybnq` (یا شاخه‌ای که آن را merge کرده) باشد.
-2. به ترتیب: در `Acl` اجرای `dotnet pack Acl.sln -c Release`، سپس در `organization` اجرای `dotnet pack OrgChart.sln -c Release`.
+2. هر دو مخزن را به‌روز کنید (`git pull`)، سپس به ترتیب: در `Acl` اجرای `dotnet pack Acl.sln -c Release` (باید نسخهٔ 0.3.0 بسازد)،
+   بعد در `organization` اجرای `dotnet pack OrgChart.sln -c Release`. مسیرها در `nuget.config` هر مخزن است.
 3. اجرای Mapper: جدول‌های `org` و `acl` خودکار در پایگاه داده `Mapper` ساخته می‌شوند (`Modules:MigrateOnStartup`).
 4. شناسهٔ ادمین باید در `Acl:SuperAdminUserIds` باشد (پیش‌فرض `"1"`؛ بررسی: `SELECT Id FROM usr.Users WHERE UserName='admin'`).
 

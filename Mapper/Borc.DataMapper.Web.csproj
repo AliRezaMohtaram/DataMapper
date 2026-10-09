@@ -20,19 +20,6 @@
 	</ItemGroup>
 	
 
-	<!--
-		OrgChart (github.com/AliRezaMohtaram/organization) and Acl (github.com/AliRezaMohtaram/Acl) come as NuGet packages.
-		Until they are on a shared feed they are restored from local folders: by default the clones next to this repository
-		(../organization and ../Acl) after "dotnet pack <sln> -c Release" in each. Override with the OrgChartPackages /
-		AclPackages properties or environment variables.
-	-->
-	<PropertyGroup>
-		<OrgChartPackages Condition="'$(OrgChartPackages)' == ''">$(MSBuildThisFileDirectory)..\..\organization\artifacts\packages</OrgChartPackages>
-		<AclPackages Condition="'$(AclPackages)' == ''">$(MSBuildThisFileDirectory)..\..\Acl\artifacts\packages</AclPackages>
-		<RestoreAdditionalProjectSources Condition="Exists('$(OrgChartPackages)')">$(RestoreAdditionalProjectSources);$(OrgChartPackages)</RestoreAdditionalProjectSources>
-		<RestoreAdditionalProjectSources Condition="Exists('$(AclPackages)')">$(RestoreAdditionalProjectSources);$(AclPackages)</RestoreAdditionalProjectSources>
-	</PropertyGroup>
-
 	<ItemGroup>
 		<PackageReference Include="OrgChart.AspNetCore" Version="0.1.0" />
 		<PackageReference Include="OrgChart.EFCore" Version="0.1.0" />

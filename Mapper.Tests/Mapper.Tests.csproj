@@ -5,11 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <!-- Same local feeds as Mapper (OrgChart, Acl). -->
-    <OrgChartPackages Condition="'$(OrgChartPackages)' == ''">$(MSBuildThisFileDirectory)..\..\organization\artifacts\packages</OrgChartPackages>
-    <AclPackages Condition="'$(AclPackages)' == ''">$(MSBuildThisFileDirectory)..\..\Acl\artifacts\packages</AclPackages>
-    <RestoreAdditionalProjectSources Condition="Exists('$(OrgChartPackages)')">$(RestoreAdditionalProjectSources);$(OrgChartPackages)</RestoreAdditionalProjectSources>
-    <RestoreAdditionalProjectSources Condition="Exists('$(AclPackages)')">$(RestoreAdditionalProjectSources);$(AclPackages)</RestoreAdditionalProjectSources>
   </PropertyGroup>
 
   <ItemGroup>
