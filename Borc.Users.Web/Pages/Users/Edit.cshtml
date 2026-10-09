@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = Model.IsEdit ? "ویرایش کاربر" : "کاربر جدید";
 }
+<partial name="_UsersIcons" />
 <div class="modal-page">
     <partial name="@Borc.Users.Web.Pages.Users.EditModel.FormPath" model="Model" />
 </div>

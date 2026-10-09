@@ -14,6 +14,9 @@ public interface IUserAdministration
     /// <summary>Deactivating signs the user out everywhere (security stamp) and notifies <see cref="IUserStatusListener"/>s.</summary>
     Task SetActiveAsync(long id, bool active, CancellationToken cancellationToken = default);
 
+    /// <summary>Ends a temporary lockout (after repeated failed sign-ins) without changing the password.</summary>
+    Task UnlockAsync(long id, CancellationToken cancellationToken = default);
+
     /// <summary>Sets a new password and ends a lockout; the user's other sessions are signed out.</summary>
     Task ResetPasswordAsync(long id, string newPassword, CancellationToken cancellationToken = default);
 }

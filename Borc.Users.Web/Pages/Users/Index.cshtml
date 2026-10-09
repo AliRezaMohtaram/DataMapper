@@ -7,6 +7,7 @@
     var filters = new[] { ("", "همه"), ("active", "فعال"), ("inactive", "غیرفعال") };
 }
 <link rel="stylesheet" href="~/_content/Borc.Users.Web/css/users.css" asp-append-version="true" />
+<partial name="_UsersIcons" />
 
 <article class="card">
     <header class="card-head">
@@ -64,10 +65,15 @@
                             <td>
                                 <div class="usr-actions">
                                     <a class="icon-btn" asp-page="/Users/Edit" asp-route-id="@u.Id" asp-route-returnUrl="@Model.ReturnUrl" data-modal title="ویرایش" aria-label="ویرایش @u.DisplayName"><svg class="ico"><use href="#i-edit" /></svg></a>
-                                    <a class="icon-btn" asp-page="/Users/Password" asp-route-id="@u.Id" asp-route-returnUrl="@Model.ReturnUrl" data-modal title="تعیین رمز جدید" aria-label="تعیین رمز جدید برای @u.DisplayName"><svg class="ico"><use href="#i-refresh" /></svg></a>
+                                    <a class="icon-btn" asp-page="/Users/Password" asp-route-id="@u.Id" asp-route-returnUrl="@Model.ReturnUrl" data-modal title="تعیین رمز جدید" aria-label="تعیین رمز جدید برای @u.DisplayName"><svg class="ico"><use href="#usr-key" /></svg></a>
+                                    @if (u.IsLockedOut)
+                                    {
+                                        <a class="icon-btn" asp-page="/Users/Unlock" asp-route-id="@u.Id" asp-route-returnUrl="@Model.ReturnUrl" data-modal title="برداشتن قفل" aria-label="برداشتن قفل @u.DisplayName"><svg class="ico"><use href="#usr-unlock" /></svg></a>
+                                    }
                                     @if (!self)
                                     {
-                                        <a class="btn btn-quiet btn-sm" asp-page="/Users/Status" asp-route-id="@u.Id" asp-route-active="@(!u.IsActive)" asp-route-returnUrl="@Model.ReturnUrl" data-modal>@(u.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")</a>
+                                        string label = u.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی";
+                                        <a class="icon-btn@(u.IsActive ? " usr-danger" : "")" asp-page="/Users/Status" asp-route-id="@u.Id" asp-route-active="@(!u.IsActive)" asp-route-returnUrl="@Model.ReturnUrl" data-modal title="@label" aria-label="@label @u.DisplayName"><svg class="ico"><use href="#@(u.IsActive ? "usr-user-off" : "usr-user-on")" /></svg></a>
                                     }
                                 </div>
                             </td>

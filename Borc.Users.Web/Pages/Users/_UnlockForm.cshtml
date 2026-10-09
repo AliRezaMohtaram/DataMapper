@@ -1,0 +1,26 @@
+@model Borc.Users.Web.Pages.Users.UnlockModel
+<form class="modal modal-sm" method="post" asp-page="/Users/Unlock" asp-route-id="@Model.Id" asp-route-returnUrl="@Model.ReturnUrl" data-mx-ajax novalidate>
+    <div class="modal-head">
+        <span class="modal-head-ico tone-warning"><svg class="ico"><use href="#usr-unlock" /></svg></span>
+        <div><div class="modal-title">برداشتن قفل «@Model.Subject.DisplayName»</div></div>
+        <a class="icon-btn plain close" href="@Model.BackUrl" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+    </div>
+    <div class="modal-body">
+        <partial name="_UsersFormErrors" model="Model.FormErrors" />
+        <p>
+            @if (Model.Subject.IsLockedOut)
+            {
+                <text>این حساب به‌دلیل تلاش‌های ناموفق ورود موقتاً قفل شده است. با برداشتن قفل، کاربر می‌تواند با همان رمز فعلی وارد شود.</text>
+            }
+            else
+            {
+                <text>این حساب قفل نیست.</text>
+            }
+        </p>
+    </div>
+    <div class="modal-foot">
+        <span class="spacer"></span>
+        <a class="btn btn-quiet" href="@Model.BackUrl" data-close>انصراف</a>
+        <button type="submit" class="btn btn-primary" autofocus><svg class="ico"><use href="#usr-unlock" /></svg>برداشتن قفل</button>
+    </div>
+</form>

@@ -9,7 +9,7 @@ second host needs it.
   reset password), `IUserLookup` (search and names for pickers and other modules), `UserSignIn` (user name or e-mail),
   `IUserStatusListener` (hook on (de)activation).
 - `Borc.Users.Web` — Razor Pages on the MX design system inside the host's `_Layout`: `/Account/Login` (own minimal shell),
-  `/Account/Logout` (POST), `/Account/Password`, `/Account/AccessDenied`, `/Users` (+ `Edit`, `Password`, `Status`),
+  `/Account/Logout` (POST), `/Account/Password`, `/Account/AccessDenied`, `/Users` (+ `Edit`, `Password`, `Unlock`, `Status`; row actions are icons from the module sprite `_UsersIcons`, ids `usr-*`),
   modal-first like the host (`X-MX-Modal`, JSON `{redirect}`, toast via `TempData["Success"]`).
 - `Borc.Users.Tests` — TestServer + SQLite.
 

@@ -10,3 +10,4 @@
 .usr-toolbar { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; padding:.75rem 1rem; }
 .usr-toolbar .input-wrap { flex:1 1 16rem; }
 .usr-tags { display:flex; gap:.35rem; flex-wrap:wrap; }
+.icon-btn.usr-danger:hover { color:rgb(var(--err)); border-color:rgb(var(--err) / .5); }

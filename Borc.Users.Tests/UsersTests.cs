@@ -58,7 +58,7 @@ public sealed class UsersTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Repeated_failures_lock_the_account_until_an_administrator_resets_the_password()
+    public async Task Repeated_failures_lock_the_account_until_an_administrator_unlocks_it()
     {
         long id = await CreateUserAsync("reza");
         for (int i = 0; i < 5; i++)
@@ -70,9 +70,16 @@ public sealed class UsersTests : IAsyncLifetime
         Assert.Contains("قفل", await UsersHost.TextAsync(locked));
         Assert.True((await AdminAsync(a => a.GetAsync(id)))!.IsLockedOut);
 
-        await AdminAsync(async a => { await a.ResetPasswordAsync(id, "NewSecret1"); return 0; });
+        HttpClient admin = await _host.SignedInAsync();
+        string list = await UsersHost.TextAsync(await admin.GetAsync("/Users?q=reza"));
+        Assert.Contains("قفل موقت", list);
+        Assert.Contains($"/Users/Unlock?id={id}", list);
 
-        Assert.Equal(HttpStatusCode.Redirect, (await UsersHost.SignInAsync(_host.Client(), "reza", "NewSecret1")).StatusCode);
+        HttpResponseMessage unlocked = await UsersHost.SubmitAsync(admin, $"/Users/Unlock?id={id}", []);
+        Assert.Equal(HttpStatusCode.Redirect, unlocked.StatusCode);
+        Assert.False((await AdminAsync(a => a.GetAsync(id)))!.IsLockedOut);
+        Assert.Equal(HttpStatusCode.Redirect, (await UsersHost.SignInAsync(_host.Client(), "reza", "Secret123")).StatusCode);
+        Assert.DoesNotContain($"/Users/Unlock?id={id}", await UsersHost.TextAsync(await admin.GetAsync("/Users?q=reza")));
     }
 
     [Fact]
@@ -177,5 +184,19 @@ public sealed class UsersTests : IAsyncLifetime
         IUserLookup lookup = scope.ServiceProvider.GetRequiredService<IUserLookup>();
         Assert.Equal([a], (await lookup.SearchAsync("kia", 10)).Select(u => u.Id));
         Assert.Equal(2, (await lookup.GetAsync([a, b, 999])).Count);
+    }
+
+    [Fact]
+    public async Task Password_reset_also_ends_a_lockout()
+    {
+        long id = await CreateUserAsync("mina");
+        for (int i = 0; i < 5; i++)
+        {
+            await UsersHost.SignInAsync(_host.Client(), "mina", "wrong123");
+        }
+
+        await AdminAsync(async a => { await a.ResetPasswordAsync(id, "NewSecret1"); return 0; });
+
+        Assert.Equal(HttpStatusCode.Redirect, (await UsersHost.SignInAsync(_host.Client(), "mina", "NewSecret1")).StatusCode);
     }
 }

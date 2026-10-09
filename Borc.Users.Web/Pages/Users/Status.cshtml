@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = Model.Active ? "فعال‌سازی کاربر" : "غیرفعال‌سازی کاربر";
 }
+<partial name="_UsersIcons" />
 <div class="modal-page">
     <partial name="@Borc.Users.Web.Pages.Users.StatusModel.FormPath" model="Model" />
 </div>

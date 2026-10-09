@@ -113,6 +113,13 @@ internal sealed class UserAdministration(
         }
     }
 
+    public async Task UnlockAsync(long id, CancellationToken cancellationToken = default)
+    {
+        AppUser user = await FindAsync(id);
+        Check(await users.SetLockoutEndDateAsync(user, null));
+        Check(await users.ResetAccessFailedCountAsync(user));
+    }
+
     public async Task ResetPasswordAsync(long id, string newPassword, CancellationToken cancellationToken = default)
     {
         AppUser user = await FindAsync(id);

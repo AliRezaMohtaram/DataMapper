@@ -1,0 +1,9 @@
+@page
+@model Borc.Users.Web.Pages.Users.UnlockModel
+@{
+    ViewData["Title"] = "برداشتن قفل حساب";
+}
+<partial name="_UsersIcons" />
+<div class="modal-page">
+    <partial name="@Borc.Users.Web.Pages.Users.UnlockModel.FormPath" model="Model" />
+</div>
