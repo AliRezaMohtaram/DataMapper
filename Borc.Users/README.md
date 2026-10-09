@@ -17,7 +17,9 @@ second host needs it.
 
 ```csharp
 builder.Services.AddBorcUsers(connectionString, o => builder.Configuration.GetSection("Users").Bind(o));
-builder.Services.AddBorcUsersUi();           // cookie auth, pages, policy "Users.Administrator", sign-in required everywhere
+builder.Services.AddBorcUsersUi();           // cookie auth, pages, policies "Users.View"/"Users.Manage", sign-in required everywhere
+// or decide who manages accounts yourself (e.g. with Acl), hiding the administrator flag:
+// builder.Services.AddBorcUsersUi(ui => { ui.ViewPolicy = p => ...; ui.ManagePolicy = p => ...; ui.ShowAdministratorFlag = false; });
 // ...
 app.UseRouting();
 app.UseAuthentication();
@@ -34,7 +36,8 @@ Configuration (`Users` section): `MigrateOnStartup` (default true; otherwise run
 - Sign-in by user name or e-mail (e-mail optional, unique when set). No public registration: administrators create accounts.
 - Accounts are never deleted. Deactivating blocks sign-in and ends open sessions within a minute (security stamp,
   validated every minute); the same applies to password resets. Lockout after 5 failures for 10 minutes; a reset unlocks.
-- Administrators (`IsAdministrator`, claim `usr:admin`) manage accounts. You cannot deactivate yourself or remove your
+- By default administrators (`IsAdministrator`, claim `usr:admin`) manage accounts; hosts can replace the
+  `ViewPolicy` (list) and `ManagePolicy` (all changes) in `UsersUiOptions`. You cannot deactivate yourself or remove your
   own administrator flag, and at least one active administrator must remain.
 - Claims: `NameIdentifier` = id (long as string — also the `UserId` other modules store), `Name` = user name,
   `usr:display_name`.

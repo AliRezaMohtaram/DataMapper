@@ -51,7 +51,7 @@ public sealed class SmokeTests(MapperApp app) : IClassFixture<MapperApp>
             Assert.DoesNotContain($"href=\"{link}\"", html);
         }
 
-        foreach (string path in new[] { "/Templates", "/DataSources", "/MappingProfiles", "/Imports", "/DataRecords", "/OrgChart" })
+        foreach (string path in new[] { "/Templates", "/DataSources", "/MappingProfiles", "/Imports", "/DataRecords", "/OrgChart", "/Users" })
         {
             HttpResponseMessage response = await client.GetAsync(path);
             Assert.True(response.StatusCode == HttpStatusCode.Redirect && response.Headers.Location!.PathAndQuery.StartsWith("/Account/AccessDenied"),
@@ -72,6 +72,24 @@ public sealed class SmokeTests(MapperApp app) : IClassFixture<MapperApp>
         HttpResponseMessage form = await client.GetAsync("/DataSources/Create");
         Assert.Equal(HttpStatusCode.Redirect, form.StatusCode);
         Assert.StartsWith("/Account/AccessDenied", form.Headers.Location!.PathAndQuery);
+    }
+
+    [Fact]
+    public async Task Users_page_follows_acl_view_lists_and_edit_manages()
+    {
+        await GrantAsync("hr", "UserViewers", ("Mapper.Users", WellKnownActions.View));
+        HttpClient client = await app.SignInAsync("hr", "Secret123");
+
+        HttpResponseMessage list = await client.GetAsync("/Users");
+        Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+        string html = await TextAsync(list);
+        Assert.Contains("href=\"/Users\"", html);
+        Assert.DoesNotContain("/Users/Edit", html);
+        Assert.Equal(HttpStatusCode.Redirect, (await client.GetAsync("/Users/Edit")).StatusCode);
+
+        HttpClient admin = await app.AdminAsync();
+        string adminForm = await TextAsync(await admin.GetAsync("/Users/Edit"));
+        Assert.DoesNotContain("name=\"IsAdministrator\"", adminForm); // access comes from Acl, not the flag
     }
 
     /// <summary>Creates a user (password Secret123) and returns a client signed in as them.</summary>

@@ -36,9 +36,12 @@
                     <input class="input ltr" id="Confirm" name="Confirm" type="password" autocomplete="new-password" required />
                 </div>
             }
-            <div class="field span-2">
-                <label class="usr-check"><input type="checkbox" name="IsAdministrator" value="true" checked="@Model.IsAdministrator" />مدیر سامانه (مدیریت کاربران)</label>
-            </div>
+            @if (Model.ShowAdministratorFlag)
+            {
+                <div class="field span-2">
+                    <label class="usr-check"><input type="checkbox" name="IsAdministrator" value="true" checked="@Model.IsAdministrator" />مدیر سامانه (مدیریت کاربران)</label>
+                </div>
+            }
         </div>
     </div>
     <div class="modal-foot">

@@ -32,7 +32,13 @@ builder.Services.AddControllersWithViews(options =>
 builder.Services.AddBorcUsers(
     builder.Configuration.GetConnectionString("BorcDataMapper")!,
     options => builder.Configuration.GetSection("Users").Bind(options));
-builder.Services.AddBorcUsersUi();
+builder.Services.AddBorcUsersUi(ui =>
+{
+    // Who manages accounts is decided in Acl (resource Mapper.Users), not by the account's administrator flag.
+    ui.ViewPolicy = p => p.AddRequirements(new PermissionRequirement(MapperResources.Users, WellKnownActions.View));
+    ui.ManagePolicy = p => p.AddRequirements(new PermissionRequirement(MapperResources.Users, WellKnownActions.Edit));
+    ui.ShowAdministratorFlag = false;
+});
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 
 // چارت سازمانی و دسترسی‌ها (ماژول‌های OrgChart و Acl): جدول‌ها در schemaهای org و acl همان پایگاه داده.

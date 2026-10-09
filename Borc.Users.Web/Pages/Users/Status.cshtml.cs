@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Borc.Users.Web.Pages.Users;
 
 /// <summary>Confirms and applies (de)activation of an account.</summary>
-[Microsoft.AspNetCore.Authorization.Authorize(Policy = UsersPolicies.Administrator)]
+[Microsoft.AspNetCore.Authorization.Authorize(Policy = UsersPolicies.Manage)]
 public sealed class StatusModel(IUserAdministration admin) : UsersPageModel
 {
     public const string FormPath = "/Pages/Users/_StatusForm.cshtml";

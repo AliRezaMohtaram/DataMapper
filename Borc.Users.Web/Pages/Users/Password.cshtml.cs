@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Borc.Users.Web.Pages.Users;
 
 /// <summary>An administrator sets a new password (also ends a lockout).</summary>
-[Microsoft.AspNetCore.Authorization.Authorize(Policy = UsersPolicies.Administrator)]
+[Microsoft.AspNetCore.Authorization.Authorize(Policy = UsersPolicies.Manage)]
 public sealed class PasswordModel(IUserAdministration admin) : UsersPageModel
 {
     public const string FormPath = "/Pages/Users/_PasswordForm.cshtml";

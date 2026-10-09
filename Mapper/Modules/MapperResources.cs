@@ -9,6 +9,7 @@ using Acl.Core.Model;
 [assembly: Resource(Borc.DataMapper.Web.Modules.MapperResources.MappingProfiles, ResourceType.Page, Title = "پروفایل‌های نگاشت", SortOrder = 4)]
 [assembly: Resource(Borc.DataMapper.Web.Modules.MapperResources.Imports, ResourceType.Page, Title = "ایمپورت داده", SortOrder = 5)]
 [assembly: Resource(Borc.DataMapper.Web.Modules.MapperResources.DataRecords, ResourceType.Page, Title = "داده‌های ثبت‌شده", SortOrder = 6)]
+[assembly: Resource(Borc.DataMapper.Web.Modules.MapperResources.Users, ResourceType.Page, Title = "کاربران", SortOrder = 9)]
 [assembly: Resource(Borc.DataMapper.Web.Modules.MapperResources.OrgChart, ResourceType.Module, Title = "چارت سازمانی", SortOrder = 10)]
 
 namespace Borc.DataMapper.Web.Modules;
@@ -26,6 +27,9 @@ public static class MapperResources
     public const string MappingProfiles = "Mapper.MappingProfiles";
     public const string Imports = "Mapper.Imports";
     public const string DataRecords = "Mapper.DataRecords";
+
+    /// <summary>View = the user list; Edit = create/edit/(de)activate/unlock accounts and set passwords.</summary>
+    public const string Users = "Mapper.Users";
 
     /// <summary>View = see the org chart; Edit = change units, positions, assignments and delegations.</summary>
     public const string OrgChart = "Mapper.OrgChart";

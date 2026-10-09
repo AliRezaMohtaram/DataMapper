@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Borc.Users.Web.Pages.Users;
 
 /// <summary>Create (no id) or edit an account.</summary>
-[Microsoft.AspNetCore.Authorization.Authorize(Policy = UsersPolicies.Administrator)]
-public sealed class EditModel(IUserAdministration admin) : UsersPageModel
+[Microsoft.AspNetCore.Authorization.Authorize(Policy = UsersPolicies.Manage)]
+public sealed class EditModel(IUserAdministration admin, UsersUiOptions ui) : UsersPageModel
 {
     public const string FormPath = "/Pages/Users/_EditForm.cshtml";
 
@@ -20,6 +20,7 @@ public sealed class EditModel(IUserAdministration admin) : UsersPageModel
     [BindProperty] public string? Confirm { get; set; }
 
     public bool IsEdit => Id is not null;
+    public bool ShowAdministratorFlag => ui.ShowAdministratorFlag;
     public string BackUrl => !string.IsNullOrEmpty(ReturnUrl) && Url.IsLocalUrl(ReturnUrl) ? ReturnUrl : Url.Page("/Users/Index")!;
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
@@ -43,6 +44,12 @@ public sealed class EditModel(IUserAdministration admin) : UsersPageModel
         {
             ModelState.AddModelError(string.Empty, "تکرار رمز عبور با آن یکسان نیست.");
             return Form(FormPath);
+        }
+
+        if (!ui.ShowAdministratorFlag)
+        {
+            // The checkbox is not shown: keep the stored flag (new accounts get none).
+            IsAdministrator = Id is { } existing && (await admin.GetAsync(existing, cancellationToken))?.IsAdministrator == true;
         }
 
         UserInput input = new(UserName ?? "", DisplayName ?? "", Email, IsAdministrator, Password);

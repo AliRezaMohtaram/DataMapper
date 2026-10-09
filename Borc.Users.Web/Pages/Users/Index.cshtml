@@ -15,7 +15,10 @@
             <span class="card-ico"><svg class="ico"><use href="#i-user" /></svg></span>
             <div>کاربران<div class="card-sub">@UsersFormat.Number(r.TotalCount) حساب</div></div>
         </div>
-        <a class="btn btn-primary" asp-page="/Users/Edit" asp-route-returnUrl="@Model.ReturnUrl" data-modal><svg class="ico"><use href="#i-plus" /></svg>کاربر جدید</a>
+        @if (Model.CanManage)
+        {
+            <a class="btn btn-primary" asp-page="/Users/Edit" asp-route-returnUrl="@Model.ReturnUrl" data-modal><svg class="ico"><use href="#i-plus" /></svg>کاربر جدید</a>
+        }
     </header>
 
     <form class="usr-toolbar" method="get" role="search">
@@ -63,6 +66,8 @@
                             </td>
                             <td class="cell-sub">@UsersFormat.Date(u.LastSignInAt, withTime: true)</td>
                             <td>
+                                @if (Model.CanManage)
+                                {
                                 <div class="usr-actions">
                                     <a class="icon-btn" asp-page="/Users/Edit" asp-route-id="@u.Id" asp-route-returnUrl="@Model.ReturnUrl" data-modal title="ویرایش" aria-label="ویرایش @u.DisplayName"><svg class="ico"><use href="#i-edit" /></svg></a>
                                     <a class="icon-btn" asp-page="/Users/Password" asp-route-id="@u.Id" asp-route-returnUrl="@Model.ReturnUrl" data-modal title="تعیین رمز جدید" aria-label="تعیین رمز جدید برای @u.DisplayName"><svg class="ico"><use href="#usr-key" /></svg></a>
@@ -76,6 +81,7 @@
                                         <a class="icon-btn@(u.IsActive ? " usr-danger" : "")" asp-page="/Users/Status" asp-route-id="@u.Id" asp-route-active="@(!u.IsActive)" asp-route-returnUrl="@Model.ReturnUrl" data-modal title="@label" aria-label="@label @u.DisplayName"><svg class="ico"><use href="#@(u.IsActive ? "usr-user-off" : "usr-user-on")" /></svg></a>
                                     }
                                 </div>
+                                }
                             </td>
                         </tr>
                     }

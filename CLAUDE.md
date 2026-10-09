@@ -11,7 +11,7 @@
 
 Sign-in and account management, kept independent of the Mapper projects so it can be extracted later; see
 `Borc.Users/README.md`. Wiring in Mapper: `Program.cs` (`AddBorcUsers`, `AddBorcUsersUi`, `UseAuthentication`,
-`MapRazorPages`), sign-in required everywhere, `_Layout` (user chip, sign-out, change password, "کاربران" for admins),
+`MapRazorPages`), sign-in required everywhere, `_Layout` (user chip, sign-out, change password, "کاربران" via Acl),
 `HttpCurrentUser` → `ICurrentUser` (Application) → `AuditStampInterceptor` fills `CreatedBy/UpdatedBy/DeletedBy`.
 User ids are `long`; other modules (OrgChart, Acl) store them as strings. Manual checklist: `docs/users-test-checklist.md`.
 
@@ -39,7 +39,8 @@ Cloud container: the clones are /home/user/acl and /home/user/organization; a sy
 
 - Acl resources (`Modules/MapperResources.cs`): module `Mapper` with pages `Mapper.Templates` (templates, versions, fields,
   layouts), `Mapper.DataSources`, `Mapper.MappingProfiles`, `Mapper.Imports`, `Mapper.DataRecords`, and module
-  `Mapper.OrgChart`. A grant on `Mapper` is inherited by everything below it.
+  `Mapper.OrgChart`, `Mapper.Users` (user pages: View = list, Edit = every change; `AddBorcUsersUi` policies, the
+  account's administrator flag is hidden and unused in Mapper). A grant on `Mapper` is inherited by everything below it.
 - Controllers: `[RequirePermission]` — class = View; Create/Edit/Delete actions as named; Approve = publish/archive a
   template version, commit an import; template fields/layouts and new versions = Edit on Templates; DataSources has no
   class-level check so `Options` (used by record forms) only needs sign-in; `DataRecords.Save` checks Create or Edit in code.

@@ -9,19 +9,45 @@ namespace Borc.Users.Web;
 
 public static class UsersPolicies
 {
-    /// <summary>May manage user accounts (administrator flag on the account).</summary>
-    public const string Administrator = "Users.Administrator";
+    /// <summary>May open the user list (<see cref="UsersUiOptions.ViewPolicy"/>).</summary>
+    public const string View = "Users.View";
+
+    /// <summary>May create, edit, (de)activate and unlock accounts and set passwords (<see cref="UsersUiOptions.ManagePolicy"/>).</summary>
+    public const string Manage = "Users.Manage";
+}
+
+/// <summary>Options of the pages (<c>AddBorcUsersUi(ui => ...)</c>).</summary>
+public sealed class UsersUiOptions
+{
+    private static void Administrators(AuthorizationPolicyBuilder p) =>
+        p.RequireAuthenticatedUser().RequireClaim(UserClaimTypes.Administrator, "true");
+
+    /// <summary>Who may see the user list. Default: accounts with the administrator flag.</summary>
+    public Action<AuthorizationPolicyBuilder> ViewPolicy { get; set; } = Administrators;
+
+    /// <summary>Who may change accounts. Default: accounts with the administrator flag.</summary>
+    public Action<AuthorizationPolicyBuilder> ManagePolicy { get; set; } = Administrators;
+
+    /// <summary>
+    /// Show the "administrator" checkbox. Turn off when the host decides access another way (e.g. Acl policies above);
+    /// the flag then keeps its stored value.
+    /// </summary>
+    public bool ShowAdministratorFlag { get; set; } = true;
 }
 
 public static class UsersUiExtensions
 {
     /// <summary>
     /// Cookie sign-in for the whole host (Identity application cookie), the pages under /Account and /Users and the
-    /// <see cref="UsersPolicies.Administrator"/> policy. With <paramref name="requireSignIn"/> (default) every endpoint
-    /// without [AllowAnonymous] needs a signed-in user. The host calls AddRazorPages() and MapRazorPages().
+    /// <see cref="UsersPolicies"/>. With <paramref name="requireSignIn"/> (default) every endpoint without [AllowAnonymous]
+    /// needs a signed-in user. The host calls AddRazorPages() and MapRazorPages().
     /// </summary>
-    public static IServiceCollection AddBorcUsersUi(this IServiceCollection services, bool requireSignIn = true)
+    public static IServiceCollection AddBorcUsersUi(this IServiceCollection services, Action<UsersUiOptions>? configure = null, bool requireSignIn = true)
     {
+        UsersUiOptions ui = new();
+        configure?.Invoke(ui);
+        services.AddSingleton(ui);
+
         services.AddAuthentication(IdentityConstants.ApplicationScheme).AddIdentityCookies();
         services.ConfigureApplicationCookie(cookie =>
         {
@@ -46,7 +72,8 @@ public static class UsersUiExtensions
         services.Configure<SecurityStampValidatorOptions>(o => o.ValidationInterval = TimeSpan.FromMinutes(1));
 
         services.AddAuthorizationBuilder()
-            .AddPolicy(UsersPolicies.Administrator, p => p.RequireAuthenticatedUser().RequireClaim(UserClaimTypes.Administrator, "true"));
+            .AddPolicy(UsersPolicies.View, ui.ViewPolicy)
+            .AddPolicy(UsersPolicies.Manage, ui.ManagePolicy);
         if (requireSignIn)
         {
             services.AddAuthorizationBuilder().SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());

@@ -22,7 +22,6 @@
 
     // کاربر واردشده (ماژول Borc.Users)
     var userName = User.FindFirst(Borc.Users.UserClaimTypes.DisplayName)?.Value ?? User.Identity?.Name ?? "";
-    var isAdmin = User.HasClaim(Borc.Users.UserClaimTypes.Administrator, "true");
     var page = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
     var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
     var usersActive = area == "" && page.StartsWith("/Users/", StringComparison.OrdinalIgnoreCase);
@@ -101,12 +100,10 @@
                 </a>
 
                 <div class="nav-section">سیستم</div>
-                @if (isAdmin)
-                {
-                    <a class="nav-item@(usersActive ? " active" : "")" title="کاربران" aria-current="@(usersActive ? "page" : null)" asp-area="" asp-page="/Users/Index">
-                        <svg class="ico"><use href="#i-user" /></svg><span class="nav-label">کاربران</span>
-                    </a>
-                }
+                <a class="nav-item@(usersActive ? " active" : "")" title="کاربران" aria-current="@(usersActive ? "page" : null)"
+                   acl-res="@Borc.DataMapper.Web.Modules.MapperResources.Users" asp-area="" asp-page="/Users/Index">
+                    <svg class="ico"><use href="#i-user" /></svg><span class="nav-label">کاربران</span>
+                </a>
                 <button class="nav-item" type="button" data-action="theme-open" title="تنظیمات ظاهر">
                     <svg class="ico"><use href="#i-palette" /></svg><span class="nav-label">تنظیمات ظاهر</span>
                 </button>
@@ -117,7 +114,7 @@
                     <span class="avatar">@(userName.Length > 0 ? userName[..1] : "?")</span>
                     <span class="user-info">
                         <span class="user-name">@userName</span>
-                        <span class="user-role">@(isAdmin ? "مدیر سامانه" : "کاربر")</span>
+                        <span class="user-role ltr">@User.Identity?.Name</span>
                     </span>
                     <svg class="ico faint"><use href="#i-chev-down" /></svg>
                 </button>
@@ -204,10 +201,7 @@
                     <a class="cmdk-item" asp-area="" asp-controller="@item.Controller" asp-action="Index" data-k="@item.Controller"><span class="src-ico"><svg class="ico"><use href="#@item.Icon" /></svg></span>@item.Label<span class="hint faint">@item.Section</span></a>
                 }
 
-                @if (isAdmin)
-                {
-                    <a class="cmdk-item" asp-area="" asp-page="/Users/Index" data-k="users کاربران"><span class="src-ico"><svg class="ico"><use href="#i-user" /></svg></span>کاربران<span class="hint faint">سیستم</span></a>
-                }
+                <a class="cmdk-item" acl-res="@Borc.DataMapper.Web.Modules.MapperResources.Users" asp-area="" asp-page="/Users/Index" data-k="users کاربران"><span class="src-ico"><svg class="ico"><use href="#i-user" /></svg></span>کاربران<span class="hint faint">سیستم</span></a>
 
                 <div class="cmdk-group">ظاهر</div>
                 <button class="cmdk-item" type="button" data-action="mode:light" data-k="light theme روشن"><span class="src-ico tone-warning"><svg class="ico"><use href="#i-sun" /></svg></span>حالت روشن</button>

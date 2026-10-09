@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Borc.Users.Web.Pages.Users;
 
 /// <summary>Ends a temporary lockout without changing the password.</summary>
-[Microsoft.AspNetCore.Authorization.Authorize(Policy = UsersPolicies.Administrator)]
+[Microsoft.AspNetCore.Authorization.Authorize(Policy = UsersPolicies.Manage)]
 public sealed class UnlockModel(IUserAdministration admin) : UsersPageModel
 {
     public const string FormPath = "/Pages/Users/_UnlockForm.cshtml";
