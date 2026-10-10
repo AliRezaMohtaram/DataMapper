@@ -92,6 +92,30 @@ public sealed class SmokeTests(MapperApp app) : IClassFixture<MapperApp>
         Assert.DoesNotContain("name=\"IsAdministrator\"", adminForm); // access comes from Acl, not the flag
     }
 
+    [Fact]
+    public async Task Role_assignment_picks_users_by_name_and_rejects_unknown_ids()
+    {
+        HttpClient admin = await app.AdminAsync();
+        int roleId;
+        await using (AsyncServiceScope scope = app.Services.CreateAsyncScope())
+        {
+            roleId = await scope.ServiceProvider.GetRequiredService<IRoleAdministration>().CreateRoleAsync(new RoleInput { Name = "Pickers", IsActive = true });
+        }
+
+        string page = await TextAsync(await admin.GetAsync($"/Acl/Roles/Assignments/{roleId}"));
+        Assert.Contains("data-acl-user-search", page);
+
+        string json = await (await admin.GetAsync($"/Acl/Roles/Assignments/{roleId}?handler=Users&q=admin")).Content.ReadAsStringAsync();
+        Assert.Contains("\"id\":\"1\"", json);
+
+        await using (AsyncServiceScope scope = app.Services.CreateAsyncScope())
+        {
+            var assignments = scope.ServiceProvider.GetRequiredService<IAssignmentAdministration>();
+            AclAdminException ex = await Assert.ThrowsAsync<AclAdminException>(() => assignments.AddUserRoleAsync("999", new UserRoleInput { RoleId = roleId }));
+            Assert.Equal(AdminErrors.UnknownUser, ex.Code);
+        }
+    }
+
     /// <summary>Creates a user (password Secret123) and returns a client signed in as them.</summary>
     private async Task<HttpClient> NewUserAsync(string userName)
     {

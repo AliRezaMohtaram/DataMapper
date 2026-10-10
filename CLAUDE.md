@@ -17,7 +17,7 @@ User ids are `long`; other modules (OrgChart, Acl) store them as strings. Manual
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.1.0) and /Acl (0.3.0) as NuGet packages from local folders,
+From github.com/AliRezaMohtaram/organization (OrgChart 0.1.0) and /Acl (0.4.0) as NuGet packages from local folders,
 configured in `nuget.config`: `../organization/artifacts/packages` and `../Acl/artifacts/packages` (pack Acl first, then
 OrgChart). Package source mapping pins `OrgChart.*`/`Acl.*` to those folders — nuget.org has unrelated packages with the
 same names (e.g. Acl.Core 3.x). Bump the module version when repacking (NuGet caches by version).
@@ -69,6 +69,9 @@ Cloud container: the clones are /home/user/acl and /home/user/organization; a sy
   visible, new unit among the choices). Application: `OrgUnits/OrgUnitOwnership.cs`.
 - `MapperAccessBootstrapper`: the "مدیر Mapper" role gets data scope All on `Mapper` (also added once to an existing role
   that has no data-scope rule).
+- Acl 0.4.0: role assignments pick users by name (search over `MapperUserDirectory`); unknown user ids are rejected.
+- DI gotcha: `UserAdministration` resolves `IUserStatusListener`s lazily — the org chart listener depends (via Acl) on
+  `IUserDirectory` → `IUserLookup`, and constructor injection made a cycle that crashed startup (stack overflow).
 - Known limit: lookups follow the scope too (a field's data source in another unit gives no options).
 
 - Tests: `Mapper.Tests` (WebApplicationFactory, every DbContext on its own SQLite connection, startup migrations off;

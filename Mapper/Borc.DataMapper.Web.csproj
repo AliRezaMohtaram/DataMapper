@@ -25,9 +25,9 @@
 		<PackageReference Include="OrgChart.EFCore" Version="0.1.0" />
 		<PackageReference Include="OrgChart.Razor" Version="0.1.0" />
 		<PackageReference Include="OrgChart.Acl" Version="0.1.0" />
-		<PackageReference Include="Acl.AspNetCore" Version="0.3.0" />
-		<PackageReference Include="Acl.EFCore" Version="0.3.0" />
-		<PackageReference Include="Acl.Razor" Version="0.3.0" />
+		<PackageReference Include="Acl.AspNetCore" Version="0.4.0" />
+		<PackageReference Include="Acl.EFCore" Version="0.4.0" />
+		<PackageReference Include="Acl.Razor" Version="0.4.0" />
 	</ItemGroup>
 
 	<ItemGroup>

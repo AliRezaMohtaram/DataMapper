@@ -6,6 +6,7 @@ using Borc.Users.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Borc.Users.Services;
 
@@ -14,7 +15,7 @@ internal sealed class UserAdministration(
     UsersDbContext db,
     IHttpContextAccessor http,
     TimeProvider time,
-    IEnumerable<IUserStatusListener> listeners) : IUserAdministration, IUserLookup
+    IServiceProvider services) : IUserAdministration, IUserLookup
 {
     public async Task<UserPage> ListAsync(UserQuery query, CancellationToken cancellationToken = default)
     {
@@ -107,7 +108,8 @@ internal sealed class UserAdministration(
 
         // A new stamp ends the user's existing sessions at the next cookie validation.
         Check(await users.UpdateSecurityStampAsync(user));
-        foreach (IUserStatusListener listener in listeners)
+        // Resolved here, not in the constructor: listeners (e.g. an org chart bridge) may themselves depend on IUserLookup.
+        foreach (IUserStatusListener listener in services.GetServices<IUserStatusListener>())
         {
             await listener.OnStatusChangedAsync(id, active, cancellationToken);
         }
