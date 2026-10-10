@@ -9,21 +9,46 @@ namespace Borc.DataMapper.Infrastructure.Persistence;
 /// پر کردن CreatedBy / UpdatedBy / DeletedBy از کاربر واردشده هنگام ذخیره.
 /// Fills CreatedBy / UpdatedBy / DeletedBy from the signed-in user on save (values set explicitly are kept).
 /// </summary>
-public sealed class AuditStampInterceptor(ICurrentUser currentUser) : SaveChangesInterceptor
+public sealed class AuditStampInterceptor(ICurrentUser currentUser, IOrgUnitSelection orgUnits) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         Stamp(eventData.Context);
+        StampOrgUnitsAsync(eventData.Context, CancellationToken.None).GetAwaiter().GetResult();
         return base.SavingChanges(eventData, result);
     }
 
-    public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
         DbContextEventData eventData,
         InterceptionResult<int> result,
         CancellationToken cancellationToken = default)
     {
         Stamp(eventData.Context);
-        return base.SavingChangesAsync(eventData, result, cancellationToken);
+        await StampOrgUnitsAsync(eventData.Context, cancellationToken);
+        return await base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    /// <summary>
+    /// ردیف‌های جدید بدون واحد: واحد انتخاب‌شده در فرم، وگرنه واحد پیش‌فرض کاربر. رکوردهای ایمپورت واحد ایمپورت را دارند.
+    /// New rows without a unit get the unit chosen in the form, else the user's default unit. Records created by an
+    /// import keep the import's unit (also when that is "public").
+    /// </summary>
+    private async Task StampOrgUnitsAsync(DbContext? context, CancellationToken cancellationToken)
+    {
+        if (context is null)
+        {
+            return;
+        }
+
+        foreach (var entry in context.ChangeTracker.Entries<IOrgUnitOwned>().Where(e => e.State == EntityState.Added).ToList())
+        {
+            if (entry.Entity.OrgUnitKey is not null || entry.Entity is Domain.Records.DataRecord { ImportBatchId: not null })
+            {
+                continue;
+            }
+
+            entry.Entity.AssignOrgUnit(orgUnits.IsExplicit ? orgUnits.Key : await orgUnits.GetDefaultAsync(cancellationToken));
+        }
     }
 
     private void Stamp(DbContext? context)
@@ -61,4 +86,16 @@ public sealed class AuditStampInterceptor(ICurrentUser currentUser) : SaveChange
 internal sealed class NoCurrentUser : ICurrentUser
 {
     public long? UserId => null;
+}
+
+/// <summary>No selection outside the web host: new rows stay public unless their code sets a unit.</summary>
+internal sealed class NoOrgUnitSelection : IOrgUnitSelection
+{
+    public bool IsExplicit { get; private set; }
+
+    public string? Key { get; private set; }
+
+    public void Choose(string? orgUnitKey) => (IsExplicit, Key) = (true, string.IsNullOrWhiteSpace(orgUnitKey) ? null : orgUnitKey);
+
+    public Task<string?> GetDefaultAsync(CancellationToken cancellationToken = default) => Task.FromResult<string?>(null);
 }

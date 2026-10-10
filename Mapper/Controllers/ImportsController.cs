@@ -62,6 +62,7 @@ public sealed class ImportsController : Controller
 
     [HttpGet]
     [RequirePermission(MapperResources.Imports, WellKnownActions.Create)]
+    [OrgUnitField(MapperResources.Imports, allowPublic: false)]
     public async Task<IActionResult> Upload(long? versionId, long? profileId, CancellationToken cancellationToken)
         => await UploadFormAsync(versionId, profileId, cancellationToken);
 
@@ -69,6 +70,7 @@ public sealed class ImportsController : Controller
     [ValidateAntiForgeryToken]
     [RequestSizeLimit(ImportLimits.MaxFileBytes + 1_048_576)]
     [RequirePermission(MapperResources.Imports, WellKnownActions.Create)]
+    [OrgUnitField(MapperResources.Imports, allowPublic: false)]
     public async Task<IActionResult> UploadAsync(
         IFormFile? file,
         long templateVersionId,
@@ -77,7 +79,9 @@ public sealed class ImportsController : Controller
     {
         string? error = null;
 
-        if (templateVersionId <= 0)
+        if (ModelState[OrgUnitFieldAttribute.FieldName]?.Errors.Count > 0)
+            error = "واحد سازمانی انتخاب‌شده مجاز نیست.";
+        else if (templateVersionId <= 0)
             error = "قالب و نسخهٔ مقصد را انتخاب کنید.";
         else if (file is null || file.Length == 0)
             error = "فایلی انتخاب نشده است.";

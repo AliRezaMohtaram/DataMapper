@@ -40,6 +40,9 @@ builder.Services.AddBorcUsersUi(ui =>
     ui.ShowAdministratorFlag = false;
 });
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
+builder.Services.AddScoped<IDataScopeProvider, AclDataScopeProvider>(); // row filter by org unit (Acl data scope)
+builder.Services.AddScoped<OrgUnitChoices>();
+builder.Services.AddScoped<IOrgUnitSelection>(sp => sp.GetRequiredService<OrgUnitChoices>());
 
 // چارت سازمانی و دسترسی‌ها (ماژول‌های OrgChart و Acl): جدول‌ها در schemaهای org و acl همان پایگاه داده.
 var connectionString = builder.Configuration.GetConnectionString("BorcDataMapper")!;

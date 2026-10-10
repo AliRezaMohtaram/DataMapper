@@ -30,4 +30,9 @@
 		<PackageReference Include="Acl.Razor" Version="0.3.0" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<!-- Mapper schema patches applied at startup by ModuleDatabaseMigrator (idempotent). -->
+		<EmbeddedResource Include="..\Scripts\009_OrgUnits.sql" LogicalName="Scripts.009_OrgUnits.sql" />
+	</ItemGroup>
+
 </Project>

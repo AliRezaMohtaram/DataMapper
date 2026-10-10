@@ -1,0 +1,40 @@
+@model Borc.DataMapper.Web.Controllers.ChangeOrgUnitViewModel
+@{
+    var errors = ViewData.ModelState.Where(kv => string.IsNullOrEmpty(kv.Key)).SelectMany(kv => kv.Value!.Errors).Select(e => e.ErrorMessage).ToList();
+    var currentInOptions = Model.Options.Any(o => string.Equals(o.Key, Model.Row.OrgUnitKey, StringComparison.OrdinalIgnoreCase));
+}
+<form class="modal modal-sm" method="post" asp-controller="OrgUnits" asp-action="Change" asp-route-kind="@Model.Row.Kind" asp-route-id="@Model.Row.Id" asp-route-returnUrl="@Model.BackUrl" data-mx-ajax novalidate>
+    <div class="modal-head">
+        <span class="modal-head-ico tone-info"><svg class="ico"><use href="#i-layout" /></svg></span>
+        <div>
+            <div class="modal-title">واحد سازمانی «@Model.Row.Title»</div>
+            <div class="modal-sub">فعلی: @Model.CurrentTitle</div>
+        </div>
+        <a class="icon-btn plain close" href="@Model.BackUrl" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+    </div>
+    <div class="modal-body">
+        @if (errors.Count > 0)
+        {
+            <div class="callout tone-danger" role="alert" style="margin-bottom:1rem"><svg class="ico"><use href="#i-alert" /></svg><div>@string.Join(" — ", errors)</div></div>
+        }
+        <div class="field">
+            <label class="label" for="orgUnitKey">واحد جدید</label>
+            <select class="select" id="orgUnitKey" name="orgUnitKey">
+                @if (!currentInOptions)
+                {
+                    <option value="" disabled selected>— انتخاب کنید —</option>
+                }
+                @foreach (var option in Model.Options)
+                {
+                    <option value="@option.Key" selected="@(currentInOptions && string.Equals(option.Key, Model.Selected, StringComparison.OrdinalIgnoreCase))" title="@option.Path">@option.Title</option>
+                }
+            </select>
+            <span class="hint">فقط واحدهایی که در محدودهٔ دسترسی شما هستند.</span>
+        </div>
+    </div>
+    <div class="modal-foot">
+        <span class="spacer"></span>
+        <a class="btn btn-quiet" href="@Model.BackUrl" data-close>انصراف</a>
+        <button type="submit" class="btn btn-primary"><svg class="ico"><use href="#i-check" /></svg>ذخیره</button>
+    </div>
+</form>

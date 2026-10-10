@@ -3,8 +3,14 @@ using System;
 
 namespace Borc.DataMapper.Domain.Templates
 {
-    public sealed class Template : EntityBase
+    public sealed class Template : EntityBase, IOrgUnitOwned
     {
+        /// <summary>واحد سازمانی مالک (کلید چارت)؛ null = عمومی.</summary>
+        public string? OrgUnitKey { get; private set; }
+
+        public void AssignOrgUnit(string? orgUnitKey) =>
+            OrgUnitKey = string.IsNullOrWhiteSpace(orgUnitKey) ? null : orgUnitKey.Trim();
+
         private Template()
         {
         }

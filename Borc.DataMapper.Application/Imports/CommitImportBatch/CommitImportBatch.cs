@@ -73,7 +73,8 @@ public sealed class CommitImportBatchHandler
                             version.Id,
                             row.MappedDataJson!,
                             b.Id,
-                            row.Id));
+                            row.Id,
+                            b.OrgUnitKey)); // records belong to the import's unit
 
                         row.MarkImported();
                         imported++;

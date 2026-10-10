@@ -101,6 +101,7 @@
                 }
 
                 <dl class="dl stacked" style="margin-top:1rem">
+                    <div><dt>واحد سازمانی</dt><dd><partial name="_OrgUnitBadge" model="(Borc.DataMapper.Application.OrgUnits.OrgUnitOwnedKind.Template, Model.Id)" /></dd></div>
                     <div><dt>نسخهٔ منتشرشده</dt><dd>@(published is null ? "—" : $"نسخهٔ {published.VersionNo.ToPersianNumber()} · {published.FieldCount.ToPersianNumber()} فیلد")</dd></div>
                     <div><dt>تاریخ ایجاد</dt><dd class="nums">@Model.CreatedAt.ToJalali().ToPersianDigits()</dd></div>
                     <div><dt>آخرین ویرایش</dt><dd class="nums">@Model.UpdatedAt.ToJalali().ToPersianDigits()</dd></div>

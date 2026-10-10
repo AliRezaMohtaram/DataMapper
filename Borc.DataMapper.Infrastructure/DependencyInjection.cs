@@ -17,6 +17,7 @@ public static class DependencyInjection
     {
         // کاربر جاری: میزبان وب پیاده‌سازی واقعی را ثبت می‌کند؛ بیرون از درخواست، کاربری نیست.
         services.TryAddScoped<ICurrentUser, NoCurrentUser>();
+        services.TryAddScoped<IOrgUnitSelection, NoOrgUnitSelection>();
         services.AddScoped<AuditStampInterceptor>();
 
         services.AddDbContext<BorcDataMapperDbContext>((sp, options) =>

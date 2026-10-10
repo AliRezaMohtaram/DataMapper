@@ -62,6 +62,7 @@ public sealed class MappingProfilesController : Controller
 
     [HttpGet]
     [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Create)]
+    [OrgUnitField(MapperResources.MappingProfiles, allowPublic: true)]
     public async Task<IActionResult> Create(long? templateVersionId, CancellationToken cancellationToken)
     {
         await LoadVersionsAsync(cancellationToken);
@@ -72,6 +73,7 @@ public sealed class MappingProfilesController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission(MapperResources.MappingProfiles, WellKnownActions.Create)]
+    [OrgUnitField(MapperResources.MappingProfiles, allowPublic: true)]
     public async Task<IActionResult> CreateAsync(
         CreateMappingProfileCommand command,
         CancellationToken cancellationToken)

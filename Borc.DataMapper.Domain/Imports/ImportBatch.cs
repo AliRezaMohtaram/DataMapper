@@ -2,8 +2,14 @@
 
 namespace Borc.DataMapper.Domain.Imports;
 
-public sealed class ImportBatch : EntityBase
+public sealed class ImportBatch : EntityBase, IOrgUnitOwned
 {
+    /// <summary>واحد سازمانی مالک (کلید چارت)؛ null = عمومی.</summary>
+    public string? OrgUnitKey { get; private set; }
+
+    public void AssignOrgUnit(string? orgUnitKey) =>
+        OrgUnitKey = string.IsNullOrWhiteSpace(orgUnitKey) ? null : orgUnitKey.Trim();
+
     private ImportBatch()
     {
     }

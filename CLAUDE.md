@@ -49,5 +49,28 @@ Cloud container: the clones are /home/user/acl and /home/user/organization; a sy
   with `IAccessService` (UI hiding is cosmetic; the controllers enforce).
 - `MapperAccessBootstrapper` (first run only): role "مدیر Mapper" with every action on `Mapper`, given to
   `Acl:SuperAdminUserIds`; left alone once it exists.
-- Tests: `Mapper.Tests` (WebApplicationFactory, every DbContext on its own SQLite connection, startup migrations off).
+
+## Data scope by org unit (user decisions: all five kinds; default unit + choice; rows without a unit are public)
+
+- `Template`, `DataSource`, `MappingProfile`, `ImportBatch`, `DataRecord` implement `IOrgUnitOwned` (`OrgUnitKey`
+  nvarchar(256) = the chart's stable unit key, null = public). Script `Scripts/009_OrgUnits.sql` (idempotent; also run at
+  startup by `ModuleDatabaseMigrator` as an embedded resource).
+- Row filter in `BorcDataMapperDbContext` (soft delete AND (unit null OR scope)) over `IDataScopeProvider` (Application);
+  Mapper's `AclDataScopeProvider` reads Acl's data scope per resource (`Mapper.Templates`, …): All, Own (`CreatedBy`),
+  OrgUnit / OrgUnitAndChildren. No HTTP request → everything; request without loaded access → public rows only.
+  No data-scope rule for a resource → only public rows (Acl fails closed). Rules are set per role in Acl
+  ("محدودهٔ داده"); a rule on `Mapper` is inherited by every page.
+- New rows: `AuditStampInterceptor` stamps the unit from `IOrgUnitSelection` (`OrgUnitChoices`): the form's validated
+  choice (`[OrgUnitField(resource, allowPublic)]` on create actions + `_OrgUnitField` partial in the create forms of
+  templates, data sources, mapping profiles, imports), else the user's current primary (else acting) position's unit.
+  Choices = units of positions held now ∪ units of the data scope (all active units with "all"); "public" only for
+  definitions and only with scope "all". Import records take the import's unit (`DataRecord.CreateFromImport`).
+- Existing rows: `_OrgUnitBadge` on the detail pages + `OrgUnitsController.Change` (modal; Edit on the resource, row
+  visible, new unit among the choices). Application: `OrgUnits/OrgUnitOwnership.cs`.
+- `MapperAccessBootstrapper`: the "مدیر Mapper" role gets data scope All on `Mapper` (also added once to an existing role
+  that has no data-scope rule).
+- Known limit: lookups follow the scope too (a field's data source in another unit gives no options).
+
+- Tests: `Mapper.Tests` (WebApplicationFactory, every DbContext on its own SQLite connection, startup migrations off;
+  `DataScopeTests` for the unit filter).
   Manual checklist: `docs/modules-test-checklist.md`.

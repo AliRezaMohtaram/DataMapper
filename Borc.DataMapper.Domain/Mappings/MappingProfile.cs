@@ -2,8 +2,14 @@
 
 namespace Borc.DataMapper.Domain.Mappings;
 
-public sealed class MappingProfile : EntityBase
+public sealed class MappingProfile : EntityBase, IOrgUnitOwned
 {
+    /// <summary>واحد سازمانی مالک (کلید چارت)؛ null = عمومی.</summary>
+    public string? OrgUnitKey { get; private set; }
+
+    public void AssignOrgUnit(string? orgUnitKey) =>
+        OrgUnitKey = string.IsNullOrWhiteSpace(orgUnitKey) ? null : orgUnitKey.Trim();
+
     private MappingProfile()
     {
     }

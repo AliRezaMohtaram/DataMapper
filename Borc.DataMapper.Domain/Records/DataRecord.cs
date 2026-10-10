@@ -2,8 +2,14 @@
 
 namespace Borc.DataMapper.Domain.Records;
 
-public sealed class DataRecord : EntityBase
+public sealed class DataRecord : EntityBase, IOrgUnitOwned
 {
+    /// <summary>واحد سازمانی مالک (کلید چارت)؛ null = عمومی.</summary>
+    public string? OrgUnitKey { get; private set; }
+
+    public void AssignOrgUnit(string? orgUnitKey) =>
+        OrgUnitKey = string.IsNullOrWhiteSpace(orgUnitKey) ? null : orgUnitKey.Trim();
+
     private DataRecord()
     {
     }
@@ -40,10 +46,12 @@ public sealed class DataRecord : EntityBase
         long templateVersionId,
         string dataJson,
         long importBatchId,
-        long importRowId)
+        long importRowId,
+        string? orgUnitKey = null)
     {
         return new DataRecord
         {
+            OrgUnitKey = orgUnitKey,
             TemplateId = templateId,
             TemplateVersionId = templateVersionId,
             DataJson = dataJson,

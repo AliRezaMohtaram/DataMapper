@@ -56,6 +56,7 @@ public sealed class TemplatesController : Controller
 
     [HttpGet]
     [RequirePermission(MapperResources.Templates, WellKnownActions.Create)]
+    [OrgUnitField(MapperResources.Templates, allowPublic: true)]
     public IActionResult Create()
     {
         return this.ModalOrView(FormPartial, new TemplateFormViewModel());
@@ -64,6 +65,7 @@ public sealed class TemplatesController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission(MapperResources.Templates, WellKnownActions.Create)]
+    [OrgUnitField(MapperResources.Templates, allowPublic: true)]
     public async Task<IActionResult> CreateAsync(
         TemplateFormViewModel model,
         CancellationToken cancellationToken)

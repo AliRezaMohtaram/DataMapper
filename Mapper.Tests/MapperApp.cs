@@ -45,6 +45,7 @@ public sealed partial class MapperApp : WebApplicationFactory<Program>
         builder.ConfigureTestServices(services =>
         {
             UseSqlite<BorcDataMapperDbContext>(services, _mapper);
+            services.AddDbContext<BorcDataMapperDbContext>((sp, o) => o.AddInterceptors(sp.GetRequiredService<AuditStampInterceptor>()));
             UseSqlite<UsersDbContext>(services, _users);
             UseSqlite<OrgChartDbContext>(services, _chart);
             UseSqlite<AclDbContext>(services, _acl);

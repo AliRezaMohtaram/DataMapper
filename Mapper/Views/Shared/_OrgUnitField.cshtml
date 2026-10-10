@@ -1,0 +1,23 @@
+@using Borc.DataMapper.Web.Modules
+@* فیلد «واحد سازمانی» فرم‌های ایجاد؛ فقط وقتی کنترلر [OrgUnitField] دارد نمایش داده می‌شود. *@
+@if (ViewData[OrgUnitFieldAttribute.ViewDataKey] is OrgUnitFieldModel field)
+{
+    var error = ViewData.ModelState[OrgUnitFieldAttribute.FieldName]?.Errors.FirstOrDefault()?.ErrorMessage;
+    <div class="field@(error is null ? "" : " field-invalid")" style="margin-top:1rem">
+        <label class="label" for="OrgUnitKey">واحد سازمانی</label>
+        <select class="select" id="OrgUnitKey" name="OrgUnitKey">
+            @foreach (var option in field.Options)
+            {
+                <option value="@option.Key" selected="@(string.Equals(option.Key, field.Selected, StringComparison.OrdinalIgnoreCase))" title="@option.Path">@option.Title</option>
+            }
+        </select>
+        @if (error is not null)
+        {
+            <span class="field-error">@error</span>
+        }
+        else
+        {
+            <span class="hint">کاربران همین واحد (و مدیران بالادست طبق محدودهٔ دسترسی) آن را می‌بینند؛ «عمومی» برای همه.</span>
+        }
+    </div>
+}

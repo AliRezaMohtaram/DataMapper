@@ -40,7 +40,33 @@ public sealed class ModuleDatabaseMigrator(IServiceProvider services, IConfigura
                 await db.Database.MigrateAsync(cancellationToken);
             }
         }
+
+        // After the existence check above (same database).
+        await ApplyMapperPatchesAsync(scope.ServiceProvider.GetRequiredService<Borc.DataMapper.Infrastructure.Persistence.BorcDataMapperDbContext>(), cancellationToken);
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <summary>
+    /// اسکریپت‌های تغییر schema خود Mapper که به ماژول‌ها مربوط‌اند (Scripts/009_OrgUnits.sql)؛ idempotent هستند.
+    /// Mapper's own schema patches needed by the module integration (idempotent scripts embedded from Scripts/).
+    /// </summary>
+    private async Task ApplyMapperPatchesAsync(DbContext db, CancellationToken cancellationToken)
+    {
+        foreach (string name in new[] { "Scripts.009_OrgUnits.sql" })
+        {
+            await using Stream stream = typeof(ModuleDatabaseMigrator).Assembly.GetManifestResourceStream(name)
+                ?? throw new InvalidOperationException($"Embedded script {name} is missing.");
+            string script = await new StreamReader(stream).ReadToEndAsync(cancellationToken);
+            foreach (string batch in System.Text.RegularExpressions.Regex.Split(script, @"^\s*GO\s*$", System.Text.RegularExpressions.RegexOptions.Multiline))
+            {
+                if (!string.IsNullOrWhiteSpace(batch))
+                {
+                    await db.Database.ExecuteSqlRawAsync(batch, cancellationToken);
+                }
+            }
+
+            logger.LogDebug("Applied {Script}", name);
+        }
+    }
 }

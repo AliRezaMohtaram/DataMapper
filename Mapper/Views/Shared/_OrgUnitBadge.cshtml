@@ -1,0 +1,17 @@
+@model (Borc.DataMapper.Application.OrgUnits.OrgUnitOwnedKind Kind, long Id)
+@inject MediatR.ISender Sender
+@inject Borc.DataMapper.Web.Modules.OrgUnitChoices Choices
+@* واحد سازمانی یک ردیف در صفحهٔ جزئیات + لینک تغییر (فقط با مجوز ویرایش). *@
+@{
+    var row = await Sender.Send(new Borc.DataMapper.Application.OrgUnits.GetOrgUnitOwnerQuery(Model.Kind, Model.Id));
+}
+@if (row is not null)
+{
+    var title = await Choices.TitleAsync(row.OrgUnitKey);
+    var resource = Borc.DataMapper.Web.Controllers.OrgUnitsController.Resource(Model.Kind);
+    <span class="org-unit-badge" style="display:inline-flex;align-items:center;gap:.4rem">
+        <span class="tag @(row.OrgUnitKey is null ? "tone-info" : "tone-primary")" title="واحد سازمانی"><svg class="ico"><use href="#i-layout" /></svg>@title</span>
+        <a acl-res="@resource" acl-act="Edit" class="btn btn-quiet btn-sm" asp-area="" asp-controller="OrgUnits" asp-action="Change"
+           asp-route-kind="@Model.Kind" asp-route-id="@Model.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" data-modal>تغییر واحد</a>
+    </span>
+}
