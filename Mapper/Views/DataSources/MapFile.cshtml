@@ -1,77 +1,92 @@
 @model Borc.DataMapper.Application.DataSources.PreviewDataSourceFile.DataSourceFilePreviewDto
 @{
     ViewData["Title"] = $"انتخاب ستون‌ها - {Model.DataSourceName}";
+    ViewData["Subtitle"] = $"منبع داده «{Model.DataSourceName}»";
 
     var id = (long)ViewData["DataSourceId"]!;
 }
 
-<div class="panel card">
-    <div class="panel-header">
-        <h2>انتخاب ستون‌ها — @Model.DataSourceName</h2>
-        <div class="summary-stats">
-            <span>فایل: <b dir="ltr">@Model.FileName</b></span>
-            <span>تعداد سطر: <b>@Model.RowCount</b></span>
-        </div>
-    </div>
-
-    <div class="hint">
-        «مقدار واقعی» همان چیزی است که در داده‌های ثبت‌شده ذخیره می‌شود (مثلاً کد)، و «عنوان نمایشی» همان است که کاربر هنگام انتخاب می‌بیند (مثلاً نام).
-        مقدار تکراری یا خالی نادیده گرفته می‌شود.
-    </div>
-
-    <form acl-res="Mapper.DataSources" acl-act="Edit" asp-action="ImportFile" method="post">
+<div class="modal-page">
+    <form acl-res="Mapper.DataSources" acl-act="Edit" class="modal modal-lg" asp-action="ImportFile" method="post">
         <input type="hidden" name="id" value="@id" />
         <input type="hidden" name="token" value="@Model.Token" />
 
-        <div class="form-group">
-            <label for="valueColumnIndex">ستون مقدار واقعی:</label>
-            <select id="valueColumnIndex" name="valueColumnIndex" required>
-                @for (var i = 0; i < Model.Headers.Count; i++)
-                {
-                    <option value="@i" selected="@(i == Model.SuggestedValueIndex)">@Model.Headers[i]</option>
-                }
-            </select>
+        <div class="modal-head">
+            <span class="modal-head-ico tone-success"><svg class="ico"><use href="#i-sheet" /></svg></span>
+            <div>
+                <div class="modal-title">انتخاب ستون‌ها</div>
+                <div class="modal-sub">فایل <span class="code-chip">@Model.FileName</span> · @Model.RowCount.ToPersianNumber() سطر</div>
+            </div>
+            <a acl-res="Mapper.DataSources" acl-act="View" class="icon-btn plain close" asp-action="Detail" asp-route-id="@id" aria-label="بازگشت به جزئیات"><svg class="ico"><use href="#i-x" /></svg></a>
         </div>
 
-        <div class="form-group">
-            <label for="displayColumnIndex">ستون عنوان نمایشی:</label>
-            <select id="displayColumnIndex" name="displayColumnIndex">
-                <option value="">— همان مقدار —</option>
-                @for (var i = 0; i < Model.Headers.Count; i++)
-                {
-                    <option value="@i" selected="@(Model.SuggestedDisplayIndex == i)">@Model.Headers[i]</option>
-                }
-            </select>
+        @* مسیر کامل منبع فایل: مشخصات → فایل → انتخاب ستون‌ها → آماده *@
+        <div class="steps" aria-label="مراحل">
+            <span class="step done"><span class="step-num"><span class="n">۱</span><svg class="ico"><use href="#i-check" /></svg></span>مشخصات منبع</span><span class="step-line"></span>
+            <span class="step done"><span class="step-num"><span class="n">۲</span><svg class="ico"><use href="#i-check" /></svg></span>بارگذاری فایل</span><span class="step-line"></span>
+            <span class="step active" aria-current="step"><span class="step-num"><span class="n">۳</span></span>انتخاب ستون‌ها</span><span class="step-line"></span>
+            <span class="step"><span class="step-num"><span class="n">۴</span></span>آماده استفاده</span>
         </div>
 
-        <div class="tscroll results-table-container">
-            <table class="results-table">
-                <thead>
-                    <tr>
-                        @foreach (var h in Model.Headers)
+        <div class="modal-body">
+            <div class="form-grid">
+                <div class="field">
+                    <label class="label" for="valueColumnIndex">ستون مقدار واقعی<span class="req">*</span></label>
+                    <select class="select" id="valueColumnIndex" name="valueColumnIndex" required>
+                        @for (var i = 0; i < Model.Headers.Count; i++)
                         {
-                            <th>@h</th>
+                            <option value="@i" selected="@(i == Model.SuggestedValueIndex)">@Model.Headers[i]</option>
                         }
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var row in Model.SampleRows)
-                    {
+                    </select>
+                    <span class="hint">همان چیزی که در داده‌ها ذخیره می‌شود (مثلاً کد).</span>
+                </div>
+                <div class="field">
+                    <label class="label" for="displayColumnIndex">ستون عنوان نمایشی</label>
+                    <select class="select" id="displayColumnIndex" name="displayColumnIndex">
+                        <option value="">— همان مقدار —</option>
+                        @for (var i = 0; i < Model.Headers.Count; i++)
+                        {
+                            <option value="@i" selected="@(Model.SuggestedDisplayIndex == i)">@Model.Headers[i]</option>
+                        }
+                    </select>
+                    <span class="hint">آنچه کاربر هنگام انتخاب می‌بیند (مثلاً نام).</span>
+                </div>
+            </div>
+
+            <div class="fieldset-title">نمونهٔ فایل</div>
+            <div class="tbl-wrap" style="border:1px solid var(--line);border-radius:var(--radius-sm)">
+                <table class="tbl">
+                    <thead>
                         <tr>
-                            @for (var i = 0; i < Model.Headers.Count; i++)
+                            @foreach (var h in Model.Headers)
                             {
-                                <td>@(i < row.Count ? row[i] : null)</td>
+                                <th>@h</th>
                             }
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.SampleRows)
+                        {
+                            <tr>
+                                @for (var i = 0; i < Model.Headers.Count; i++)
+                                {
+                                    <td>@(i < row.Count ? row[i] : null)</td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="hint" style="margin-top:.6rem">
+                @Model.SampleRows.Count.ToPersianNumber() سطر اول از @Model.RowCount.ToPersianNumber() سطر. مقدار تکراری یا خالی نادیده گرفته می‌شود
+                و گزینه‌های فعلی منبع با گزینه‌های این فایل جایگزین می‌شوند.
+            </p>
         </div>
-        <div class="hint">نمونه: @Model.SampleRows.Count سطر اول از @Model.RowCount سطر.</div>
 
-        <div class="actions">
-            <button type="submit" class="btn primary">ثبت گزینه‌ها</button>
-            <a acl-res="Mapper.DataSources" acl-act="View" asp-action="Detail" asp-route-id="@id" class="btn ghost">انصراف</a>
+        <div class="modal-foot">
+            <span class="spacer"></span>
+            <a acl-res="Mapper.DataSources" acl-act="View" class="btn btn-quiet" asp-action="Detail" asp-route-id="@id">انصراف</a>
+            <button type="submit" class="btn btn-primary"><svg class="ico"><use href="#i-check" /></svg>ثبت گزینه‌ها</button>
         </div>
     </form>
 </div>

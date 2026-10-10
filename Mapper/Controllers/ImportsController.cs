@@ -6,6 +6,7 @@ using Borc.DataMapper.Application.Imports.CommitImportBatch;
 using Borc.DataMapper.Application.Imports.Common;
 using Borc.DataMapper.Application.Imports.DeleteImportBatch;
 using Borc.DataMapper.Application.Imports.GetImportBatch;
+using Borc.DataMapper.Application.Imports.GetImportFile;
 using Borc.DataMapper.Application.Imports.GetImportLookups;
 using Borc.DataMapper.Application.Imports.ListImportBatches;
 using Borc.DataMapper.Application.Imports.ReopenImportMapping;
@@ -127,6 +128,23 @@ public sealed class ImportsController : Controller
             profileId);
 
         return this.ModalOrView(UploadPartial, vm, "Upload");
+    }
+
+    // ---------- فایل اصلی ----------
+
+    /// <summary>دانلود فایلی که برای این ایمپورت آپلود شده بود.</summary>
+    [HttpGet]
+    public async Task<IActionResult> Download(long id, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetImportFileQuery(id), cancellationToken);
+
+        if (!result.Success || result.Data is null)
+        {
+            TempData["Error"] = result.Message ?? "فایل پیدا نشد.";
+            return RedirectToAction(nameof(Detail), new { id });
+        }
+
+        return File(result.Data.Content, result.Data.ContentType, result.Data.FileName);
     }
 
     // ---------- جزئیات / تطبیق ----------

@@ -29,6 +29,7 @@ public interface IAppDbContext
 
     DbSet<ImportBatch> ImportBatches { get; }
     DbSet<ImportRow> ImportRows { get; }
+    DbSet<ImportBatchFile> ImportBatchFiles { get; }
 
     DbSet<DataRecord> DataRecords { get; }
 

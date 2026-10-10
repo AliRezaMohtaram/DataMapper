@@ -4,10 +4,18 @@ using Borc.DataMapper.Domain.Records;
 
 namespace Borc.DataMapper.Web.ViewModels.DataRecords;
 
+/// <param name="Filter">TemplateVersionId = نسخه‌ای که واقعاً نمایش داده می‌شود (شاید پیش‌فرض).</param>
 public sealed record DataRecordIndexViewModel(
     ListDataRecordsQuery Filter,
     PagedResult<DataRecordListItemDto> Result,
+    IReadOnlyList<RecordColumnDto> Columns,
     IReadOnlyList<VersionFilterOption> Versions);
+
+/// <summary>جدول رکوردها (partial «_RecordGrid»). Compact = زیر فرم ورود داده.</summary>
+public sealed record RecordGridViewModel(
+    IReadOnlyList<RecordColumnDto> Columns,
+    IReadOnlyList<DataRecordListItemDto> Items,
+    bool Compact = false);
 
 public sealed record VersionFilterOption(long Id, string Label);
 
@@ -17,7 +25,14 @@ public sealed record RecordFormPageViewModel(
     string TemplateName,
     int VersionNo,
     long TemplateVersionId,
-    string DataJson);
+    string DataJson,
+    RecentRecordsViewModel? Recent = null);
+
+/// <summary>آخرین رکوردهای یک نسخه زیر فرم ورود داده (partial «_RecentRecords»).</summary>
+public sealed record RecentRecordsViewModel(
+    long TemplateVersionId,
+    int TotalCount,
+    RecordGridViewModel Grid);
 
 /// <summary>درخواست JSON ذخیرهٔ رکورد (RecordId خالی = رکورد جدید).</summary>
 public sealed record SaveRecordRequest(

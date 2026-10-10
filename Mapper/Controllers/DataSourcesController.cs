@@ -82,7 +82,7 @@ public sealed class DataSourcesController : Controller
         if (ModelState.IsValid)
         {
             var result = await _sender.Send(new CreateDataSourceCommand(
-                model.Code ?? string.Empty, model.Name, model.SourceType, model.ItemsText,
+                null, model.Name, model.SourceType, model.ItemsText,
                 model.TemplateId, model.ValueKey, model.DisplayKey,
                 model.ApiUrl, model.ApiItemsPath, model.ApiValueKey, model.ApiDisplayKey), cancellationToken);
 

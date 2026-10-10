@@ -57,7 +57,7 @@
                 <div><dt>نوع منبع</dt><dd>@Model.SourceType.ToLabel()</dd></div>
             </dl>
             <p class="hint" style="margin:-.4rem 0 1rem">
-                کد و نوع منبع پس از ایجاد قابل تغییر نیست.
+                کد (خودکار) و نوع منبع پس از ایجاد قابل تغییر نیست.
                 @if (ViewData["UsedBy"] is int used && used > 0)
                 {
                     <text>این منبع داده در <b>@used</b> فیلد قالب استفاده می‌شود.</text>
@@ -85,16 +85,7 @@
 
         <div class="fieldset-title">مشخصات</div>
         <div class="form-grid">
-            @if (!isEdit)
-            {
-                <div class="field@(Invalid(nameof(Model.Code)))">
-                    <label class="label" asp-for="Code">کد منبع<span class="req">*</span></label>
-                    <input class="input ltr" asp-for="Code" autocomplete="off" spellcheck="false" placeholder="CONTRACTORS" />
-                    <span class="field-error" asp-validation-for="Code"></span>
-                    <span class="hint">حروف انگلیسی، عدد، _ و -. پس از ایجاد قابل تغییر نیست.</span>
-                </div>
-            }
-            <div class="field@(Invalid(nameof(Model.Name)))@(isEdit ? " span-2" : "")">
+            <div class="field span-2@(Invalid(nameof(Model.Name)))">
                 <label class="label" asp-for="Name">نام منبع<span class="req">*</span></label>
                 <input class="input" asp-for="Name" autocomplete="off" placeholder="مثلاً: پیمانکاران" />
                 <span class="field-error" asp-validation-for="Name"></span>

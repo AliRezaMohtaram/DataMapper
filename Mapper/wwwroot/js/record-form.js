@@ -116,11 +116,24 @@
         if (andNew) {
             showToast(res.message || "رکورد ثبت شد.", "success");
             render({});
+            refreshRecent();
             window.scrollTo({ top: 0, behavior: "smooth" });
             return;
         }
 
         window.location.href = res.redirect || PAGE.urls.index;
+    }
+
+    // فهرست رکوردهای ثبت‌شدهٔ همین نسخه زیر فرم (partial _RecentRecords)
+    async function refreshRecent() {
+        const box = document.getElementById("rfRecent");
+        if (!box || !PAGE.urls.recent) return;
+        try {
+            const response = await fetch(PAGE.urls.recent, { headers: { "X-Requested-With": "XMLHttpRequest" }, credentials: "same-origin" });
+            if (response.ok) box.innerHTML = await response.text();
+        } catch {
+            // فهرست قدیمی می‌ماند؛ رکورد ذخیره شده است
+        }
     }
 
     if (saveBtn) saveBtn.addEventListener("click", () => save(false));

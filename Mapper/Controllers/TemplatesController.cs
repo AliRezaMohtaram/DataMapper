@@ -73,7 +73,7 @@ public sealed class TemplatesController : Controller
         if (ModelState.IsValid)
         {
             var result = await _sender.Send(
-                new CreateTemplateCommand(model.Code!.Trim(), model.Name!.Trim(), model.Description),
+                new CreateTemplateCommand(null, model.Name!.Trim(), model.Description),
                 cancellationToken);
 
             if (result.Success)

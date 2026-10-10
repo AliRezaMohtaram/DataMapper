@@ -1,0 +1,83 @@
+@model Borc.DataMapper.Web.ViewModels.DataRecords.RecordGridViewModel
+@using Borc.DataMapper.Domain.Common
+@using Borc.DataMapper.Domain.Records
+@using Borc.DataMapper.Web.ViewModels.DataRecords
+@* رکوردهای یک نسخه به‌صورت جدول: سرستون‌ها = فیلدهای قالب، هر ردیف = یک رکورد.
+   در صفحهٔ فهرست و زیر فرم ورود داده (Compact: بدون ستون منبع و دکمهٔ حذف). *@
+@{
+    bool IsLtr(FieldDataType type) => type is FieldDataType.Number or FieldDataType.Date or FieldDataType.DateTime;
+}
+
+<div class="tbl-wrap">
+    <table class="tbl">
+        <thead>
+            <tr>
+                <th>#</th>
+                @foreach (var c in Model.Columns)
+                {
+                    <th>@c.Label</th>
+                }
+                @if (!Model.Compact)
+                {
+                    <th>منبع</th>
+                }
+                <th>ثبت</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model.Items)
+            {
+                <tr>
+                    <td><a acl-res="Mapper.DataRecords" acl-act="View" class="code" asp-controller="DataRecords" asp-action="Detail" asp-route-id="@r.Id">@r.Id</a></td>
+                    @foreach (var c in Model.Columns)
+                    {
+                        var value = r.Values.TryGetValue(c.Key, out var v) ? v : null;
+                        <td style="white-space:normal;min-width:8rem;max-width:22rem">
+                            @if (string.IsNullOrEmpty(value))
+                            {
+                                <span class="faint">—</span>
+                            }
+                            else if (IsLtr(c.DataType))
+                            {
+                                <span class="ltr nums">@value.ToRecordDisplay(c.DataType)</span>
+                            }
+                            else
+                            {
+                                @value
+                            }
+                        </td>
+                    }
+                    @if (!Model.Compact)
+                    {
+                        <td>
+                            @if (r.Source == RecordSource.Import)
+                            {
+                                <span class="badge st-uploaded">ایمپورت</span>
+                                @if (r.ImportBatchId.HasValue)
+                                {
+                                    <div class="cell-sub"><a acl-res="Mapper.Imports" acl-act="View" class="code" asp-controller="Imports" asp-action="Detail" asp-route-id="@r.ImportBatchId">IMP-@r.ImportBatchId.Value.ToString("0000")</a></div>
+                                }
+                            }
+                            else
+                            {
+                                <span class="badge st-validated">ورود دستی</span>
+                            }
+                        </td>
+                    }
+                    <td class="cell-sub" style="white-space:nowrap">@((r.UpdatedAt ?? r.CreatedAt).ToRelative())</td>
+                    <td>
+                        <div class="row-actions">
+                            <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-controller="DataRecords" asp-action="Detail" asp-route-id="@r.Id" title="مشاهده" aria-label="مشاهدهٔ رکورد @r.Id"><svg class="ico"><use href="#i-eye" /></svg></a>
+                            <a acl-res="Mapper.DataRecords" acl-act="Edit" class="icon-btn sm" asp-controller="DataRecords" asp-action="Edit" asp-route-id="@r.Id" title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
+                            @if (!Model.Compact)
+                            {
+                                <button class="icon-btn sm danger" type="button" data-delete-id="@r.Id" data-delete-name="رکورد @r.Id" title="حذف" aria-label="حذف رکورد @r.Id"><svg class="ico"><use href="#i-trash" /></svg></button>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

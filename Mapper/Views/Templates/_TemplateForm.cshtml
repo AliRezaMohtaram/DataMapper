@@ -47,21 +47,12 @@
                 <div class="field">
                     <span class="label">کد قالب</span>
                     <span class="code-chip" style="height:2.5rem;display:flex;align-items:center;padding-inline:.8rem">@Model.Code</span>
-                    <span class="hint">کد پس از ایجاد قابل تغییر نیست.</span>
+                    <span class="hint">کد خودکار ساخته شده و تغییر نمی‌کند.</span>
                 </div>
             }
-            else
-            {
-                <div class="field@(Invalid(nameof(Model.Code)))">
-                    <label class="label" asp-for="Code">کد قالب<span class="req">*</span></label>
-                    <input class="input ltr" asp-for="Code" autocomplete="off" spellcheck="false" placeholder="SITE" autofocus />
-                    <span class="field-error" asp-validation-for="Code"></span>
-                    <span class="hint">حروف انگلیسی، عدد، _ و -. پس از ایجاد قابل تغییر نیست.</span>
-                </div>
-            }
-            <div class="field@(Invalid(nameof(Model.Name)))">
+            <div class="field@(Invalid(nameof(Model.Name)))@(isEdit ? "" : " span-2")">
                 <label class="label" asp-for="Name">نام قالب<span class="req">*</span></label>
-                <input class="input" asp-for="Name" autocomplete="off" placeholder="مثلاً: اطلاعات پایه سایت" />
+                <input class="input" asp-for="Name" autocomplete="off" placeholder="مثلاً: اطلاعات پایه سایت" autofocus />
                 <span class="field-error" asp-validation-for="Name"></span>
             </div>
             <div class="field span-2@(Invalid(nameof(Model.Description)))">

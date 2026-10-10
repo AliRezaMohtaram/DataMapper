@@ -48,7 +48,7 @@ public sealed class TemplateFormViewModel : System.ComponentModel.DataAnnotation
 {
     public long Id { get; set; }
 
-    /// <summary>فقط در ایجاد ارسال می‌شود؛ در ویرایش برای نمایش فقط‌خواندنی پر می‌شود.</summary>
+    /// <summary>فقط برای نمایش در ویرایش؛ در ایجاد خودکار ساخته می‌شود.</summary>
     public string? Code { get; set; }
 
     public string? Name { get; set; }
@@ -60,24 +60,10 @@ public sealed class TemplateFormViewModel : System.ComponentModel.DataAnnotation
 
     public bool IsEdit => Id > 0;
 
-    /// <summary>
-    /// کد فقط در ایجاد ارسال می‌شود، پس قواعدش اینجا (و نه با Required) بررسی می‌شود.
-    /// همان قواعد CreateTemplateValidator؛ آن validator در pipeline اجرا نمی‌شود.
-    /// </summary>
+    /// <summary>قواعد CreateTemplateValidator؛ آن validator در pipeline اجرا نمی‌شود.</summary>
     public IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult> Validate(
         System.ComponentModel.DataAnnotations.ValidationContext validationContext)
     {
-        if (!IsEdit)
-        {
-            var code = Code?.Trim() ?? string.Empty;
-            if (code.Length == 0)
-                yield return new("کد قالب را وارد کنید.", new[] { nameof(Code) });
-            else if (code.Length > 50)
-                yield return new("کد قالب حداکثر ۵۰ کاراکتر است.", new[] { nameof(Code) });
-            else if (!System.Text.RegularExpressions.Regex.IsMatch(code, "^[A-Za-z0-9_-]+$"))
-                yield return new("کد فقط می‌تواند شامل حروف انگلیسی، عدد، _ و - باشد.", new[] { nameof(Code) });
-        }
-
         if (string.IsNullOrWhiteSpace(Name))
             yield return new("نام قالب را وارد کنید.", new[] { nameof(Name) });
         else if (Name.Length > 200)

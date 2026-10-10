@@ -97,16 +97,7 @@
                         <div class="field">
                             <span class="label">کلید فیلد</span>
                             <span class="code-chip" style="height:2.5rem;display:flex;align-items:center;padding-inline:.8rem">@info!.FieldKey</span>
-                            <span class="hint">کلید پس از ایجاد قابل تغییر نیست.</span>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="field@(Invalid("FieldKey"))">
-                            <label class="label" for="FieldKey">کلید فیلد<span class="req">*</span></label>
-                            <input class="input ltr" id="FieldKey" name="FieldKey" value="@create!.FieldKey" autocomplete="off" spellcheck="false" placeholder="SiteName" autofocus />
-                            <span class="field-error">@ErrorOf("FieldKey")</span>
-                            <span class="hint">در هر نسخه یکتاست و پس از ایجاد قابل تغییر نیست.</span>
+                            <span class="hint">کلید خودکار ساخته شده و تغییر نمی‌کند.</span>
                         </div>
                     }
                     <div class="field@(Invalid("SortOrder"))">

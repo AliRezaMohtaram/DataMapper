@@ -1,4 +1,5 @@
 ﻿using Borc.DataMapper.Application.Abstractions.Persistence;
+using Borc.DataMapper.Application.Common.Codes;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Domain.Templates;
 using FluentValidation;
@@ -7,8 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Borc.DataMapper.Application.Templates.CreateTemplate;
 
+/// <summary>Code خالی = خودکار (TPL-0001، …)؛ فرم‌ها کد نمی‌فرستند.</summary>
 public sealed record CreateTemplateCommand(
-    string Code,
+    string? Code,
     string Name,
     string? Description
 ) : IRequest<Result<long>>;
@@ -19,10 +21,10 @@ public sealed class CreateTemplateValidator
     public CreateTemplateValidator()
     {
         RuleFor(x => x.Code)
-            .NotEmpty()
             .MaximumLength(50)
             .Matches("^[A-Za-z0-9_-]+$")
-            .WithMessage("Code can only contain letters, numbers, _ and -.");
+            .WithMessage("Code can only contain letters, numbers, _ and -.")
+            .When(x => !string.IsNullOrWhiteSpace(x.Code));
 
         RuleFor(x => x.Name)
             .NotEmpty()
@@ -47,7 +49,11 @@ public sealed class CreateTemplateHandler
         CreateTemplateCommand request,
         CancellationToken cancellationToken)
     {
-        var code = request.Code.Trim();
+        var code = string.IsNullOrWhiteSpace(request.Code)
+            ? await GeneratedCodes.NextAsync(
+                _db.Templates.IgnoreQueryFilters().Select(t => t.Code),
+                GeneratedCodes.TemplatePrefix, 4, cancellationToken)
+            : request.Code.Trim();
 
         // collation دیتابیس CI است؛ فیلتر سراسری حذف‌شده‌ها را کنار می‌گذارد.
      
@@ -68,7 +74,7 @@ public sealed class CreateTemplateHandler
         catch (DbUpdateException)
         {
             // رقابت هم‌زمان: ایندکس یکتای UX_Template_Code
-            return Result<long>.Failure("ذخیره قالب انجام نشد؛ احتمالاً کد تکراری است.");
+            return Result<long>.Failure("ذخیره قالب انجام نشد؛ احتمالاً هم‌زمان قالب دیگری ساخته شد. دوباره تلاش کنید.");
         }
 
         return Result<long>.Ok(template.Id, "قالب ایجاد شد.");

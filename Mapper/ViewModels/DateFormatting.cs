@@ -40,6 +40,22 @@ public static class DateFormatting
         return ToPersianDigits(utc.ToJalali());
     }
 
+    /// <summary>
+    /// نمایش مقدار ذخیره‌شدهٔ یک فیلد رکورد: تاریخ (ISO، همان‌طور که ذخیره شده و بدون تبدیل منطقهٔ زمانی) به شمسی،
+    /// عدد و تاریخ با رقم فارسی؛ بقیه همان‌طور.
+    /// </summary>
+    public static string ToRecordDisplay(this string value, Borc.DataMapper.Domain.Common.FieldDataType type)
+    {
+        if (type is Borc.DataMapper.Domain.Common.FieldDataType.Date or Borc.DataMapper.Domain.Common.FieldDataType.DateTime
+            && DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d))
+        {
+            var date = $"{Pc.GetYear(d):0000}/{Pc.GetMonth(d):00}/{Pc.GetDayOfMonth(d):00}";
+            return ToPersianDigits(type == Borc.DataMapper.Domain.Common.FieldDataType.DateTime ? $"{date} {d:HH:mm}" : date);
+        }
+
+        return type == Borc.DataMapper.Domain.Common.FieldDataType.Number ? ToPersianDigits(value) : value;
+    }
+
     public static string ToPersianDigits(this string value)
         => string.Concat(value.Select(ch => ch is >= '0' and <= '9' ? (char)('۰' + (ch - '0')) : ch));
 

@@ -1,5 +1,6 @@
 @model Borc.DataMapper.Web.ViewModels.DataSources.DataSourceIndexViewModel
 @using Borc.DataMapper.Web.ViewModels
+@using Borc.DataMapper.Web.ViewModels.Dashboard
 @using Borc.DataMapper.Web.ViewModels.DataSources
 @{
     ViewData["Title"] = "منابع داده";
@@ -7,6 +8,7 @@
     var result = Model.Result;
     var filter = Model.Filter;
     var searching = !string.IsNullOrWhiteSpace(filter.Search);
+    var here = Context.Request.Path + Context.Request.QueryString;
 
     var errors = ViewData.ModelState.Values
         .SelectMany(v => v.Errors)
@@ -17,183 +19,134 @@
     var from = result.TotalCount == 0 ? 0 : (result.Page - 1) * result.PageSize + 1;
     var to = Math.Min(result.Page * result.PageSize, result.TotalCount);
     var pageSizes = new[] { 10, 20, 50, 100 };
+
+    ViewData["Subtitle"] = $"{result.TotalCount.ToPersianNumber()} منبع · گزینه‌های فیلدهای انتخابی قالب‌ها";
 }
 
-@section Styles {
-    <link rel="stylesheet" href="~/css/vx.css" asp-append-version="true" />
+@section TopbarActions {
+    <a acl-res="Mapper.DataSources" acl-act="Create" class="btn btn-soft" asp-action="Create" data-modal><svg class="ico"><use href="#i-plus" /></svg><span class="lbl">منبع داده جدید</span></a>
 }
 
-<div class="vx">
+@if (errors.Count > 0)
+{
+    <div class="callout tone-danger" role="alert" style="margin-bottom:1rem">
+        <svg class="ico"><use href="#i-alert" /></svg><div>@string.Join(" — ", errors)</div>
+    </div>
+}
 
-    <header class="vx-head">
-        <div>
-            <h1 class="vx-title">منابع داده</h1>
-            <p class="vx-sub">گزینه‌های فیلدهای قالب از فایل Excel/CSV، قالب‌های داخلی یا API خارجی تأمین می‌شود.</p>
+<article class="card rise">
+    <header class="card-head">
+        <div class="card-title">
+            <span class="card-ico"><svg class="ico"><use href="#i-db" /></svg></span>
+            <div>منابع داده<div class="card-sub">گزینه‌ها از فهرست ثابت، فایل Excel/CSV، رکوردهای یک قالب یا API خارجی خوانده می‌شوند.</div></div>
         </div>
-        <a acl-res="Mapper.DataSources" acl-act="Create" asp-action="Create" class="vx-btn vx-btn--primary" data-modal>منبع داده جدید</a>
     </header>
 
-    @if (errors.Count > 0)
+    <div class="toolbar">
+        <form acl-res="Mapper.DataSources" acl-act="View" method="get" asp-action="Index" role="search">
+            <input type="hidden" name="pageSize" value="@result.PageSize" />
+            <div class="input-wrap">
+                <svg class="ico"><use href="#i-search" /></svg>
+                <input class="input" type="search" name="search" value="@filter.Search" placeholder="جستجو بر اساس کد یا نام…" aria-label="جستجو در منابع داده" autocomplete="off" />
+            </div>
+            <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#i-search" /></svg>جستجو</button>
+            @if (searching)
+            {
+                <a acl-res="Mapper.DataSources" acl-act="View" class="btn btn-quiet" asp-action="Index" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
+            }
+        </form>
+    </div>
+
+    @if (result.Items.Count == 0)
     {
-        <div class="vx-alert" role="alert">@string.Join(" — ", errors)</div>
+        <div class="empty">
+            @if (searching)
+            {
+                <p>منبع داده‌ای با «@filter.Search» پیدا نشد.</p>
+                <a acl-res="Mapper.DataSources" acl-act="View" class="btn btn-ghost btn-sm" style="margin-top:.8rem" asp-action="Index" asp-route-pageSize="@result.PageSize">پاک کردن فیلتر</a>
+            }
+            else
+            {
+                <p>هنوز منبع داده‌ای ساخته نشده است؛ یک منبع بسازید تا فیلدهای قالب گزینه‌هایشان را از آن بگیرند.</p>
+                <a acl-res="Mapper.DataSources" acl-act="Create" class="btn btn-primary btn-sm" style="margin-top:.8rem" asp-action="Create" data-modal><svg class="ico"><use href="#i-plus" /></svg>ساخت اولین منبع داده</a>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="tbl-wrap">
+            <table class="tbl">
+                <thead>
+                    <tr><th>منبع داده</th><th>نوع</th><th>وضعیت</th><th>ایجاد</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in result.Items)
+                    {
+                        <tr>
+                            <td>
+                                <a acl-res="Mapper.DataSources" acl-act="View" class="cell-main" asp-action="Detail" asp-route-id="@d.Id">@d.Name</a>
+                                <div class="code">@d.Code</div>
+                            </td>
+                            <td><span class="tag @DashboardUi.Tone(d.SourceType)"><svg class="ico" style="width:.8rem;height:.8rem"><use href="#@DashboardUi.Icon(d.SourceType)" /></svg>@d.SourceType.ToLabel()</span></td>
+                            <td><span class="badge @(d.IsActive ? "st-active" : "st-inactive")">@(d.IsActive ? "فعال" : "غیرفعال")</span></td>
+                            <td class="cell-sub nums">@d.CreatedAt.ToJalali().ToPersianDigits()</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a acl-res="Mapper.DataSources" acl-act="View" class="icon-btn sm primary" asp-action="Detail" asp-route-id="@d.Id" title="جزئیات و گزینه‌ها" aria-label="جزئیات @d.Name"><svg class="ico"><use href="#i-eye" /></svg></a>
+                                    <a acl-res="Mapper.DataSources" acl-act="Edit" class="icon-btn sm" asp-action="Edit" asp-route-id="@d.Id" asp-route-returnUrl="@here" data-modal title="ویرایش" aria-label="ویرایش @d.Name"><svg class="ico"><use href="#i-edit" /></svg></a>
+                                    <form acl-res="Mapper.DataSources" acl-act="Edit" asp-action="SetActive" method="post" style="display:contents">
+                                        <input type="hidden" name="id" value="@d.Id" />
+                                        <input type="hidden" name="isActive" value="@((!d.IsActive).ToString().ToLowerInvariant())" />
+                                        <button type="submit" class="icon-btn sm" title="@(d.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")" aria-label="@(d.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی") @d.Name"><svg class="ico"><use href="#@(d.IsActive ? "i-x" : "i-check")" /></svg></button>
+                                    </form>
+                                    <button class="icon-btn sm danger" type="button" data-delete-id="@d.Id" data-delete-name="@d.Name" title="حذف" aria-label="حذف @d.Name"><svg class="ico"><use href="#i-trash" /></svg></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     }
 
-    <section class="vx-card" aria-label="فهرست منابع داده">
+    @if (result.TotalCount > 0)
+    {
+        <footer class="card-foot">
+            <span>@from.ToPersianNumber() تا @to.ToPersianNumber() از @result.TotalCount.ToPersianNumber()</span>
 
-        <div class="vx-toolbar">
-            <form acl-res="Mapper.DataSources" acl-act="View" method="get" asp-action="Index" role="search">
-                <input type="hidden" name="pageSize" value="@result.PageSize" />
-
-                <div class="vx-search">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <circle cx="11" cy="11" r="7" />
-                        <path d="m20 20-3.5-3.5" />
-                    </svg>
-                    <label for="dsSearch" class="sr-only" style="position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%)">جستجو بر اساس کد یا نام</label>
-                    <input type="search" id="dsSearch" name="search" value="@filter.Search" class="vx-input"
-                           placeholder="جستجو بر اساس کد یا نام…" autocomplete="off" spellcheck="false" />
-                </div>
-
-                <button type="submit" class="vx-btn">جستجو</button>
-
-                @if (searching)
+            <nav class="pager" aria-label="صفحه‌بندی">
+                @if (result.HasPrevious)
                 {
-                    <a acl-res="Mapper.DataSources" acl-act="View" asp-action="Index" asp-route-pageSize="@result.PageSize" class="vx-btn">پاک کردن فیلتر</a>
-                }
-            </form>
-        </div>
-
-        @if (result.Items.Count == 0)
-        {
-            <div class="vx-empty">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
-                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <ellipse cx="12" cy="5" rx="8" ry="3" />
-                    <path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
-                    <path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
-                </svg>
-                @if (searching)
-                {
-                    <strong>نتیجه‌ای پیدا نشد</strong>
-                    <p>منبع داده‌ای با «@filter.Search» وجود ندارد. عبارت دیگری را امتحان کنید یا فیلتر را پاک کنید.</p>
-                    <a acl-res="Mapper.DataSources" acl-act="View" asp-action="Index" asp-route-pageSize="@result.PageSize" class="vx-btn">پاک کردن فیلتر</a>
+                    <a acl-res="Mapper.DataSources" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
                 }
                 else
                 {
-                    <strong>هنوز منبع داده‌ای ندارید</strong>
-                    <p>یک منبع داده بسازید تا فیلدهای قالب بتوانند گزینه‌هایشان را از آن بگیرند.</p>
-                    <a acl-res="Mapper.DataSources" acl-act="Create" asp-action="Create" class="vx-btn vx-btn--primary" data-modal>ساخت اولین منبع داده</a>
+                    <span aria-disabled="true"><svg class="ico"><use href="#i-chev-right" /></svg></span>
                 }
-            </div>
-        }
-        else
-        {
-            <div class="vx-scroll">
-                <table class="vx-table">
-                    <thead>
-                        <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">نام</th>
-                            <th scope="col">کد</th>
-                            <th scope="col">نوع</th>
-                            <th scope="col">وضعیت</th>
-                            <th scope="col">تاریخ ایجاد</th>
-                            <th scope="col"><span class="sr-only" style="position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%)">عملیات</span></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var d in result.Items)
-                        {
-                            <tr>
-                                <td class="vx-num">@d.Id</td>
-                                <td><a acl-res="Mapper.DataSources" acl-act="View" asp-action="Detail" asp-route-id="@d.Id" class="vx-link">@d.Name</a></td>
-                                <td data-label="کد"><span class="vx-code">@d.Code</span></td>
-                                <td data-label="نوع"><span class="vx-tag">@d.SourceType.ToLabel()</span></td>
-                                <td data-label="وضعیت">
-                                    <span class="vx-status @(d.IsActive ? "vx-status--on" : "")">@(d.IsActive ? "فعال" : "غیرفعال")</span>
-                                </td>
-                                <td data-label="ایجاد" class="vx-muted" dir="ltr" style="text-align:start">@d.CreatedAt.ToJalali()</td>
-                                <td class="vx-end">
-                                    <div class="vx-actions">
-                                        <a acl-res="Mapper.DataSources" acl-act="Edit" asp-action="Edit" asp-route-id="@d.Id" asp-route-returnUrl="@(Context.Request.Path + Context.Request.QueryString)" class="vx-btn vx-btn--icon" data-modal
-                                           title="ویرایش @d.Name" aria-label="ویرایش @d.Name">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                <path d="M12 20h9" />
-                                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                                            </svg>
-                                        </a>
+                <span class="pager-now" aria-current="page">صفحه @result.Page.ToPersianNumber() از @Math.Max(1, result.TotalPages).ToPersianNumber()</span>
+                @if (result.HasNext)
+                {
+                    <a acl-res="Mapper.DataSources" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
+                }
+                else
+                {
+                    <span aria-disabled="true"><svg class="ico"><use href="#i-chev-left" /></svg></span>
+                }
+            </nav>
 
-                                        <form acl-res="Mapper.DataSources" acl-act="Edit" asp-action="SetActive" method="post">
-                                            <input type="hidden" name="id" value="@d.Id" />
-                                            <input type="hidden" name="isActive" value="@((!d.IsActive).ToString().ToLowerInvariant())" />
-                                            <button type="submit" class="vx-btn">@(d.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")</button>
-                                        </form>
-
-                                        <button type="button" class="vx-btn vx-btn--icon vx-btn--danger"
-                                                title="حذف @d.Name" aria-label="حذف @d.Name"
-                                                data-delete-id="@d.Id" data-delete-name="@d.Name">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                                <polyline points="3 6 5 6 21 6" />
-                                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                                                <path d="M10 11v6" />
-                                                <path d="M14 11v6" />
-                                                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-
-            <footer class="vx-foot">
-                <span>@from تا @to از @result.TotalCount</span>
-
-                <nav class="vx-pager" aria-label="صفحه‌بندی">
-                    @if (result.HasPrevious)
+            <form acl-res="Mapper.DataSources" acl-act="View" method="get" asp-action="Index" class="page-size">
+                <input type="hidden" name="search" value="@filter.Search" />
+                <label for="pageSize">ردیف در صفحه</label>
+                <select class="select" id="pageSize" name="pageSize" onchange="this.form.submit()">
+                    @foreach (var size in pageSizes)
                     {
-                        <a acl-res="Mapper.DataSources" acl-act="View" class="vx-btn" asp-action="Index" asp-route-search="@filter.Search"
-                           asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev">قبلی</a>
+                        <option value="@size" selected="@(result.PageSize == size)">@size.ToPersianNumber()</option>
                     }
-                    else
-                    {
-                        <span class="vx-btn" aria-disabled="true">قبلی</span>
-                    }
-
-                    <span aria-current="page">صفحه @result.Page از @Math.Max(1, result.TotalPages)</span>
-
-                    @if (result.HasNext)
-                    {
-                        <a acl-res="Mapper.DataSources" acl-act="View" class="vx-btn" asp-action="Index" asp-route-search="@filter.Search"
-                           asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next">بعدی</a>
-                    }
-                    else
-                    {
-                        <span class="vx-btn" aria-disabled="true">بعدی</span>
-                    }
-                </nav>
-
-                <form acl-res="Mapper.DataSources" acl-act="View" method="get" asp-action="Index">
-                    <input type="hidden" name="search" value="@filter.Search" />
-                    <label>
-                        ردیف در صفحه
-                        <select name="pageSize" class="vx-select" onchange="this.form.submit()">
-                            @foreach (var size in pageSizes)
-                            {
-                                <option value="@size" selected="@(result.PageSize == size)">@size</option>
-                            }
-                        </select>
-                    </label>
-                </form>
-            </footer>
-        }
-    </section>
-</div>
+                </select>
+            </form>
+        </footer>
+    }
+</article>
 
 <partial name="_DeleteModal" />
 

@@ -1,4 +1,5 @@
 ﻿using Borc.DataMapper.Application.Abstractions.Persistence;
+using Borc.DataMapper.Application.Common.Codes;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Domain.Common;
 using Borc.DataMapper.Domain.Templates;
@@ -8,10 +9,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Borc.DataMapper.Application.TemplateFields.CreateTemplateField;
 
-/// <summary>SortOrder خالی = انتهای فهرست. خروجی: شناسه فیلد.</summary>
+/// <summary>
+/// SortOrder خالی = انتهای فهرست. FieldKey خالی = خودکار (F001، …؛ یکتا در همهٔ نسخه‌های قالب تا کلید حذف‌شده
+/// برای معنای دیگری دوباره استفاده نشود). خروجی: شناسه فیلد.
+/// </summary>
 public sealed record CreateTemplateFieldCommand(
     long TemplateVersionId,
-    string FieldKey,
+    string? FieldKey,
     string Label,
     FieldDataType DataType,
     string DbType,
@@ -34,10 +38,10 @@ public sealed class CreateTemplateFieldValidator
         RuleFor(x => x.TemplateVersionId).GreaterThan(0);
 
         RuleFor(x => x.FieldKey)
-            .NotEmpty()
             .MaximumLength(200)
             .Matches(@"^[\x20-\x7E]+$")
-            .WithMessage("کلید فیلد فقط می‌تواند شامل حروف انگلیسی و علائم ASCII باشد.");
+            .WithMessage("کلید فیلد فقط می‌تواند شامل حروف انگلیسی و علائم ASCII باشد.")
+            .When(x => !string.IsNullOrWhiteSpace(x.FieldKey));
 
         this.ApplyFieldRules();
     }
@@ -67,7 +71,14 @@ public sealed class CreateTemplateFieldHandler
         if (!version.IsEditable)
             return Result<long>.Failure("فقط نسخه پیش‌نویس قابل ویرایش است.");
 
-        var key = request.FieldKey.Trim();
+        var key = string.IsNullOrWhiteSpace(request.FieldKey)
+            ? await GeneratedCodes.NextAsync(
+                from f in _db.TemplateFields.IgnoreQueryFilters()
+                join v in _db.TemplateVersions.IgnoreQueryFilters() on f.TemplateVersionId equals v.Id
+                where v.TemplateId == version.TemplateId
+                select f.FieldKey,
+                GeneratedCodes.FieldPrefix, 3, cancellationToken)
+            : request.FieldKey.Trim();
 
         // collation دیتابیس CI است؛ کلید در هر نسخه یکتاست.
         var keyExists = await _db.TemplateFields.AnyAsync(

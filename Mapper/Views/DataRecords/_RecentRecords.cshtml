@@ -1,0 +1,31 @@
+@model Borc.DataMapper.Web.ViewModels.DataRecords.RecentRecordsViewModel
+@using Borc.DataMapper.Web.ViewModels.DataRecords
+@* آخرین رکوردهای همین نسخه زیر فرم ورود داده؛ record-form.js پس از «ذخیره و رکورد جدید» آن را از
+   DataRecords/Recent دوباره می‌گیرد و جایگزین می‌کند. *@
+<header class="card-head">
+    <div class="card-title">
+        <span class="card-ico"><svg class="ico"><use href="#i-rows" /></svg></span>
+        <div>
+            رکوردهای ثبت‌شده
+            <div class="card-sub">
+                @if (Model.TotalCount > Model.Grid.Items.Count)
+                {
+                    <text>@Model.Grid.Items.Count.ToPersianNumber() رکورد آخر از @Model.TotalCount.ToPersianNumber()</text>
+                }
+                else
+                {
+                    <text>@Model.TotalCount.ToPersianNumber() رکورد</text>
+                }
+            </div>
+        </div>
+    </div>
+    <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-ghost btn-sm" asp-controller="DataRecords" asp-action="Index" asp-route-templateVersionId="@Model.TemplateVersionId"><svg class="ico"><use href="#i-list" /></svg>همهٔ رکوردها</a>
+</header>
+@if (Model.Grid.Items.Count == 0)
+{
+    <div class="empty">هنوز رکوردی برای این قالب ثبت نشده است؛ رکوردهایی که ذخیره می‌کنید این‌جا نمایش داده می‌شوند.</div>
+}
+else
+{
+    <partial name="_RecordGrid" model="Model.Grid" />
+}

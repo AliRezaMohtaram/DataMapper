@@ -10,7 +10,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Borc.DataMapper.Application.Imports.UploadImportBatch;
 
-/// <summary>آپلود فایل Excel: ساخت ImportBatch و یک ImportRow به‌ازای هر سطر. خروجی: شناسه دسته.</summary>
+/// <summary>
+/// آپلود فایل Excel: ساخت ImportBatch، نگه‌داری خود فایل (ImportBatchFile) و یک ImportRow به‌ازای هر سطر.
+/// خروجی: شناسه دسته.
+/// </summary>
 public sealed record UploadImportBatchCommand(
     long TemplateVersionId,
     string FileName,
@@ -106,6 +109,12 @@ public sealed class UploadImportBatchHandler
 
                 _db.ImportBatches.Add(batch);
                 await _db.SaveChangesAsync(cancellationToken);
+
+                _db.ImportBatchFiles.Add(ImportBatchFile.Create(
+                    batch.Id,
+                    // از پسوند، نه از مرورگر: هنگام دانلود همین نوع برگردانده می‌شود
+                    ImportFiles.DefaultContentType(fileName),
+                    request.Content));
 
                 for (var offset = 0; offset < sheet.Rows.Count; offset += ImportLimits.ChunkSize)
                 {

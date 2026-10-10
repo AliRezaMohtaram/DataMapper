@@ -48,10 +48,12 @@ public sealed class DataRecordsController : Controller
             ModelState.AddResultErrors(result, "خطا در دریافت رکوردها.", Request);
 
             return View(new DataRecordIndexViewModel(
-                query, new(Array.Empty<DataRecordListItemDto>(), 1, pageSize, 0), versions));
+                query, new(Array.Empty<DataRecordListItemDto>(), 1, pageSize, 0), Array.Empty<RecordColumnDto>(), versions));
         }
 
-        return View(new DataRecordIndexViewModel(query, result.Data, versions));
+        // بدون انتخاب، نسخهٔ پیش‌فرض (ایمپورت فیلترشده یا آخرین رکورد) نمایش داده می‌شود
+        return View(new DataRecordIndexViewModel(
+            query with { TemplateVersionId = result.Data.TemplateVersionId }, result.Data.Page, result.Data.Columns, versions));
     }
 
     // ---------- ورود دستی ----------
@@ -78,7 +80,14 @@ public sealed class DataRecordsController : Controller
             return RedirectToAction(nameof(Create));
         }
 
-        return View("Form", BuildFormPage(form.Data));
+        return View("Form", BuildFormPage(form.Data) with { Recent = await LoadRecentAsync(form.Data.TemplateVersionId, cancellationToken) });
+    }
+
+    /// <summary>آخرین رکوردهای نسخه برای زیر فرم ورود داده (HTML)؛ پس از هر ذخیره دوباره گرفته می‌شود.</summary>
+    [HttpGet]
+    public async Task<IActionResult> Recent(long versionId, CancellationToken cancellationToken)
+    {
+        return PartialView("_RecentRecords", await LoadRecentAsync(versionId, cancellationToken));
     }
 
     [HttpGet]
@@ -93,7 +102,7 @@ public sealed class DataRecordsController : Controller
             return RedirectToAction(nameof(Detail), new { id });
         }
 
-        return View("Form", BuildFormPage(form.Data));
+        return View("Form", BuildFormPage(form.Data) with { Recent = await LoadRecentAsync(form.Data.TemplateVersionId, cancellationToken) });
     }
 
     /// <summary>ذخیرهٔ رکورد جدید یا ویرایش‌شده؛ فرم با fetch و JSON ارسال می‌شود.</summary>
@@ -171,7 +180,23 @@ public sealed class DataRecordsController : Controller
                ?? new List<VersionFilterOption>();
     }
 
-    private RecordFormPageViewModel BuildFormPage(RecordFormDto d)
+    private const int RecentCount = 10;
+
+    private async Task<RecentRecordsViewModel> LoadRecentAsync(long versionId, CancellationToken ct)
+    {
+        var result = await _sender.Send(new ListDataRecordsQuery(TemplateVersionId: versionId, PageSize: RecentCount), ct);
+        var data = result.Data;
+
+        return new RecentRecordsViewModel(
+            versionId,
+            data?.Page.TotalCount ?? 0,
+            new RecordGridViewModel(
+                data?.Columns ?? Array.Empty<RecordColumnDto>(),
+                data?.Page.Items ?? Array.Empty<DataRecordListItemDto>(),
+                Compact: true));
+    }
+
+        private RecordFormPageViewModel BuildFormPage(RecordFormDto d)
     {
         object? layout = null;
 
@@ -215,6 +240,7 @@ public sealed class DataRecordsController : Controller
             {
                 save = Url.Action(nameof(Save), "DataRecords"),
                 index = Url.Action(nameof(Index), "DataRecords"),
+                recent = Url.Action(nameof(Recent), "DataRecords", new { versionId = d.TemplateVersionId }),
                 options = Url.Action("Options", "DataSources")
             }
         };

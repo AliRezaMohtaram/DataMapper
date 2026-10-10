@@ -100,13 +100,14 @@ public sealed partial class DataScopeTests : IClassFixture<MapperApp>, IAsyncLif
         Assert.Contains("name=\"OrgUnitKey\"", form);
         Assert.DoesNotContain("value=\"HR\"", form);
 
-        HttpResponseMessage refused = await SubmitAsync(client, "/Templates/Create", [new("Code", "T-NEW1"), new("Name", "x"), new("OrgUnitKey", "HR")]);
+        HttpResponseMessage refused = await SubmitAsync(client, "/Templates/Create", [new("Name", "x"), new("OrgUnitKey", "HR")]);
         Assert.Contains("واحد سازمانی انتخاب‌شده مجاز نیست", await TextAsync(refused));
 
-        HttpResponseMessage created = await SubmitAsync(client, "/Templates/Create", [new("Code", "T-NEW2"), new("Name", "y"), new("OrgUnitKey", "FIN")]);
+        HttpResponseMessage created = await SubmitAsync(client, "/Templates/Create", [new("Name", "y"), new("OrgUnitKey", "FIN")]);
         Assert.Equal(HttpStatusCode.Redirect, created.StatusCode);
-        Assert.Equal("FIN", await UnitOfAsync("T-NEW2"));
-        Assert.Null(await UnitOfAsync("T-NEW1"));
+        // The code is generated; the refused post did not use up a number.
+        Assert.Equal("FIN", await UnitOfAsync("TPL-0001"));
+        Assert.Null(await UnitOfAsync("TPL-0002"));
     }
 
     [Fact]

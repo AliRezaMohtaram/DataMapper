@@ -1,4 +1,5 @@
 using Borc.DataMapper.Application.Abstractions.Persistence;
+using Borc.DataMapper.Application.Common.Codes;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Application.DataSources.Common;
 using Borc.DataMapper.Domain.DataSources;
@@ -10,10 +11,11 @@ namespace Borc.DataMapper.Application.DataSources.CreateDataSource;
 
 /// <summary>
 /// فیلدهای تنظیمات بسته به SourceType پر می‌شوند:
+/// Code خالی = خودکار (DS-0001، …)؛ فرم‌ها کد نمی‌فرستند.
 /// StaticList → ItemsText؛ Template → TemplateId/ValueKey/DisplayKey؛ Api → Api*؛ File → بدون تنظیمات (بعد از ساخت فایل بارگذاری می‌شود).
 /// </summary>
 public sealed record CreateDataSourceCommand(
-    string Code,
+    string? Code,
     string Name,
     DataSourceType SourceType,
     string? ItemsText = null,
@@ -32,10 +34,10 @@ public sealed class CreateDataSourceValidator
     public CreateDataSourceValidator()
     {
         RuleFor(x => x.Code)
-            .NotEmpty()
             .MaximumLength(100)
             .Matches("^[A-Za-z0-9_-]+$")
-            .WithMessage("کد فقط می‌تواند شامل حروف انگلیسی، عدد، _ و - باشد.");
+            .WithMessage("کد فقط می‌تواند شامل حروف انگلیسی، عدد، _ و - باشد.")
+            .When(x => !string.IsNullOrWhiteSpace(x.Code));
 
         RuleFor(x => x.Name)
             .NotEmpty()
@@ -59,7 +61,11 @@ public sealed class CreateDataSourceHandler
         CreateDataSourceCommand request,
         CancellationToken cancellationToken)
     {
-        var code = request.Code.Trim();
+        var code = string.IsNullOrWhiteSpace(request.Code)
+            ? await GeneratedCodes.NextAsync(
+                _db.DataSources.IgnoreQueryFilters().Select(d => d.Code),
+                GeneratedCodes.DataSourcePrefix, 4, cancellationToken)
+            : request.Code.Trim();
 
         var exists = await _db.DataSources
             .AnyAsync(x => x.Code == code, cancellationToken);
@@ -113,7 +119,7 @@ public sealed class CreateDataSourceHandler
         }
         catch (DbUpdateException)
         {
-            return Result<long>.Failure("ذخیره منبع داده انجام نشد؛ احتمالاً کد تکراری است.");
+            return Result<long>.Failure("ذخیره منبع داده انجام نشد؛ احتمالاً هم‌زمان منبع دیگری ساخته شد. دوباره تلاش کنید.");
         }
     }
 }

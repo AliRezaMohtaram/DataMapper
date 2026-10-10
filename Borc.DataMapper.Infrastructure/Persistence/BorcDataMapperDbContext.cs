@@ -44,6 +44,7 @@ public sealed class BorcDataMapperDbContext : DbContext, IAppDbContext
 
     public DbSet<ImportBatch> ImportBatches => Set<ImportBatch>();
     public DbSet<ImportRow> ImportRows => Set<ImportRow>();
+    public DbSet<ImportBatchFile> ImportBatchFiles => Set<ImportBatchFile>();
 
     public DbSet<DataRecord> DataRecords => Set<DataRecord>();
 

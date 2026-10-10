@@ -47,6 +47,13 @@
     </footer>
 </article>
 
+@if (Model.Recent is not null)
+{
+    <article class="card rise" id="rfRecent" style="--i:1;margin-top:1rem">
+        <partial name="_RecentRecords" model="Model.Recent" />
+    </article>
+}
+
 <partial name="_ConfirmModal" />
 
 <script id="rfData" type="application/json">@Html.Raw(Model.DataJson)</script>

@@ -289,6 +289,19 @@
                     <div><dt>قالب</dt><dd><a acl-res="Mapper.Templates" acl-act="View" class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@Model.TemplateName</a> · نسخهٔ @Model.VersionNo.ToPersianNumber()</dd></div>
                     <div><dt>پروفایل نگاشت</dt><dd>@(Model.MappingProfileName ?? "تطبیق خودکار")</dd></div>
                     <div><dt>حجم فایل</dt><dd>@(Model.FileSize.HasValue ? $"{(Model.FileSize.Value / 1024.0).ToString("0.#", CultureInfo.InvariantCulture)} KB".ToPersianDigits() : "—")</dd></div>
+                    <div>
+                        <dt>فایل اصلی</dt>
+                        <dd>
+                            @if (Model.HasFile)
+                            {
+                                <a acl-res="Mapper.Imports" acl-act="View" class="btn btn-ghost btn-sm" asp-action="Download" asp-route-id="@Model.Id"><svg class="ico"><use href="#i-download" /></svg>دانلود فایل</a>
+                            }
+                            else
+                            {
+                                <span class="faint">نگه‌داری نشده (آپلود قدیمی)</span>
+                            }
+                        </dd>
+                    </div>
                     <div><dt>آپلود</dt><dd class="nums">@Model.CreatedAt.ToJalali().ToPersianDigits()</dd></div>
                     <div><dt>پایان</dt><dd class="nums">@(Model.CompletedAt.HasValue ? Model.CompletedAt.ToJalali().ToPersianDigits() : "—")</dd></div>
                 </dl>

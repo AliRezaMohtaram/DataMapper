@@ -17,7 +17,7 @@ User ids are `long`; other modules (OrgChart, Acl) store them as strings. Manual
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.1.0) and /Acl (0.4.0) as NuGet packages from local folders,
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.0) and /Acl (0.5.0) as NuGet packages from local folders,
 configured in `nuget.config`: `../organization/artifacts/packages` and `../Acl/artifacts/packages` (pack Acl first, then
 OrgChart). Package source mapping pins `OrgChart.*`/`Acl.*` to those folders — nuget.org has unrelated packages with the
 same names (e.g. Acl.Core 3.x). Bump the module version when repacking (NuGet caches by version).
@@ -73,6 +73,25 @@ Cloud container: the clones are /home/user/acl and /home/user/organization; a sy
 - DI gotcha: `UserAdministration` resolves `IUserStatusListener`s lazily — the org chart listener depends (via Acl) on
   `IUserDirectory` → `IUserLookup`, and constructor injection made a cycle that crashed startup (stack overflow).
 - Known limit: lookups follow the scope too (a field's data source in another unit gives no options).
+
+## No typed keys (user decision: nothing is keyed in by hand)
+
+- Codes are generated (`Application/Common/Codes/GeneratedCodes`): templates `TPL-0001`, data sources `DS-0001`, template
+  fields `F001` (numbered across all versions of the template, deleted rows count, so a key is never reused). The commands
+  still accept an explicit code (blank = generated); the forms no longer send one. OrgChart 0.2.0 does the same for units,
+  positions and types (`UNIT-0001`, `POS-0001`, `UTYPE-`, `PTYPE-`).
+- Still typed: the JSON property names of an external API data source (they belong to the remote service).
+
+## Records, imports, data sources
+
+- `ListDataRecordsQuery` returns one template version as a table (`Columns` = fields, `Values` per record, option titles for
+  static/file sources); without a version: the filtered import's, else the latest record's. Partial `_RecordGrid` on
+  `/DataRecords` and, compact, in `_RecentRecords` under the entry form (`DataRecords/Recent?versionId=`, refreshed by
+  record-form.js after "save and new"). Dates/numbers shown via `ToRecordDisplay` (Jalali, Persian digits).
+- Import files are kept in `dbo.ImportBatchFile` (one row per batch, varbinary; `Scripts/010_ImportFiles.sql`, also run at
+  startup); download: `Imports/Download/{id}` (only for batches the user can see). Content type from the extension.
+- Data source pages (index, detail, map file, preview) are on MX; `vx.css` was removed (it was never loaded: `_Layout` has no
+  Styles section). `TemplateLayouts/*` still use old class names.
 
 - Tests: `Mapper.Tests` (WebApplicationFactory, every DbContext on its own SQLite connection, startup migrations off;
   `DataScopeTests` for the unit filter).

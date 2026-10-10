@@ -28,6 +28,8 @@ public sealed record ImportBatchDetailDto(
     string? MappingProfileName,
     string FileName,
     long? FileSize,
+    /// <summary>فایل اصلی نگه‌داری شده و قابل دانلود است (ایمپورت‌های قدیمی فقط نام فایل دارند).</summary>
+    bool HasFile,
     int TotalRows,
     int ValidRows,
     int InvalidRows,
@@ -129,6 +131,7 @@ public sealed class GetImportBatchHandler
             profileName,
             batch.FileName,
             batch.FileSize,
+            await _db.ImportBatchFiles.AnyAsync(f => f.ImportBatchId == batch.Id, cancellationToken),
             batch.TotalRows,
             batch.ValidRows,
             batch.InvalidRows,

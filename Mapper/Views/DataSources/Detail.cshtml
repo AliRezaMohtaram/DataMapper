@@ -1,163 +1,149 @@
 @model Borc.DataMapper.Application.DataSources.GetDataSource.DataSourceDetailDto
 @using Borc.DataMapper.Web.ViewModels
+@using Borc.DataMapper.Web.ViewModels.Dashboard
 @using Borc.DataMapper.Web.ViewModels.DataSources
 @using Borc.DataMapper.Domain.DataSources
 @{
     ViewData["Title"] = Model.Name;
+    ViewData["Subtitle"] = $"منبع داده {Model.Code} · {Model.SourceType.ToLabel()}";
+    var here = Context.Request.Path.ToString();
 }
 
-<div class="page-grid">
+@section TopbarActions {
+    <a acl-res="Mapper.DataSources" acl-act="View" class="btn btn-ghost" asp-action="Index"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">همهٔ منابع داده</span></a>
+}
 
-    <!-- ===== محتوای اصلی ===== -->
-    <section class="page-main">
-        <div class="panel card">
-            <div class="panel-header">
-                <h2>گزینه‌ها</h2>
+@if (Model.SourceType == DataSourceType.File && Model.ItemCount == 0)
+{
+    <div class="callout tone-warning" style="margin-bottom:1rem">
+        <svg class="ico"><use href="#i-alert" /></svg>
+        <div>هنوز فایلی برای این منبع بارگذاری نشده است؛ تا بارگذاری نشود، فیلدهای وابسته گزینه‌ای ندارند.</div>
+    </div>
+}
 
+<div class="split">
+
+    <article class="card rise">
+        <header class="card-head">
+            <div class="card-title">
+                <span class="card-ico"><svg class="ico"><use href="#i-list" /></svg></span>
+                <div>
+                    گزینه‌ها
+                    <div class="card-sub">
+                        @switch (Model.SourceType)
+                        {
+                            case DataSourceType.StaticList:
+                                <text>@Model.ItemCount.ToPersianNumber() گزینه ثبت شده است؛ برای تغییر، «ویرایش» را بزنید.</text>
+                                break;
+                            case DataSourceType.File:
+                                if (Model.ItemCount > 0)
+                                {
+                                    <text>@Model.ItemCount.ToPersianNumber() گزینه از فایل «@Model.FileName» (مقدار: «@Model.FileValueColumn»@(string.IsNullOrEmpty(Model.FileDisplayColumn) ? "" : $"، نمایشی: «{Model.FileDisplayColumn}»"))</text>
+                                }
+                                else
+                                {
+                                    <text>بعد از بارگذاری فایل، ستون مقدار و ستون نمایشی را انتخاب می‌کنید.</text>
+                                }
+                                break;
+                            case DataSourceType.Template:
+                                <text>هر بار از رکوردهای ثبت‌شدهٔ قالب خوانده می‌شود (حداکثر ۵۰۰۰ رکورد آخر).</text>
+                                break;
+                            case DataSourceType.Api:
+                                <text>از سرویس خارجی خوانده و ۵ دقیقه نگه‌داری می‌شود.</text>
+                                break;
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="row" style="gap:.5rem">
                 @if (Model.SourceType == DataSourceType.File)
                 {
-                    <a acl-res="Mapper.DataSources" acl-act="Edit" asp-action="UploadFile" asp-route-id="@Model.Id" class="btn primary">
-                        @(Model.ItemCount == 0 ? "بارگذاری فایل" : "بارگذاری فایل جدید")
-                    </a>
+                    <a acl-res="Mapper.DataSources" acl-act="Edit" class="btn btn-soft btn-sm" asp-action="UploadFile" asp-route-id="@Model.Id"><svg class="ico"><use href="#i-upload" /></svg>@(Model.ItemCount == 0 ? "بارگذاری فایل" : "بارگذاری فایل جدید")</a>
                 }
-
-                <button type="button" id="dsPreviewBtn" class="btn secondary"
-                        data-url="@Url.Action("Options", "DataSources", new { id = Model.Id })">نمایش نمونه</button>
+                <button type="button" id="dsPreviewBtn" class="btn btn-ghost btn-sm"
+                        data-url="@Url.Action("Options", "DataSources", new { id = Model.Id })"><svg class="ico"><use href="#i-eye" /></svg>نمایش نمونه</button>
             </div>
+        </header>
 
-            @switch (Model.SourceType)
-            {
-                case DataSourceType.StaticList:
-                    <div class="hint">@Model.ItemCount گزینه ثبت شده است. برای تغییر، «ویرایش» را بزنید.</div>
-                    break;
+        <div id="dsPreviewOut">
+            <div class="empty">«نمایش نمونه» ۲۰ گزینهٔ اول را همان‌طور که در فرم‌ها دیده می‌شوند نشان می‌دهد@(Model.SourceType == DataSourceType.Api ? " و اتصال و تنظیمات مسیر را بررسی می‌کند" : "").</div>
+        </div>
+    </article>
 
-                case DataSourceType.File:
-                    if (Model.ItemCount == 0)
+    <aside class="split-side">
+        <article class="card rise" style="--i:1">
+            <div class="card-body">
+                <div class="row" style="justify-content:space-between;align-items:flex-start">
+                    <div class="hero-title">@Model.Name</div>
+                    <span class="badge @(Model.IsActive ? "st-active" : "st-inactive")">@(Model.IsActive ? "فعال" : "غیرفعال")</span>
+                </div>
+                <div class="row" style="gap:.5rem;margin-top:.3rem">
+                    <span class="code">@Model.Code</span>
+                    <span class="tag @DashboardUi.Tone(Model.SourceType)"><svg class="ico" style="width:.8rem;height:.8rem"><use href="#@DashboardUi.Icon(Model.SourceType)" /></svg>@Model.SourceType.ToLabel()</span>
+                </div>
+
+                <dl class="dl stacked" style="margin-top:1rem">
+                    <div><dt>واحد سازمانی</dt><dd><partial name="_OrgUnitBadge" model="(Borc.DataMapper.Application.OrgUnits.OrgUnitOwnedKind.DataSource, Model.Id)" /></dd></div>
+
+                    @if (Model.SourceType == DataSourceType.Template)
                     {
-                        <div class="status error show">هنوز فایلی بارگذاری نشده است.</div>
-                    }
-                    else
-                    {
-                        <div class="hint">
-                            @Model.ItemCount گزینه از فایل «@Model.FileName» خوانده شده است
-                            (مقدار: «@Model.FileValueColumn»@(string.IsNullOrEmpty(Model.FileDisplayColumn) ? "" : $"، نمایشی: «{Model.FileDisplayColumn}»")).
+                        <div>
+                            <dt>قالب منبع</dt>
+                            <dd>
+                                @if (Model.TemplateId.HasValue)
+                                {
+                                    <a acl-res="Mapper.Templates" acl-act="View" class="link-btn" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@(Model.TemplateName ?? $"#{Model.TemplateId}")</a>
+                                }
+                                else
+                                {
+                                    <text>—</text>
+                                }
+                            </dd>
                         </div>
+                        <div><dt>فیلد مقدار / نمایشی</dt><dd class="mono">@Model.ValueKey / @Model.DisplayKey</dd></div>
                     }
-                    break;
 
-                case DataSourceType.Template:
-                    <div class="hint">گزینه‌ها هر بار از رکوردهای ثبت‌شدهٔ قالب خوانده می‌شود؛ با افزودن رکورد جدید، فهرست خودکار به‌روز می‌شود (حداکثر 5000 رکورد آخر بررسی می‌شود).</div>
-                    break;
+                    @if (Model.SourceType == DataSourceType.Api)
+                    {
+                        <div><dt>آدرس API</dt><dd class="mono" style="overflow-wrap:anywhere">@Model.ApiUrl</dd></div>
+                        <div><dt>مسیر آرایه</dt><dd class="mono">@(string.IsNullOrEmpty(Model.ApiItemsPath) ? "(ریشه)" : Model.ApiItemsPath)</dd></div>
+                        <div><dt>فیلد مقدار / نمایشی</dt><dd class="mono">@(Model.ApiValueKey ?? "—") / @(Model.ApiDisplayKey ?? "—")</dd></div>
+                    }
 
-                case DataSourceType.Api:
-                    <div class="hint">گزینه‌ها از سرویس خارجی خوانده و 5 دقیقه نگه‌داری می‌شود. «نمایش نمونه» اتصال و تنظیمات مسیر را بررسی می‌کند.</div>
-                    break;
-            }
+                    @if (Model.SourceType == DataSourceType.File && Model.FileImportedAt.HasValue)
+                    {
+                        <div><dt>آخرین بارگذاری</dt><dd class="nums">@Model.FileImportedAt.ToJalali().ToPersianDigits()</dd></div>
+                    }
 
-            <div id="dsPreviewOut"></div>
-        </div>
-    </section>
+                    @if (Model.SourceType is DataSourceType.StaticList or DataSourceType.File)
+                    {
+                        <div><dt>تعداد گزینه</dt><dd class="nums">@Model.ItemCount.ToPersianNumber()</dd></div>
+                    }
 
-    <!-- ===== اطلاعات کلی (aside سمت چپ) ===== -->
-    <aside class="page-aside">
-        <div class="panel card">
-            <div class="aside-title">@Model.Name</div>
-            <span class="mode-badge">@Model.SourceType.ToLabel()</span>
-            <span class="mode-badge">@(Model.IsActive ? "فعال" : "غیرفعال")</span>
-
-            <dl class="info-list">
-                <div>
-                    <dt>واحد سازمانی</dt>
-                    <dd><partial name="_OrgUnitBadge" model="(Borc.DataMapper.Application.OrgUnits.OrgUnitOwnedKind.DataSource, Model.Id)" /></dd>
-                </div>
-                <div>
-                    <dt>کد</dt>
-                    <dd dir="ltr" style="text-align:right"><code style="font-family:var(--mono)">@Model.Code</code></dd>
-                </div>
-
-                @if (Model.SourceType == DataSourceType.Template)
-                {
-                    <div>
-                        <dt>قالب منبع</dt>
-                        <dd>
-                            @if (Model.TemplateId.HasValue)
-                            {
-                                <a acl-res="Mapper.Templates" acl-act="View" asp-controller="Templates" asp-action="Detail" asp-route-id="@Model.TemplateId">@(Model.TemplateName ?? $"#{Model.TemplateId}")</a>
-                            }
-                            else
-                            {
-                                <text>—</text>
-                            }
-                        </dd>
-                    </div>
-                    <div>
-                        <dt>فیلد مقدار / نمایشی</dt>
-                        <dd dir="ltr" style="text-align:right">@Model.ValueKey / @Model.DisplayKey</dd>
-                    </div>
-                }
-
-                @if (Model.SourceType == DataSourceType.Api)
-                {
-                    <div>
-                        <dt>آدرس API</dt>
-                        <dd dir="ltr" style="text-align:right;word-break:break-all">@Model.ApiUrl</dd>
-                    </div>
-                    <div>
-                        <dt>مسیر آرایه</dt>
-                        <dd dir="ltr" style="text-align:right">@(string.IsNullOrEmpty(Model.ApiItemsPath) ? "(ریشه)" : Model.ApiItemsPath)</dd>
-                    </div>
-                    <div>
-                        <dt>فیلد مقدار / نمایشی</dt>
-                        <dd dir="ltr" style="text-align:right">@(Model.ApiValueKey ?? "—") / @(Model.ApiDisplayKey ?? "—")</dd>
-                    </div>
-                }
-
-                @if (Model.SourceType == DataSourceType.File && Model.FileImportedAt.HasValue)
-                {
-                    <div>
-                        <dt>آخرین بارگذاری</dt>
-                        <dd dir="ltr" style="text-align:right">@Model.FileImportedAt.ToJalali()</dd>
-                    </div>
-                }
-
-                @if (Model.SourceType is DataSourceType.StaticList or DataSourceType.File)
-                {
-                    <div>
-                        <dt>تعداد گزینه</dt>
-                        <dd>@Model.ItemCount</dd>
-                    </div>
-                }
-
-                <div>
-                    <dt>استفاده در فیلدهای قالب</dt>
-                    <dd>@Model.UsedByFieldCount</dd>
-                </div>
-                <div>
-                    <dt>تاریخ ایجاد</dt>
-                    <dd dir="ltr" style="text-align:right">@Model.CreatedAt.ToJalali()</dd>
-                </div>
-                <div>
-                    <dt>آخرین ویرایش</dt>
-                    <dd dir="ltr" style="text-align:right">@Model.UpdatedAt.ToJalali()</dd>
-                </div>
-            </dl>
-
-            <div class="aside-actions">
-                <a acl-res="Mapper.DataSources" acl-act="Edit" asp-action="Edit" asp-route-id="@Model.Id" class="btn primary block" data-modal>ویرایش</a>
-
-                <form acl-res="Mapper.DataSources" acl-act="Edit" asp-action="SetActive" method="post">
-                    <input type="hidden" name="id" value="@Model.Id" />
-                    <input type="hidden" name="isActive" value="@((!Model.IsActive).ToString().ToLowerInvariant())" />
-                    <input type="hidden" name="returnTo" value="detail" />
-                    <button type="submit" class="btn secondary block">@(Model.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")</button>
-                </form>
-
-                <button type="button" class="btn danger block"
-                        data-delete-id="@Model.Id" data-delete-name="@Model.Name">حذف منبع داده</button>
-
-                <a acl-res="Mapper.DataSources" acl-act="View" asp-action="Index" class="btn ghost block">بازگشت به فهرست</a>
+                    <div><dt>استفاده در فیلدهای قالب</dt><dd class="nums">@Model.UsedByFieldCount.ToPersianNumber()</dd></div>
+                    <div><dt>تاریخ ایجاد</dt><dd class="nums">@Model.CreatedAt.ToJalali().ToPersianDigits()</dd></div>
+                    <div><dt>آخرین ویرایش</dt><dd class="nums">@Model.UpdatedAt.ToJalali().ToPersianDigits()</dd></div>
+                </dl>
             </div>
-        </div>
+
+            <div class="card-foot" style="display:block">
+                <div class="action-stack">
+                    <a acl-res="Mapper.DataSources" acl-act="Edit" class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Id" asp-route-returnUrl="@here" data-modal><svg class="ico"><use href="#i-edit" /></svg>ویرایش مشخصات</a>
+
+                    <form acl-res="Mapper.DataSources" acl-act="Edit" asp-action="SetActive" method="post">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <input type="hidden" name="isActive" value="@((!Model.IsActive).ToString().ToLowerInvariant())" />
+                        <input type="hidden" name="returnTo" value="detail" />
+                        <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#@(Model.IsActive ? "i-x" : "i-check")" /></svg>@(Model.IsActive ? "غیرفعال‌سازی" : "فعال‌سازی")</button>
+                    </form>
+
+                    <div class="dd-sep"></div>
+                    <button type="button" class="btn btn-danger-soft" data-delete-id="@Model.Id" data-delete-name="@Model.Name">
+                        <svg class="ico"><use href="#i-trash" /></svg>حذف منبع داده
+                    </button>
+                </div>
+            </div>
+        </article>
     </aside>
 </div>
 

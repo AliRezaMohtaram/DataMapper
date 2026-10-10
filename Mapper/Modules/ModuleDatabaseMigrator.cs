@@ -48,12 +48,12 @@ public sealed class ModuleDatabaseMigrator(IServiceProvider services, IConfigura
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <summary>
-    /// اسکریپت‌های تغییر schema خود Mapper که به ماژول‌ها مربوط‌اند (Scripts/009_OrgUnits.sql)؛ idempotent هستند.
+    /// اسکریپت‌های تغییر schema خود Mapper که به ماژول‌ها مربوط‌اند (Scripts/009_OrgUnits.sql، 010_ImportFiles.sql)؛ idempotent هستند.
     /// Mapper's own schema patches needed by the module integration (idempotent scripts embedded from Scripts/).
     /// </summary>
     private async Task ApplyMapperPatchesAsync(DbContext db, CancellationToken cancellationToken)
     {
-        foreach (string name in new[] { "Scripts.009_OrgUnits.sql" })
+        foreach (string name in new[] { "Scripts.009_OrgUnits.sql", "Scripts.010_ImportFiles.sql" })
         {
             await using Stream stream = typeof(ModuleDatabaseMigrator).Assembly.GetManifestResourceStream(name)
                 ?? throw new InvalidOperationException($"Embedded script {name} is missing.");
