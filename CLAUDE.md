@@ -112,6 +112,11 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   `[data-list-page="templateVersionId=5"]` is remembered under path + that parameter, so links with exactly that query
   are restored too. It opens `tr[data-row-modal]` rows in a modal and follows `tr[data-row-href]`.
 
+- Demo data (user request, for manual tests): `Scripts/demo/demo-seed.sql` / `demo-remove.sql` (SQL Server, run by hand after
+  one start of Mapper; everything marked `DEMO-` / `demo.` / «دمو - »; users' password Test1234, Identity V3 hash in the
+  script), sample import files `Scripts/demo/*.xlsx`, guide `docs/demo-data.md`. Verified on SQL Server 2022 (docker) with
+  the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
+
 - Tests: `Mapper.Tests` (WebApplicationFactory, every DbContext on its own SQLite connection, startup migrations off;
   `DataScopeTests` for the unit filter).
   Manual checklist: `docs/modules-test-checklist.md`.
