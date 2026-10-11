@@ -21,13 +21,13 @@
 	
 
 	<ItemGroup>
-		<PackageReference Include="OrgChart.AspNetCore" Version="0.2.0" />
-		<PackageReference Include="OrgChart.EFCore" Version="0.2.0" />
-		<PackageReference Include="OrgChart.Razor" Version="0.2.0" />
-		<PackageReference Include="OrgChart.Acl" Version="0.2.0" />
-		<PackageReference Include="Acl.AspNetCore" Version="0.5.0" />
-		<PackageReference Include="Acl.EFCore" Version="0.5.0" />
-		<PackageReference Include="Acl.Razor" Version="0.5.0" />
+		<PackageReference Include="OrgChart.AspNetCore" Version="0.2.1" />
+		<PackageReference Include="OrgChart.EFCore" Version="0.2.1" />
+		<PackageReference Include="OrgChart.Razor" Version="0.2.1" />
+		<PackageReference Include="OrgChart.Acl" Version="0.2.1" />
+		<PackageReference Include="Acl.AspNetCore" Version="0.5.1" />
+		<PackageReference Include="Acl.EFCore" Version="0.5.1" />
+		<PackageReference Include="Acl.Razor" Version="0.5.1" />
 	</ItemGroup>
 
 	<ItemGroup>

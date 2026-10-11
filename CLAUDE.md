@@ -17,11 +17,13 @@ User ids are `long`; other modules (OrgChart, Acl) store them as strings. Manual
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.0) and /Acl (0.5.0) as NuGet packages from local folders,
-configured in `nuget.config`: `../organization/artifacts/packages` and `../Acl/artifacts/packages` (pack Acl first, then
-OrgChart). Package source mapping pins `OrgChart.*`/`Acl.*` to those folders — nuget.org has unrelated packages with the
-same names (e.g. Acl.Core 3.x). Bump the module version when repacking (NuGet caches by version).
-Cloud container: the clones are /home/user/acl and /home/user/organization; a symlink /home/user/Acl → acl makes the paths work.
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.1) and /Acl (0.5.1) as NuGet packages **committed in this
+repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
+`OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
+To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
+`tools/update-modules.sh` (packs both clones, replaces `modules-feed/*.nupkg`), update the versions in
+`Mapper/Borc.DataMapper.Web.csproj`, commit. Cloud container: the clones are /home/user/acl (symlink /home/user/Acl) and
+/home/user/organization.
 
 - `Program.cs`: `AddOrgChart().AddSqlServerStore().AddHttpContextUser().AddUserDirectory<MapperUserDirectory>().AddAcl()
   .AddAdminUi(view/edit policies = Acl permission on Mapper.OrgChart)`, `AddAccessControl(ApplicationKey "Mapper",

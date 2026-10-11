@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsdTestResults/
+
+# OrgChart and Acl packages are committed on purpose (see nuget.config)
+!modules-feed/*.nupkg
