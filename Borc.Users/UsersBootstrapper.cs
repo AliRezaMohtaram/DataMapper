@@ -37,7 +37,18 @@ internal sealed class UsersBootstrapper(IServiceProvider services, IOptions<User
         }
 
         UsersOptions.BootstrapAdmin admin = options.Value.Bootstrap;
-        if (string.IsNullOrWhiteSpace(admin.UserName) || await db.Users.AnyAsync(cancellationToken))
+        if (string.IsNullOrWhiteSpace(admin.UserName))
+        {
+            return;
+        }
+
+        if (admin.ResetPassword)
+        {
+            await ResetAdministratorAsync(scope.ServiceProvider, admin);
+            return;
+        }
+
+        if (await db.Users.AnyAsync(cancellationToken))
         {
             return;
         }
@@ -64,6 +75,52 @@ internal sealed class UsersBootstrapper(IServiceProvider services, IOptions<User
         }
 
         logger.LogInformation("Users: created the first administrator '{UserName}'. Change its password after signing in.", user.UserName);
+    }
+
+    /// <summary>Users:Bootstrap:ResetPassword — gives the bootstrap account its configured password back.</summary>
+    private async Task ResetAdministratorAsync(IServiceProvider provider, UsersOptions.BootstrapAdmin admin)
+    {
+        if (string.IsNullOrEmpty(admin.Password))
+        {
+            logger.LogWarning("Users: ResetPassword is on but Users:Bootstrap:Password is empty; nothing was changed.");
+            return;
+        }
+
+        UserManager<AppUser> users = provider.GetRequiredService<UserManager<AppUser>>();
+        string userName = admin.UserName!.Trim();
+        AppUser? user = await users.FindByNameAsync(userName);
+        IdentityResult result;
+        if (user is null)
+        {
+            user = new AppUser
+            {
+                UserName = userName,
+                DisplayName = admin.DisplayName,
+                IsAdministrator = true,
+                CreatedAt = provider.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime,
+            };
+            result = await users.CreateAsync(user, admin.Password);
+        }
+        else
+        {
+            user.IsActive = true;
+            await users.UpdateAsync(user);
+            await users.SetLockoutEndDateAsync(user, null);
+            await users.ResetAccessFailedCountAsync(user);
+            result = await users.RemovePasswordAsync(user);
+            if (result.Succeeded)
+            {
+                result = await users.AddPasswordAsync(user, admin.Password);
+            }
+        }
+
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException("Users: the administrator password could not be reset: "
+                + string.Join(" ", result.Errors.Select(e => e.Description)));
+        }
+
+        logger.LogWarning("Users: the password of '{UserName}' was reset from configuration. Turn Users:Bootstrap:ResetPassword off now.", userName);
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

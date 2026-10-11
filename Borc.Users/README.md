@@ -28,7 +28,7 @@ app.MapRazorPages();
 ```
 
 Configuration (`Users` section): `MigrateOnStartup` (default true; otherwise run `Scripts/008_Users.sql`),
-`Bootstrap:UserName/Password/DisplayName` (first administrator, created only while there is no account),
+`Bootstrap:UserName/Password/DisplayName` (first administrator, created only while there is no account; `Bootstrap:ResetPassword: true` gives that account the configured password back at startup, unlocks and activates it — turn it off afterwards),
 `PasswordMinLength` (8, plus a digit), `MaxFailedSignIns` (5), `LockoutDuration` (10 min).
 
 ## Rules

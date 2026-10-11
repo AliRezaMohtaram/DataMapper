@@ -1,3 +1,7 @@
+using Borc.Users.Model;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.Identity;
 using System.Net;
 using System.Text.Json;
 
@@ -43,6 +47,27 @@ public sealed class UsersTests : IAsyncLifetime
         Assert.Equal("home", await client.GetStringAsync("/"));
         string users = await UsersHost.TextAsync(await client.GetAsync("/Users"));
         Assert.Contains("مدیر سامانه", users);
+    }
+
+    [Fact]
+    public async Task ResetPassword_gives_the_bootstrap_admin_its_configured_password_back_and_unlocks_it()
+    {
+        await using (AsyncServiceScope scope = _host.Services.CreateAsyncScope())
+        {
+            UserManager<AppUser> users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            AppUser admin = (await users.FindByNameAsync(UsersHost.AdminUserName))!;
+            await users.ChangePasswordAsync(admin, UsersHost.AdminPassword, "Forgotten999");
+            await users.SetLockoutEndDateAsync(admin, DateTimeOffset.UtcNow.AddHours(1));
+        }
+
+        Assert.Equal(HttpStatusCode.OK, (await UsersHost.SignInAsync(_host.Client(), UsersHost.AdminUserName, UsersHost.AdminPassword)).StatusCode);
+
+        // Users:Bootstrap:ResetPassword = true, then the next start
+        _host.Services.GetRequiredService<IOptions<UsersOptions>>().Value.Bootstrap.ResetPassword = true;
+        IHostedService bootstrapper = _host.Services.GetServices<IHostedService>().Single(s => s.GetType().Name == "UsersBootstrapper");
+        await bootstrapper.StartAsync(CancellationToken.None);
+
+        Assert.Equal(HttpStatusCode.Redirect, (await UsersHost.SignInAsync(_host.Client(), UsersHost.AdminUserName, UsersHost.AdminPassword)).StatusCode);
     }
 
     [Fact]

@@ -23,5 +23,11 @@ public sealed class UsersOptions
         public string? Password { get; set; }
 
         public string DisplayName { get; set; } = "مدیر سامانه";
+
+        /// <summary>
+        /// Recovery for a lost administrator password: at startup the account <see cref="UserName"/> gets
+        /// <see cref="Password"/> again, is unlocked and activated (created if missing). Turn it off after signing in.
+        /// </summary>
+        public bool ResetPassword { get; set; }
     }
 }

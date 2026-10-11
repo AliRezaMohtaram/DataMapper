@@ -14,6 +14,7 @@ Sign-in and account management, kept independent of the Mapper projects so it ca
 `MapRazorPages`), sign-in required everywhere, `_Layout` (user chip, sign-out, change password, "کاربران" via Acl),
 `HttpCurrentUser` → `ICurrentUser` (Application) → `AuditStampInterceptor` fills `CreatedBy/UpdatedBy/DeletedBy`.
 User ids are `long`; other modules (OrgChart, Acl) store them as strings. Manual checklist: `docs/users-test-checklist.md`.
+Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Password`) resets it at startup; turn it off afterwards.
 
 ## OrgChart and Acl modules
 
