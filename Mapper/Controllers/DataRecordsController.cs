@@ -30,8 +30,39 @@ public sealed class DataRecordsController : Controller
 
     // ---------- فهرست ----------
 
+    /// <summary>
+    /// همهٔ رکوردها با قالب، نسخه، واحد، منبع و زمان ثبت. کلیک روی ردیف → صفحهٔ رکوردهای همان نسخه (Version).
+    /// آدرس‌های قدیمی با نسخه یا ایمپورت به Version هدایت می‌شوند.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Index(
+        string? search,
+        long? templateVersionId,
+        RecordSource? source,
+        long? importBatchId,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        if (importBatchId.HasValue)
+            return RedirectToAction(nameof(Version), new { search, templateVersionId, source, importBatchId, page, pageSize });
+
+        var query = new ListRecordsOverviewQuery(search, templateVersionId, source, page, pageSize);
+        var result = await _sender.Send(query, cancellationToken);
+        var versions = await LoadVersionOptionsAsync(cancellationToken);
+
+        if (!result.Success || result.Data is null)
+        {
+            ModelState.AddResultErrors(result, "خطا در دریافت رکوردها.", Request);
+            return View(new RecordOverviewViewModel(query, new(Array.Empty<RecordOverviewItemDto>(), 1, pageSize, 0), versions));
+        }
+
+        return View(new RecordOverviewViewModel(query, result.Data, versions));
+    }
+
+    /// <summary>رکوردهای یک نسخهٔ قالب به‌صورت جدول (ستون‌ها = فیلدها)؛ ثبت، ویرایش، رونوشت و حذف.</summary>
+    [HttpGet]
+    public async Task<IActionResult> Version(
         string? search,
         long? templateVersionId,
         RecordSource? source,
@@ -48,12 +79,12 @@ public sealed class DataRecordsController : Controller
         {
             ModelState.AddResultErrors(result, "خطا در دریافت رکوردها.", Request);
 
-            return View(new DataRecordIndexViewModel(
+            return View("Version", new DataRecordIndexViewModel(
                 query, new(Array.Empty<DataRecordListItemDto>(), 1, pageSize, 0), Array.Empty<RecordColumnDto>(), versions));
         }
 
         // بدون انتخاب، نسخهٔ پیش‌فرض (ایمپورت فیلترشده یا آخرین رکورد) نمایش داده می‌شود
-        return View(new DataRecordIndexViewModel(
+        return View("Version", new DataRecordIndexViewModel(
             query with { TemplateVersionId = result.Data.TemplateVersionId }, result.Data.Page, result.Data.Columns, versions));
     }
 

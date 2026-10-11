@@ -19,7 +19,7 @@
             </div>
         </div>
     </div>
-    <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-ghost btn-sm" asp-controller="DataRecords" asp-action="Index" asp-route-templateVersionId="@Model.TemplateVersionId"><svg class="ico"><use href="#i-list" /></svg>همهٔ رکوردها</a>
+    <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-ghost btn-sm" asp-controller="DataRecords" asp-action="Version" asp-route-templateVersionId="@Model.TemplateVersionId"><svg class="ico"><use href="#i-list" /></svg>همهٔ رکوردها</a>
 </header>
 @if (Model.Grid.Items.Count == 0)
 {

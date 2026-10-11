@@ -265,7 +265,7 @@
                                 <td class="nums">
                                     @if (t.VersionId is long rv && t.RecordCount > 0)
                                     {
-                                        <a acl-res="Mapper.DataRecords" acl-act="View" class="link-btn" asp-controller="DataRecords" asp-action="Index" asp-route-templateVersionId="@rv" title="رکوردهای نسخه جاری">@Fa(t.RecordCount)</a>
+                                        <a acl-res="Mapper.DataRecords" acl-act="View" class="link-btn" asp-controller="DataRecords" asp-action="Version" asp-route-templateVersionId="@rv" title="رکوردهای نسخه جاری">@Fa(t.RecordCount)</a>
                                     }
                                     else
                                     {

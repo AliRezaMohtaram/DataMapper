@@ -19,6 +19,12 @@ public sealed record RecordGridViewModel(
 
 public sealed record VersionFilterOption(long Id, string Label);
 
+/// <summary>صفحهٔ اصلی «داده‌های ثبت‌شده» (همهٔ قالب‌ها، بدون مقدار فیلدها).</summary>
+public sealed record RecordOverviewViewModel(
+    ListRecordsOverviewQuery Filter,
+    PagedResult<RecordOverviewItemDto> Result,
+    IReadOnlyList<VersionFilterOption> Versions);
+
 /// <summary>داده‌ای که صفحهٔ فرم به JavaScript می‌دهد.</summary>
 public sealed record RecordFormPageViewModel(
     long? RecordId,

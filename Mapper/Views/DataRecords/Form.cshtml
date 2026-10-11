@@ -3,7 +3,7 @@
     var isEdit = Model.RecordId.HasValue;
     ViewData["Title"] = isEdit ? $"ویرایش رکورد {Model.RecordId}" : $"ورود دستی داده - {Model.TemplateName}";
     ViewData["Subtitle"] = $"{Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}";
-    ViewData["Crumbs"] = new[] { new Borc.DataMapper.Web.ViewModels.Crumb($"{Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}", Url.Action("Index", "DataRecords", new { templateVersionId = Model.TemplateVersionId })) };
+    ViewData["Crumbs"] = new[] { new Borc.DataMapper.Web.ViewModels.Crumb($"{Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}", Url.Action("Version", "DataRecords", new { templateVersionId = Model.TemplateVersionId })) };
 }
 
 @section TopbarActions {
@@ -13,7 +13,7 @@
     }
     else
     {
-        <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-ghost" asp-action="Index" asp-route-templateVersionId="@Model.TemplateVersionId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">رکوردهای این نسخه</span></a>
+        <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-ghost" asp-action="Version" asp-route-templateVersionId="@Model.TemplateVersionId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">رکوردهای این نسخه</span></a>
     }
 }
 

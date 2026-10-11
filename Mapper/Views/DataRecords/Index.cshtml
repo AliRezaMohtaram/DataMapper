@@ -1,11 +1,15 @@
-@model Borc.DataMapper.Web.ViewModels.DataRecords.DataRecordIndexViewModel
+@model Borc.DataMapper.Web.ViewModels.DataRecords.RecordOverviewViewModel
 @using Borc.DataMapper.Web.ViewModels.DataRecords
 @using Borc.DataMapper.Domain.Records
+@inject OrgChart.Core.Chart.IOrgChartReader Chart
+@* همهٔ رکوردها: قالب، نسخه، واحد، منبع، زمان ثبت. کلیک روی ردیف → صفحهٔ رکوردهای همان نسخه (DataRecords/Version). *@
 @{
     ViewData["Title"] = "داده‌های ثبت‌شده";
 
     var result = Model.Result;
     var filter = Model.Filter;
+    var chart = await Chart.GetSnapshotAsync();
+    string UnitTitle(string? key) => key is null ? "عمومی" : chart.FindUnit(key)?.Title ?? key;
 
     var errors = ViewData.ModelState.Values
         .SelectMany(v => v.Errors)
@@ -16,24 +20,13 @@
     var from = result.TotalCount == 0 ? 0 : (result.Page - 1) * result.PageSize + 1;
     var to = Math.Min(result.Page * result.PageSize, result.TotalCount);
     var pageSizes = new[] { 10, 20, 50, 100 };
-    // نسخهٔ قالب همیشه انتخاب شده است (پیش‌فرض: آخرین رکورد)؛ «فیلتر» یعنی جستجو، منبع یا ایمپورت
-    var hasFilter = !string.IsNullOrWhiteSpace(filter.Search) || filter.Source.HasValue || filter.ImportBatchId.HasValue;
-    var currentVersion = Model.Versions.FirstOrDefault(v => v.Id == filter.TemplateVersionId);
-    var currentLabel = currentVersion?.Label
-        ?? (result.Items.Count > 0 ? $"{result.Items[0].TemplateName} · نسخهٔ {result.Items[0].VersionNo.ToPersianNumber()}" : null);
+    var hasFilter = !string.IsNullOrWhiteSpace(filter.Search) || filter.TemplateVersionId.HasValue || filter.Source.HasValue;
 
     ViewData["Subtitle"] = $"{result.TotalCount.ToPersianNumber()} رکورد" + (hasFilter ? " با فیلتر فعلی" : "");
 }
 
 @section TopbarActions {
-    @if (filter.TemplateVersionId.HasValue)
-    {
-        <a acl-res="Mapper.DataRecords" acl-act="Create" class="btn btn-soft" asp-action="Create" asp-route-versionId="@filter.TemplateVersionId" data-modal><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>
-    }
-    else
-    {
-        <a acl-res="Mapper.DataRecords" acl-act="Create" class="btn btn-soft" asp-action="Create" data-modal><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>
-    }
+    <a acl-res="Mapper.DataRecords" acl-act="Create" class="btn btn-soft" asp-action="Create" data-modal><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>
 }
 
 @if (errors.Count > 0)
@@ -47,30 +40,19 @@
     <header class="card-head">
         <div class="card-title">
             <span class="card-ico"><svg class="ico"><use href="#i-rows" /></svg></span>
-            <div>داده‌های ثبت‌شده<div class="card-sub">@(currentLabel ?? "رکوردهای حاصل از ایمپورت یا ورود دستی") — هر ستون یک فیلد قالب است</div></div>
+            <div>داده‌های ثبت‌شده<div class="card-sub">رکوردهای همهٔ قالب‌ها — برای دیدن مقدارها و ثبت یا ویرایش، روی یک ردیف کلیک کنید.</div></div>
         </div>
-        @if (filter.ImportBatchId.HasValue)
-        {
-            <span class="fchip active">
-                فقط ایمپورت <a acl-res="Mapper.Imports" acl-act="View" class="code" asp-controller="Imports" asp-action="Detail" asp-route-id="@filter.ImportBatchId">IMP-@filter.ImportBatchId.Value.ToString("0000")</a>
-                <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Index" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-search="@filter.Search" aria-label="حذف فیلتر ایمپورت"><svg class="ico" style="width:.85rem;height:.85rem"><use href="#i-x" /></svg></a>
-            </span>
-        }
     </header>
 
     <div class="toolbar">
         <form acl-res="Mapper.DataRecords" acl-act="View" method="get" asp-action="Index" role="search">
             <input type="hidden" name="pageSize" value="@result.PageSize" />
-            <input type="hidden" name="importBatchId" value="@filter.ImportBatchId" />
             <div class="input-wrap">
                 <svg class="ico"><use href="#i-search" /></svg>
-                <input class="input" type="search" name="search" value="@filter.Search" placeholder="جستجو در مقدارهای رکورد…" aria-label="جستجو در رکوردها" autocomplete="off" />
+                <input class="input" type="search" name="search" value="@filter.Search" placeholder="جستجو در نام قالب یا مقدارها…" aria-label="جستجو در رکوردها" autocomplete="off" />
             </div>
             <select class="select" name="templateVersionId" aria-label="قالب و نسخه" onchange="this.form.requestSubmit()">
-                @if (filter.TemplateVersionId.HasValue && currentVersion is null)
-                {
-                    <option value="@filter.TemplateVersionId" selected>@(currentLabel ?? "نسخهٔ انتخاب‌شده")</option>
-                }
+                <option value="">همهٔ قالب‌ها</option>
                 @foreach (var v in Model.Versions)
                 {
                     <option value="@v.Id" selected="@(filter.TemplateVersionId == v.Id)">@v.Label</option>
@@ -84,7 +66,7 @@
             <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#i-search" /></svg>جستجو</button>
             @if (hasFilter)
             {
-                <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-quiet" asp-action="Index" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
+                <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-quiet" asp-action="Index" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
             }
         </form>
     </div>
@@ -104,7 +86,44 @@
     }
     else
     {
-        <partial name="_RecordGrid" model="new RecordGridViewModel(Model.Columns, result.Items)" />
+        <div class="tbl-wrap">
+            <table class="tbl">
+                <thead><tr><th>قالب</th><th>نسخه</th><th>واحد سازمانی</th><th>منبع</th><th>ثبت</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var r in result.Items)
+                    {
+                        <tr data-row-href="@Url.Action("Version", new { templateVersionId = r.TemplateVersionId })" style="cursor:pointer" title="رکوردهای @r.TemplateName">
+                            <td><a acl-res="Mapper.DataRecords" acl-act="View" class="cell-main" asp-action="Version" asp-route-templateVersionId="@r.TemplateVersionId">@r.TemplateName</a></td>
+                            <td class="nums">نسخهٔ @r.VersionNo.ToPersianNumber()</td>
+                            <td><span class="tag @(r.OrgUnitKey is null ? "tone-info" : "tone-primary")">@UnitTitle(r.OrgUnitKey)</span></td>
+                            <td>
+                                @if (r.Source == RecordSource.Import)
+                                {
+                                    <span class="badge st-uploaded">ایمپورت</span>
+                                    @if (r.ImportBatchId.HasValue)
+                                    {
+                                        <div class="cell-sub"><a acl-res="Mapper.Imports" acl-act="View" class="code" asp-controller="Imports" asp-action="Detail" asp-route-id="@r.ImportBatchId">IMP-@r.ImportBatchId.Value.ToString("0000")</a></div>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="badge st-validated">ورود دستی</span>
+                                }
+                            </td>
+                            <td class="cell-sub" style="white-space:nowrap">@((r.UpdatedAt ?? r.CreatedAt).ToRelative())</td>
+                            <td>
+                                <div class="row-actions">
+                                    <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-action="Detail" asp-route-id="@r.Id" title="مشاهده" aria-label="مشاهدهٔ رکورد @r.Id"><svg class="ico"><use href="#i-eye" /></svg></a>
+                                    <a acl-res="Mapper.DataRecords" acl-act="Edit" class="icon-btn sm" asp-action="Edit" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
+                                    <a acl-res="Mapper.DataRecords" acl-act="Create" class="icon-btn sm" asp-action="Create" asp-route-copyFrom="@r.Id" data-modal title="رونوشت: رکورد جدید با همین مقدارها" aria-label="رونوشت رکورد @r.Id"><svg class="ico"><use href="#i-copy" /></svg></a>
+                                    <button class="icon-btn sm danger" type="button" data-delete-id="@r.Id" data-delete-name="رکورد @r.Id" title="حذف" aria-label="حذف رکورد @r.Id"><svg class="ico"><use href="#i-trash" /></svg></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     }
 
     @if (result.TotalCount > 0)
@@ -114,7 +133,7 @@
             <nav class="pager" aria-label="صفحه‌بندی">
                 @if (result.HasPrevious)
                 {
-                    <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
+                    <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
                 }
                 else
                 {
@@ -123,7 +142,7 @@
                 <span class="pager-now" aria-current="page">صفحه @result.Page.ToPersianNumber() از @Math.Max(1, result.TotalPages).ToPersianNumber()</span>
                 @if (result.HasNext)
                 {
-                    <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
+                    <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
                 }
                 else
                 {
@@ -134,7 +153,6 @@
                 <input type="hidden" name="search" value="@filter.Search" />
                 <input type="hidden" name="templateVersionId" value="@filter.TemplateVersionId" />
                 <input type="hidden" name="source" value="@filter.Source" />
-                <input type="hidden" name="importBatchId" value="@filter.ImportBatchId" />
                 <label for="pageSize">ردیف در صفحه</label>
                 <select class="select" id="pageSize" name="pageSize" onchange="this.form.submit()">
                     @foreach (var size in pageSizes)

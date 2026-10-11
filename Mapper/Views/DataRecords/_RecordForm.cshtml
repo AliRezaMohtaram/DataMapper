@@ -11,7 +11,7 @@
     var title = isEdit ? $"ویرایش رکورد {Model.RecordId}" : Model.CopiedFrom.HasValue ? $"رکورد جدید (رونوشت از {Model.CopiedFrom})" : "رکورد جدید";
     var cancelUrl = isEdit
         ? Url.Action("Detail", "DataRecords", new { id = Model.RecordId })
-        : Url.Action("Index", "DataRecords", new { templateVersionId = Model.TemplateVersionId });
+        : Url.Action("Version", "DataRecords", new { templateVersionId = Model.TemplateVersionId });
 
     string Js(string file) => FileVersions.AddFileVersionToPath(Context.Request.PathBase, "/js/" + file);
     var deps = System.Text.Json.JsonSerializer.Serialize(new[]

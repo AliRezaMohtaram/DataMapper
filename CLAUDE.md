@@ -87,7 +87,10 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
 
 ## Records, imports, data sources
 
-- `ListDataRecordsQuery` returns one template version as a table (`Columns` = fields, `Values` per record, option titles for
+- `/DataRecords` (Index) = overview of all records (`ListRecordsOverviewQuery`): template, version, org unit, source, time,
+  row actions; a row click (`tr[data-row-href]`) opens `/DataRecords/Version?templateVersionId=` — the per-version table
+  where records are added, edited, copied and deleted. `importBatchId` links redirect to Version.
+- `ListDataRecordsQuery` (Version page) returns one template version as a table (`Columns` = fields, `Values` per record, option titles for
   static/file sources); without a version: the filtered import's, else the latest record's. Partial `_RecordGrid` on
   `/DataRecords` and, compact, in `_RecentRecords` under the entry form (`DataRecords/Recent?versionId=`, refreshed by
   record-form.js after "save and new"). Dates/numbers shown via `ToRecordDisplay` (Jalali, Persian digits).
@@ -107,8 +110,9 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   (`RecordNeighborsDto`).
 - Navigation: `_Layout` renders a breadcrumb (`.crumbs`, in mx.css) on every page below a menu section's home: menu
   section › `ViewData["Crumbs"]` (`Crumb(Label, Url)`) › title. `wwwroot/js/nav.js` remembers each list's URL (search,
-  filters, page) per browser tab and points plain links to that list back to it (not the sidebar), and opens
-  `tr[data-row-modal]` rows in a modal.
+  filters, page) per browser tab and points plain links to that list back to it (not the sidebar); a page marked
+  `[data-list-page="templateVersionId=5"]` is remembered under path + that parameter, so links with exactly that query
+  are restored too. It opens `tr[data-row-modal]` rows in a modal and follows `tr[data-row-href]`.
 
 - Tests: `Mapper.Tests` (WebApplicationFactory, every DbContext on its own SQLite connection, startup migrations off;
   `DataScopeTests` for the unit filter).

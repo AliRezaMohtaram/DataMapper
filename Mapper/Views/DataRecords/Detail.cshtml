@@ -7,7 +7,7 @@
 @{
     ViewData["Title"] = $"رکورد {Model.Id}";
     ViewData["Subtitle"] = $"{Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}";
-    ViewData["Crumbs"] = new[] { new Crumb($"{Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}", Url.Action("Index", "DataRecords", new { templateVersionId = Model.TemplateVersionId })) };
+    ViewData["Crumbs"] = new[] { new Crumb($"{Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}", Url.Action("Version", "DataRecords", new { templateVersionId = Model.TemplateVersionId })) };
 
     var canEdit = Model.VersionStatus == TemplateVersionStatus.Published;
     var filled = Model.Values.Count(v => !string.IsNullOrEmpty(v.Value));

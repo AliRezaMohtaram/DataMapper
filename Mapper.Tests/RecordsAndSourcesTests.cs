@@ -99,7 +99,13 @@ public sealed class RecordsAndSourcesTests(MapperApp app) : IClassFixture<Mapper
         }
 
         HttpClient admin = await app.AdminAsync();
-        string list = await TextAsync(await admin.GetAsync($"/DataRecords?templateVersionId={versionId}"));
+        // Overview: one row per record with template, version, unit and source; a row leads to the version's table.
+        string overview = await TextAsync(await admin.GetAsync("/DataRecords"));
+        Assert.Contains("<th>قالب</th><th>نسخه</th><th>واحد سازمانی</th><th>منبع</th><th>ثبت</th>", overview);
+        Assert.Contains($"data-row-href=\"/DataRecords/Version?templateVersionId={versionId}\"", overview);
+        Assert.Contains("عمومی", overview);
+
+        string list = await TextAsync(await admin.GetAsync($"/DataRecords/Version?templateVersionId={versionId}"));
         Assert.Contains("<th>نام کارگاه</th>", list);
         Assert.Contains("<th>نوع</th>", list);
         Assert.Contains("کارگاه عسلویه", list);
@@ -166,7 +172,7 @@ public sealed class RecordsAndSourcesTests(MapperApp app) : IClassFixture<Mapper
         // Detail: breadcrumb back to this version's list, and previous/next in list order (newest first).
         string detail = await TextAsync(await admin.GetAsync($"/DataRecords/Detail/{first}"));
         Assert.Contains("class=\"crumbs\"", detail);
-        Assert.Contains($"/DataRecords?templateVersionId={versionId}", detail);
+        Assert.Contains($"/DataRecords/Version?templateVersionId={versionId}", detail);
         Assert.Contains($"href=\"/DataRecords/Detail/{second}\"", detail);
         Assert.Contains("۲ از ۲", detail);
     }
