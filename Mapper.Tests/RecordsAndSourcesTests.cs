@@ -130,6 +130,48 @@ public sealed class RecordsAndSourcesTests(MapperApp app) : IClassFixture<Mapper
     }
 
     [Fact]
+    public async Task Records_open_in_a_modal_can_be_copied_and_paged_through()
+    {
+        (_, long versionId) = await PublishedTemplateAsync("مودال");
+        foreach (string site in new[] { "کارگاه یک", "کارگاه دو" })
+        {
+            await SendAsync(new CreateDataRecordCommand(versionId, new Dictionary<string, string?> { ["F001"] = site, ["F002"] = "PROD" }));
+        }
+
+        long first, second;
+        await using (AsyncServiceScope scope = app.Services.CreateAsyncScope())
+        {
+            List<long> ids = await scope.ServiceProvider.GetRequiredService<BorcDataMapperDbContext>().DataRecords
+                .Where(r => r.TemplateVersionId == versionId).OrderBy(r => r.Id).Select(r => r.Id).ToListAsync();
+            (first, second) = (ids[0], ids[1]);
+        }
+
+        HttpClient admin = await app.AdminAsync();
+        static HttpRequestMessage Modal(string url) => new(HttpMethod.Get, url) { Headers = { { "X-MX-Modal", "1" } } };
+
+        // Edit and copy answer with the modal partial; the copy is a new record with the same values.
+        string edit = await TextAsync(await admin.SendAsync(Modal($"/DataRecords/Edit/{first}")));
+        Assert.StartsWith("<div class=\"modal modal-xl\" data-mx-init=\"record-form\"", edit.TrimStart());
+        string copy = await TextAsync(await admin.SendAsync(Modal($"/DataRecords/Create?copyFrom={first}")));
+        Assert.Contains($"رونوشت از {first}", copy);
+        Assert.Contains("\"values\":{\"F001\":", copy);   // the copied values (JSON escapes Persian text)
+        Assert.Contains("\"recordId\":null", copy);
+
+        // "Manual entry" without a version opens the template used last; choose=true asks again.
+        string direct = await TextAsync(await admin.SendAsync(Modal("/DataRecords/Create")));
+        Assert.Contains("data-rf-data", direct);
+        string choose = await TextAsync(await admin.SendAsync(Modal("/DataRecords/Create?choose=true")));
+        Assert.Contains("name=\"versionId\"", choose);
+
+        // Detail: breadcrumb back to this version's list, and previous/next in list order (newest first).
+        string detail = await TextAsync(await admin.GetAsync($"/DataRecords/Detail/{first}"));
+        Assert.Contains("class=\"crumbs\"", detail);
+        Assert.Contains($"/DataRecords?templateVersionId={versionId}", detail);
+        Assert.Contains($"href=\"/DataRecords/Detail/{second}\"", detail);
+        Assert.Contains("۲ از ۲", detail);
+    }
+
+    [Fact]
     public async Task The_uploaded_import_file_is_kept_and_can_be_downloaded()
     {
         (_, long versionId) = await PublishedTemplateAsync("ایمپورت");

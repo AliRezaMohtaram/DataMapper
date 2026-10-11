@@ -28,7 +28,7 @@
 @section TopbarActions {
     @if (filter.TemplateVersionId.HasValue)
     {
-        <a acl-res="Mapper.DataRecords" acl-act="Create" class="btn btn-soft" asp-action="Create" asp-route-versionId="@filter.TemplateVersionId"><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>
+        <a acl-res="Mapper.DataRecords" acl-act="Create" class="btn btn-soft" asp-action="Create" asp-route-versionId="@filter.TemplateVersionId" data-modal><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>
     }
     else
     {
@@ -151,4 +151,5 @@
 
 @section Scripts {
     <script src="~/js/confirm-delete.js" asp-append-version="true"></script>
+    <partial name="_RecordFormScripts" />
 }

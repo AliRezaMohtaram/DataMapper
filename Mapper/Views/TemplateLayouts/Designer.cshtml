@@ -1,6 +1,11 @@
 ﻿@model Borc.DataMapper.Web.ViewModels.TemplateLayouts.LayoutDesignerViewModel
 @{
     ViewData["Title"] = $"طراح Layout - {Model.TemplateName}";
+    ViewData["Crumbs"] = new[]
+    {
+        new Borc.DataMapper.Web.ViewModels.Crumb(Model.TemplateName, Url.Action("Detail", "Templates", new { id = Model.TemplateId })),
+        new Borc.DataMapper.Web.ViewModels.Crumb($"نسخهٔ {Model.VersionNo.ToPersianNumber()}", Url.Action("Detail", "TemplateVersions", new { id = Model.TemplateVersionId })),
+    };
     var isDraft = Model.VersionStatus == TemplateVersionStatus.Draft;
 }
 

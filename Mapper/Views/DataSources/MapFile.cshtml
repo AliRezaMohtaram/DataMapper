@@ -4,6 +4,7 @@
     ViewData["Subtitle"] = $"منبع داده «{Model.DataSourceName}»";
 
     var id = (long)ViewData["DataSourceId"]!;
+    ViewData["Crumbs"] = new[] { new Borc.DataMapper.Web.ViewModels.Crumb(Model.DataSourceName, Url.Action("Detail", "DataSources", new { id })) };
 }
 
 <div class="modal-page">

@@ -28,6 +28,16 @@
     var chartActive = area == "OrgChart" && !page.StartsWith("/My", StringComparison.OrdinalIgnoreCase);
     var myActive = area == "OrgChart" && page.StartsWith("/My", StringComparison.OrdinalIgnoreCase);
     var aclActive = area == "Acl";
+
+    // مسیر صفحه: بخش منو › حلقه‌های میانیِ خود صفحه › عنوان؛ در صفحهٔ اصلی هر بخش و صفحه‌های ماژول‌ها نمایش داده نمی‌شود.
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    var navSection = area == "" ? nav.FirstOrDefault(IsActive) : null;
+    var isSectionHome = navSection is not null
+        && string.Equals(navSection.Controller, controller, StringComparison.OrdinalIgnoreCase)
+        && string.Equals(action, "Index", StringComparison.OrdinalIgnoreCase);
+    var crumbs = ViewData["Crumbs"] as IEnumerable<Crumb> ?? Array.Empty<Crumb>();
+    var showCrumbs = navSection is not null && navSection.Controller != "Dashboard" && !isSectionHome;
+    var listPaths = string.Join(",", nav.Where(n => n.Controller != "Dashboard").Select(n => Url.Action("Index", n.Controller, new { area = "" })));
 }
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -160,6 +170,26 @@
             </header>
 
             <main class="page">
+                @if (showCrumbs)
+                {
+                    <nav class="crumbs" aria-label="مسیر صفحه">
+                        <a asp-area="" asp-controller="@navSection!.Controller" asp-action="Index">@navSection.Label</a>
+                        @foreach (var c in crumbs)
+                        {
+                            <svg class="ico" aria-hidden="true"><use href="#i-chev-left" /></svg>
+                            @if (c.Url is null)
+                            {
+                                <span>@c.Label</span>
+                            }
+                            else
+                            {
+                                <a href="@c.Url">@c.Label</a>
+                            }
+                        }
+                        <svg class="ico" aria-hidden="true"><use href="#i-chev-left" /></svg>
+                        <span aria-current="page">@title</span>
+                    </nav>
+                }
                 @if (TempData["Error"] is string errMessage)
                 {
                     <div class="callout tone-danger" role="alert" style="margin-bottom:1rem">
@@ -286,6 +316,7 @@
 
     <script src="~/js/theme.js" asp-append-version="true"></script>
     <script src="~/js/mx.js" asp-append-version="true"></script>
+    <script src="~/js/nav.js" asp-append-version="true" data-lists="@listPaths"></script>
     @if (TempData["Success"] is string okMessage)
     {
         <script>MX.toast(@Json.Serialize(okMessage), "success");</script>

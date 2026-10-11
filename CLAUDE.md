@@ -91,8 +91,21 @@ Cloud container: the clones are /home/user/acl and /home/user/organization; a sy
   The record detail page is a horizontal table too (user: a vertical field list is not what users are used to).
 - Import files are kept in `dbo.ImportBatchFile` (one row per batch, varbinary; `Scripts/010_ImportFiles.sql`, also run at
   startup); download: `Imports/Download/{id}` (only for batches the user can see). Content type from the extension.
-- Data source pages (index, detail, map file, preview) are on MX; `vx.css` was removed (it was never loaded: `_Layout` has no
-  Styles section). `TemplateLayouts/*` still use old class names.
+- Data source pages (index, detail, map file, preview) are on MX; `vx.css` was removed (no page uses it any more).
+  `TemplateLayouts/*` still use old class names.
+- Record form = MX component `record-form` (`wwwroot/js/record-form.js`) on the partial `_RecordForm` (root `.modal`):
+  opened in a modal from the grid (row click via `tr[data-row-modal]`, edit/copy icons), the detail page and the list
+  toolbar; `Form.cshtml` shows the same partial as a page with the recent records. It loads its dependencies itself when
+  a page lacks them (`data-rf-deps`; ui.js, jalali-picker.js, combobox.js, layout-designer.js) — `_RecordFormScripts`
+  preloads them. Keys: Enter = next field, Ctrl+S = save, Ctrl+Enter = save and new. In a modal, saving reloads the page
+  behind it (filters kept); "save and new" (`SaveRecordRequest.Stay`) keeps the form and sets no TempData message.
+  `Create?copyFrom=` (copy, published versions only), `Create` without a version opens the version used last (cookie
+  `mapper.record-version`), `choose=true` always shows the template picker. Detail: previous/next in list order
+  (`RecordNeighborsDto`).
+- Navigation: `_Layout` renders a breadcrumb (`.crumbs`, in mx.css) on every page below a menu section's home: menu
+  section › `ViewData["Crumbs"]` (`Crumb(Label, Url)`) › title. `wwwroot/js/nav.js` remembers each list's URL (search,
+  filters, page) per browser tab and points plain links to that list back to it (not the sidebar), and opens
+  `tr[data-row-modal]` rows in a modal.
 
 - Tests: `Mapper.Tests` (WebApplicationFactory, every DbContext on its own SQLite connection, startup migrations off;
   `DataScopeTests` for the unit filter).

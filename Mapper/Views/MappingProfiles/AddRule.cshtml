@@ -1,6 +1,7 @@
 @model Borc.DataMapper.Application.MappingProfiles.AddMappingRule.AddMappingRuleCommand
 @{
     ViewData["Title"] = "قاعدهٔ جدید";
+    ViewData["Crumbs"] = new[] { new Borc.DataMapper.Web.ViewModels.Crumb("پروفایل نگاشت", Url.Action("Detail", "MappingProfiles", new { id = Model.MappingProfileId })) };
 }
 @* معمولاً این فرم در مودال باز می‌شود (data-modal)؛ این صفحه برای لینک مستقیم و حالت بدون JavaScript است. *@
 <div class="modal-page">

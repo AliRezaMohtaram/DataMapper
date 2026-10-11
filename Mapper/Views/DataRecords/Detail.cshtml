@@ -7,6 +7,7 @@
 @{
     ViewData["Title"] = $"رکورد {Model.Id}";
     ViewData["Subtitle"] = $"{Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}";
+    ViewData["Crumbs"] = new[] { new Crumb($"{Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}", Url.Action("Index", "DataRecords", new { templateVersionId = Model.TemplateVersionId })) };
 
     var canEdit = Model.VersionStatus == TemplateVersionStatus.Published;
     var filled = Model.Values.Count(v => !string.IsNullOrEmpty(v.Value));
@@ -14,7 +15,26 @@
 }
 
 @section TopbarActions {
-    <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-ghost" asp-action="Index" asp-route-templateVersionId="@Model.TemplateVersionId"><svg class="ico"><use href="#i-chev-right" /></svg><span class="lbl">رکوردهای این نسخه</span></a>
+    @* قبلی/بعدی به ترتیب فهرست رکوردهای همین نسخه (جدیدترین اول) *@
+    <div class="row" style="gap:.35rem;align-items:center">
+        @if (Model.Neighbors.PreviousId is { } prev)
+        {
+            <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn" asp-action="Detail" asp-route-id="@prev" title="رکورد قبلی" aria-label="رکورد قبلی"><svg class="ico"><use href="#i-chev-right" /></svg></a>
+        }
+        else
+        {
+            <span class="icon-btn" aria-disabled="true" style="opacity:.4"><svg class="ico"><use href="#i-chev-right" /></svg></span>
+        }
+        <span class="cell-sub nums hide-mobile">@Model.Neighbors.Position.ToPersianNumber() از @Model.Neighbors.Total.ToPersianNumber()</span>
+        @if (Model.Neighbors.NextId is { } next)
+        {
+            <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn" asp-action="Detail" asp-route-id="@next" title="رکورد بعدی" aria-label="رکورد بعدی"><svg class="ico"><use href="#i-chev-left" /></svg></a>
+        }
+        else
+        {
+            <span class="icon-btn" aria-disabled="true" style="opacity:.4"><svg class="ico"><use href="#i-chev-left" /></svg></span>
+        }
+    </div>
 }
 
 <article class="card rise">
@@ -33,7 +53,8 @@
         <div class="row" style="gap:.5rem">
             @if (canEdit)
             {
-                <a acl-res="Mapper.DataRecords" acl-act="Edit" class="btn btn-primary btn-sm" asp-action="Edit" asp-route-id="@Model.Id"><svg class="ico"><use href="#i-edit" /></svg>ویرایش رکورد</a>
+                <a acl-res="Mapper.DataRecords" acl-act="Edit" class="btn btn-primary btn-sm" asp-action="Edit" asp-route-id="@Model.Id" data-modal><svg class="ico"><use href="#i-edit" /></svg>ویرایش رکورد</a>
+                <a acl-res="Mapper.DataRecords" acl-act="Create" class="btn btn-ghost btn-sm" asp-action="Create" asp-route-copyFrom="@Model.Id" data-modal title="رکورد جدید با همین مقدارها"><svg class="ico"><use href="#i-copy" /></svg>رونوشت</a>
             }
             <button acl-res="Mapper.DataRecords" acl-act="Delete" type="button" class="btn btn-danger-soft btn-sm" data-delete-id="@Model.Id" data-delete-name="رکورد @Model.Id"><svg class="ico"><use href="#i-trash" /></svg>حذف</button>
         </div>
@@ -118,4 +139,5 @@
 
 @section Scripts {
     <script src="~/js/confirm-delete.js" asp-append-version="true"></script>
+    <partial name="_RecordFormScripts" />
 }

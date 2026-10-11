@@ -3,9 +3,8 @@
     var isEdit = Model.RecordId.HasValue;
     ViewData["Title"] = isEdit ? $"ویرایش رکورد {Model.RecordId}" : $"ورود دستی داده - {Model.TemplateName}";
     ViewData["Subtitle"] = $"{Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}";
+    ViewData["Crumbs"] = new[] { new Borc.DataMapper.Web.ViewModels.Crumb($"{Model.TemplateName} · نسخهٔ {Model.VersionNo.ToPersianNumber()}", Url.Action("Index", "DataRecords", new { templateVersionId = Model.TemplateVersionId })) };
 }
-
-@Html.AntiForgeryToken()
 
 @section TopbarActions {
     @if (isEdit)
@@ -18,34 +17,9 @@
     }
 }
 
-@* بدنهٔ فرم را record-form.js با موتور Layout داخل #rfHost می‌سازد؛ این صفحه فقط قاب و دکمه‌ها را دارد. *@
-<article class="card rise">
-    <header class="card-head">
-        <div class="card-title">
-            <span class="card-ico" style="background:var(--success-soft);color:var(--success)"><svg class="ico"><use href="#i-pen" /></svg></span>
-            <div>
-                @(isEdit ? $"ویرایش رکورد {Model.RecordId}" : "رکورد جدید")
-                <div class="card-sub">@Model.TemplateName · نسخهٔ @Model.VersionNo.ToPersianNumber() — فیلدهای ستاره‌دار الزامی‌اند</div>
-            </div>
-        </div>
-    </header>
-
-    <div class="card-body">
-        <div id="rfHost" class="rf-host"></div>
-    </div>
-
-    <footer class="card-foot" style="justify-content:flex-end">
-        @if (isEdit)
-        {
-            <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-quiet" asp-action="Detail" asp-route-id="@Model.RecordId">انصراف</a>
-        }
-        else
-        {
-            <button type="button" id="rfSaveNew" class="btn btn-ghost"><svg class="ico"><use href="#i-plus" /></svg>ذخیره و رکورد جدید</button>
-        }
-        <button type="button" id="rfSave" class="btn btn-primary"><svg class="ico"><use href="#i-check" /></svg>ذخیره رکورد</button>
-    </footer>
-</article>
+<div class="modal-page">
+    <partial name="_RecordForm" model="Model" />
+</div>
 
 @if (Model.Recent is not null)
 {
@@ -54,14 +28,6 @@
     </article>
 }
 
-<partial name="_ConfirmModal" />
-
-<script id="rfData" type="application/json">@Html.Raw(Model.DataJson)</script>
-
 @section Scripts {
-    <script src="~/js/ui.js" asp-append-version="true"></script>
-    <script src="~/js/jalali-picker.js" asp-append-version="true"></script>
-    <script src="~/js/combobox.js" asp-append-version="true"></script>
-    <script src="~/js/layout-designer.js" asp-append-version="true"></script>
-    <script src="~/js/record-form.js" asp-append-version="true"></script>
+    <partial name="_RecordFormScripts" />
 }

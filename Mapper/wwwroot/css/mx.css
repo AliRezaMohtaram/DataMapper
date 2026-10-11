@@ -377,6 +377,12 @@ h1, h2, h3, h4, p { margin:0; }
 .topbar-title { min-width:0; }
 .topbar-title h1 { font-size:1.08rem; font-weight:800; color:var(--text-strong); line-height:1.3; }
 .topbar-title p { font-size:.74rem; color:var(--faint); white-space:nowrap; }
+/* Breadcrumb (page path) above the page content */
+.crumbs { display:flex; align-items:center; flex-wrap:wrap; gap:.35rem; margin:-.35rem 0 .9rem; font-size:.78rem; color:var(--faint); }
+.crumbs a { color:var(--muted); text-decoration:none; font-weight:600; }
+.crumbs a:hover { color:var(--primary); }
+.crumbs .ico { width:.8rem; height:.8rem; opacity:.7; }
+.crumbs [aria-current] { color:var(--text-strong); font-weight:700; max-width:28rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .topbar-actions { display:flex; align-items:center; gap:.5rem; margin-inline-start:auto; }
 .menu-btn { display:none; }
 

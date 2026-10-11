@@ -2,6 +2,7 @@
 @using Borc.DataMapper.Web.ViewModels.Dashboard
 @{
     ViewData["Title"] = $"{Model.TemplateName} — نسخهٔ {Model.VersionNo.ToPersianNumber()}";
+    ViewData["Crumbs"] = new[] { new Borc.DataMapper.Web.ViewModels.Crumb(Model.TemplateName, Url.Action("Detail", "Templates", new { id = Model.TemplateId })) };
     ViewData["Subtitle"] = $"قالب {Model.TemplateCode} · {Model.Fields.Count.ToPersianNumber()} فیلد";
 
     var isDraft = Model.Status == TemplateVersionStatus.Draft;

@@ -10,6 +10,7 @@ using Borc.DataMapper.Application.DataRecords.ListDataRecords;
 using Borc.DataMapper.Application.DataRecords.UpdateDataRecord;
 using Borc.DataMapper.Application.Imports.GetImportLookups;
 using Borc.DataMapper.Domain.Records;
+using Borc.DataMapper.Domain.Templates;
 using Borc.DataMapper.Web.ViewModels.DataRecords;
 using Borc.DataMapper.Web.Mvc;
 using MediatR;
@@ -58,29 +59,68 @@ public sealed class DataRecordsController : Controller
 
     // ---------- ورود دستی ----------
 
-    /// <summary>بدون versionId: انتخاب قالب؛ با versionId: فرم ورود داده.</summary>
+    /// <summary>نسخهٔ قالبی که کاربر آخرین بار برایش رکورد ثبت کرد؛ «ورود دستی» مستقیم همان فرم را باز می‌کند.</summary>
+    private const string LastVersionCookie = "mapper.record-version";
+
+    /// <summary>
+    /// فرم رکورد جدید (در مودال یا صفحهٔ کامل). بدون versionId: قالبی که آخرین بار استفاده شد، وگرنه انتخاب قالب
+    /// (choose=true همیشه انتخاب را نشان می‌دهد). copyFrom: رکورد جدید با مقدارهای یک رکورد موجود (رونوشت).
+    /// </summary>
     [HttpGet]
     [RequirePermission(MapperResources.DataRecords, WellKnownActions.Create)]
-    public async Task<IActionResult> Create(long? versionId, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(long? versionId, long? copyFrom, bool choose, CancellationToken cancellationToken)
     {
-        if (!versionId.HasValue)
+        Application.Common.Results.Result<RecordFormDto> form;
+
+        if (copyFrom.HasValue)
         {
-            var lookups = await _sender.Send(new GetImportLookupsQuery(), cancellationToken);
-            var versions = lookups.Data?.Versions ?? Array.Empty<ImportVersionOption>();
+            form = await _sender.Send(new GetRecordFormQuery(RecordId: copyFrom), cancellationToken);
 
-            // انتخاب قالب در مودال باز می‌شود؛ بدون JavaScript صفحهٔ کامل SelectVersion
-            return this.ModalOrView("_SelectVersion", versions, "SelectVersion");
+            if (form.Success && form.Data is not null && form.Data.VersionStatus != TemplateVersionStatus.Published)
+            {
+                TempData["Error"] = "نسخهٔ قالب این رکورد منتشرشده نیست؛ رونوشت از آن ممکن نیست.";
+                return RedirectToAction(nameof(Detail), new { id = copyFrom });
+            }
         }
+        else
+        {
+            if (!versionId.HasValue)
+            {
+                var lookups = await _sender.Send(new GetImportLookupsQuery(), cancellationToken);
+                var versions = lookups.Data?.Versions ?? Array.Empty<ImportVersionOption>();
 
-        var form = await _sender.Send(new GetRecordFormQuery(TemplateVersionId: versionId), cancellationToken);
+                if (!choose
+                    && long.TryParse(Request.Cookies[LastVersionCookie], out var last)
+                    && versions.Any(v => v.Id == last))
+                {
+                    versionId = last;
+                }
+                else
+                {
+                    // انتخاب قالب در مودال باز می‌شود؛ بدون JavaScript صفحهٔ کامل SelectVersion
+                    return this.ModalOrView("_SelectVersion", versions, "SelectVersion");
+                }
+            }
+
+            form = await _sender.Send(new GetRecordFormQuery(TemplateVersionId: versionId), cancellationToken);
+        }
 
         if (!form.Success || form.Data is null)
         {
             TempData["Error"] = form.Message ?? "فرم ورود داده ساخته نشد.";
-            return RedirectToAction(nameof(Create));
+            return RedirectToAction(nameof(Create), new { choose = true });
         }
 
-        return View("Form", BuildFormPage(form.Data) with { Recent = await LoadRecentAsync(form.Data.TemplateVersionId, cancellationToken) });
+        var data = form.Data with { RecordId = null };
+
+        Response.Cookies.Append(LastVersionCookie, data.TemplateVersionId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            new CookieOptions { HttpOnly = true, IsEssential = true, SameSite = SameSiteMode.Lax, MaxAge = TimeSpan.FromDays(180) });
+
+        var page = BuildFormPage(data) with { CopiedFrom = copyFrom };
+
+        return Request.IsModalRequest()
+            ? PartialView("_RecordForm", page)
+            : View("Form", page with { Recent = await LoadRecentAsync(data.TemplateVersionId, cancellationToken) });
     }
 
     /// <summary>آخرین رکوردهای نسخه برای زیر فرم ورود داده (HTML)؛ پس از هر ذخیره دوباره گرفته می‌شود.</summary>
@@ -90,6 +130,7 @@ public sealed class DataRecordsController : Controller
         return PartialView("_RecentRecords", await LoadRecentAsync(versionId, cancellationToken));
     }
 
+    /// <summary>فرم ویرایش (در مودال از فهرست/جزئیات، یا صفحهٔ کامل).</summary>
     [HttpGet]
     [RequirePermission(MapperResources.DataRecords, WellKnownActions.Edit)]
     public async Task<IActionResult> Edit(long id, CancellationToken cancellationToken)
@@ -102,7 +143,11 @@ public sealed class DataRecordsController : Controller
             return RedirectToAction(nameof(Detail), new { id });
         }
 
-        return View("Form", BuildFormPage(form.Data) with { Recent = await LoadRecentAsync(form.Data.TemplateVersionId, cancellationToken) });
+        var page = BuildFormPage(form.Data);
+
+        return Request.IsModalRequest()
+            ? PartialView("_RecordForm", page)
+            : View("Form", page with { Recent = await LoadRecentAsync(form.Data.TemplateVersionId, cancellationToken) });
     }
 
     /// <summary>ذخیرهٔ رکورد جدید یا ویرایش‌شده؛ فرم با fetch و JSON ارسال می‌شود.</summary>
@@ -131,7 +176,9 @@ public sealed class DataRecordsController : Controller
         if (!result.Data.Saved)
             return Json(new { success = false, message = result.Message, fieldErrors = result.Data.FieldErrors });
 
-        TempData["Success"] = result.Message;
+        // «ذخیره و رکورد جدید» در همان فرم می‌ماند و پیامش را خودش نشان می‌دهد
+        if (!request.Stay)
+            TempData["Success"] = result.Message;
 
         return Json(new
         {

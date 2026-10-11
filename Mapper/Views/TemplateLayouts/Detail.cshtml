@@ -1,6 +1,7 @@
 ﻿@model Borc.DataMapper.Application.TemplateVersions.GetTemplateVersion.TemplateVersionDetailDto
 @{
     ViewData["Title"] = $"{Model.TemplateName} - نسخه {Model.VersionNo}";
+    ViewData["Crumbs"] = new[] { new Borc.DataMapper.Web.ViewModels.Crumb(Model.TemplateName, Url.Action("Detail", "Templates", new { id = Model.TemplateId })) };
 
     var isDraft = Model.Status == TemplateVersionStatus.Draft;
     var isArchived = Model.Status == TemplateVersionStatus.Archived;

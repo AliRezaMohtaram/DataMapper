@@ -3,6 +3,7 @@
 @using Borc.DataMapper.Web.ViewModels
 @{
     ViewData["Title"] = $"بارگذاری فایل - {Model.Name}";
+    ViewData["Crumbs"] = new[] { new Borc.DataMapper.Web.ViewModels.Crumb(Model.Name, Url.Action("Detail", "DataSources", new { id = Model.Id })) };
     ViewData["Subtitle"] = $"منبع داده «{Model.Name}» · {Model.Code}";
     var replacing = Model.ItemCount > 0;
 }

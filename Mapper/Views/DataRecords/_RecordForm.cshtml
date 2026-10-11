@@ -1,0 +1,66 @@
+@model Borc.DataMapper.Web.ViewModels.DataRecords.RecordFormPageViewModel
+@inject Microsoft.AspNetCore.Mvc.ViewFeatures.IFileVersionProvider FileVersions
+@*
+    فرم ورود/ویرایش رکورد — ریشهٔ آن یک .modal است:
+    · از فهرست و جزئیات رکورد با data-modal در مودال باز می‌شود (کاربر در همان صفحه می‌ماند)؛
+    · در Form.cshtml همین partial صفحهٔ کامل است (به‌همراه آخرین رکوردها).
+    بدنه را record-form.js (کامپوننت «record-form») با موتور Layout می‌سازد.
+*@
+@{
+    var isEdit = Model.RecordId.HasValue;
+    var title = isEdit ? $"ویرایش رکورد {Model.RecordId}" : Model.CopiedFrom.HasValue ? $"رکورد جدید (رونوشت از {Model.CopiedFrom})" : "رکورد جدید";
+    var cancelUrl = isEdit
+        ? Url.Action("Detail", "DataRecords", new { id = Model.RecordId })
+        : Url.Action("Index", "DataRecords", new { templateVersionId = Model.TemplateVersionId });
+
+    string Js(string file) => FileVersions.AddFileVersionToPath(Context.Request.PathBase, "/js/" + file);
+    var deps = System.Text.Json.JsonSerializer.Serialize(new[]
+    {
+        new { src = Js("ui.js"), global = "showToast" },
+        new { src = Js("jalali-picker.js"), global = "buildJalaliPicker" },
+        new { src = Js("combobox.js"), global = "buildCombobox" },
+        new { src = Js("layout-designer.js"), global = "LayoutEngine" },
+    });
+}
+
+<div class="modal modal-xl" data-mx-init="record-form" data-mx-src="@Js("record-form.js")" data-rf-deps="@deps">
+    @Html.AntiForgeryToken()
+
+    <div class="modal-head">
+        <span class="modal-head-ico tone-success"><svg class="ico"><use href="#i-pen" /></svg></span>
+        <div>
+            <div class="modal-title">@title</div>
+            <div class="modal-sub">
+                @Model.TemplateName · نسخهٔ @Model.VersionNo.ToPersianNumber() — فیلدهای ستاره‌دار الزامی‌اند
+                @if (!isEdit)
+                {
+                    <text> · </text><a acl-res="Mapper.DataRecords" acl-act="Create" class="link-btn" asp-controller="DataRecords" asp-action="Create" asp-route-choose="true" data-modal>تغییر قالب</a>
+                }
+            </div>
+        </div>
+        <a class="icon-btn plain close" href="@cancelUrl" data-close aria-label="بستن"><svg class="ico"><use href="#i-x" /></svg></a>
+    </div>
+
+    <div class="modal-body">
+        <div class="rf-host" data-rf-host></div>
+    </div>
+
+    <div class="modal-foot">
+        <span class="hint hide-mobile">
+            <span class="kbd">Enter</span> فیلد بعدی · <span class="kbd">Ctrl S</span> ذخیره
+            @if (!isEdit)
+            {
+                <text> · <span class="kbd">Ctrl Enter</span> ذخیره و رکورد جدید</text>
+            }
+        </span>
+        <span class="spacer"></span>
+        <a class="btn btn-quiet" href="@cancelUrl" data-close>انصراف</a>
+        @if (!isEdit)
+        {
+            <button type="button" class="btn btn-ghost" data-rf-save-new><svg class="ico"><use href="#i-plus" /></svg>ذخیره و رکورد جدید</button>
+        }
+        <button type="button" class="btn btn-primary" data-rf-save><svg class="ico"><use href="#i-check" /></svg>ذخیره رکورد</button>
+    </div>
+
+    <script type="application/json" data-rf-data>@Html.Raw(Model.DataJson)</script>
+</div>

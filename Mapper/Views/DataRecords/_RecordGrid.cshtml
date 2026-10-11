@@ -4,7 +4,10 @@
 @using Borc.DataMapper.Web.ViewModels.DataRecords
 @* رکوردهای یک نسخه به‌صورت جدول: سرستون‌ها = فیلدهای قالب، هر ردیف = یک رکورد.
    در صفحهٔ فهرست و زیر فرم ورود داده (Compact: بدون ستون منبع و دکمهٔ حذف). *@
+@inject Acl.Core.Abstractions.IAccessService AccessService
 @{
+    // کلیک روی ردیف = ویرایش در مودال (فقط با مجوز ویرایش؛ سرور دوباره بررسی می‌کند)
+    var canEdit = (await AccessService.GetCurrentUserAccessAsync()).IsAllowed("Mapper.DataRecords", "Edit");
     bool IsLtr(FieldDataType type) => type is FieldDataType.Number or FieldDataType.Date or FieldDataType.DateTime;
 }
 
@@ -28,7 +31,7 @@
         <tbody>
             @foreach (var r in Model.Items)
             {
-                <tr>
+                <tr data-row-modal="@(canEdit ? Url.Action("Edit", "DataRecords", new { id = r.Id }) : null)" style="@(canEdit ? "cursor:pointer" : null)">
                     <td><a acl-res="Mapper.DataRecords" acl-act="View" class="code" asp-controller="DataRecords" asp-action="Detail" asp-route-id="@r.Id">@r.Id</a></td>
                     @foreach (var c in Model.Columns)
                     {
@@ -69,7 +72,8 @@
                     <td>
                         <div class="row-actions">
                             <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-controller="DataRecords" asp-action="Detail" asp-route-id="@r.Id" title="مشاهده" aria-label="مشاهدهٔ رکورد @r.Id"><svg class="ico"><use href="#i-eye" /></svg></a>
-                            <a acl-res="Mapper.DataRecords" acl-act="Edit" class="icon-btn sm" asp-controller="DataRecords" asp-action="Edit" asp-route-id="@r.Id" title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
+                            <a acl-res="Mapper.DataRecords" acl-act="Edit" class="icon-btn sm" asp-controller="DataRecords" asp-action="Edit" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
+                            <a acl-res="Mapper.DataRecords" acl-act="Create" class="icon-btn sm" asp-controller="DataRecords" asp-action="Create" asp-route-copyFrom="@r.Id" data-modal title="رونوشت: رکورد جدید با همین مقدارها" aria-label="رونوشت رکورد @r.Id"><svg class="ico"><use href="#i-copy" /></svg></a>
                             @if (!Model.Compact)
                             {
                                 <button class="icon-btn sm danger" type="button" data-delete-id="@r.Id" data-delete-name="رکورد @r.Id" title="حذف" aria-label="حذف رکورد @r.Id"><svg class="ico"><use href="#i-trash" /></svg></button>

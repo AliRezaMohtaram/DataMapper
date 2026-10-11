@@ -26,7 +26,8 @@ public sealed record RecordFormPageViewModel(
     int VersionNo,
     long TemplateVersionId,
     string DataJson,
-    RecentRecordsViewModel? Recent = null);
+    RecentRecordsViewModel? Recent = null,
+    long? CopiedFrom = null);
 
 /// <summary>آخرین رکوردهای یک نسخه زیر فرم ورود داده (partial «_RecentRecords»).</summary>
 public sealed record RecentRecordsViewModel(
@@ -34,11 +35,12 @@ public sealed record RecentRecordsViewModel(
     int TotalCount,
     RecordGridViewModel Grid);
 
-/// <summary>درخواست JSON ذخیرهٔ رکورد (RecordId خالی = رکورد جدید).</summary>
+/// <summary>درخواست JSON ذخیرهٔ رکورد (RecordId خالی = رکورد جدید). Stay = فرم باز می‌ماند (بدون پیام TempData).</summary>
 public sealed record SaveRecordRequest(
     long VersionId,
     long? RecordId,
-    Dictionary<string, string?>? Values);
+    Dictionary<string, string?>? Values,
+    bool Stay = false);
 
 public static class RecordSourceLabels
 {

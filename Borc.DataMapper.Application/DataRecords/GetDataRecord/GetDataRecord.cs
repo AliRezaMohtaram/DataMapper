@@ -25,7 +25,14 @@ public sealed record DataRecordDetailDto(
     long? ImportRowNumber,
     DateTime CreatedAt,
     DateTime? UpdatedAt,
-    IReadOnlyList<DataRecordValueDto> Values);
+    IReadOnlyList<DataRecordValueDto> Values,
+    RecordNeighborsDto Neighbors);
+
+/// <summary>
+/// جای رکورد در فهرست رکوردهای همان نسخه (همان ترتیب فهرست: جدیدترین اول) برای «قبلی / بعدی».
+/// PreviousId = ردیف بالاتر (جدیدتر)، NextId = ردیف پایین‌تر (قدیمی‌تر).
+/// </summary>
+public sealed record RecordNeighborsDto(long? PreviousId, long? NextId, int Position, int Total);
 
 public sealed record DataRecordValueDto(
     string Key,
@@ -124,9 +131,21 @@ public sealed class GetDataRecordHandler
             .Where(p => !known.Contains(p.Key))
             .Select(p => new DataRecordValueDto(p.Key, p.Key, FieldDataType.Text, p.Value, true)));
 
+        var created = head.r.CreatedAt;
+        var id = head.r.Id;
+        var sameVersion = _db.DataRecords.AsNoTracking().Where(r => r.TemplateVersionId == head.v.Id);
+        var newer = sameVersion.Where(r => r.CreatedAt > created || (r.CreatedAt == created && r.Id > id));
+        var older = sameVersion.Where(r => r.CreatedAt < created || (r.CreatedAt == created && r.Id < id));
+
+        var neighbors = new RecordNeighborsDto(
+            await newer.OrderBy(r => r.CreatedAt).ThenBy(r => r.Id).Select(r => (long?)r.Id).FirstOrDefaultAsync(cancellationToken),
+            await older.OrderByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id).Select(r => (long?)r.Id).FirstOrDefaultAsync(cancellationToken),
+            await newer.CountAsync(cancellationToken) + 1,
+            await sameVersion.CountAsync(cancellationToken));
+
         return Result<DataRecordDetailDto>.Ok(new DataRecordDetailDto(
             head.r.Id, head.t.Id, head.t.Name, head.v.Id, head.v.VersionNo, head.v.Status,
             head.r.SourceType, head.r.ImportBatchId, fileName, rowNumber,
-            head.r.CreatedAt, head.r.UpdatedAt, values));
+            head.r.CreatedAt, head.r.UpdatedAt, values, neighbors));
     }
 }
