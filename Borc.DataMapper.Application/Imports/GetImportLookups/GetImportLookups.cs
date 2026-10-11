@@ -1,5 +1,6 @@
 ﻿using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Application.Common.Results;
+using Borc.DataMapper.Application.Templates.Entry;
 using Borc.DataMapper.Domain.Mappings;
 using Borc.DataMapper.Domain.Templates;
 using MediatR;
@@ -7,8 +8,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Borc.DataMapper.Application.Imports.GetImportLookups;
 
-/// <summary>گزینه‌های صفحهٔ آپلود: نسخه‌های منتشرشده و پروفایل‌های فعال نگاشت.</summary>
-public sealed record GetImportLookupsQuery : IRequest<Result<ImportLookupsDto>>;
+/// <summary>
+/// گزینه‌های آپلود و ورود دستی: نسخه‌های منتشرشدهٔ قالب‌هایی که کاربر اجازهٔ ثبت داده با آن‌ها را دارد
+/// (واحدهای مجاز قالب) و پروفایل‌های فعال نگاشت همان نسخه‌ها.
+/// </summary>
+/// <param name="ForEntry">Only templates the user may enter data for (false = every published version, e.g. list filters).</param>
+public sealed record GetImportLookupsQuery(bool ForEntry = true) : IRequest<Result<ImportLookupsDto>>;
 
 public sealed record ImportLookupsDto(
     IReadOnlyList<ImportVersionOption> Versions,
@@ -22,10 +27,12 @@ public sealed class GetImportLookupsHandler
     : IRequestHandler<GetImportLookupsQuery, Result<ImportLookupsDto>>
 {
     private readonly IAppDbContext _db;
+    private readonly ITemplateEntryPolicy _entry;
 
-    public GetImportLookupsHandler(IAppDbContext db)
+    public GetImportLookupsHandler(IAppDbContext db, ITemplateEntryPolicy entry)
     {
         _db = db;
+        _entry = entry;
     }
 
     public async Task<Result<ImportLookupsDto>> Handle(
@@ -37,7 +44,12 @@ public sealed class GetImportLookupsHandler
             join t in _db.Templates on v.TemplateId equals t.Id
             where v.Status == TemplateVersionStatus.Published
             orderby t.Name, v.VersionNo descending
-            select new { v.Id, t.Name, v.VersionNo }).ToListAsync(cancellationToken);
+            select new { v.Id, TemplateId = t.Id, t.Name, v.VersionNo }).ToListAsync(cancellationToken);
+
+        if (request.ForEntry && await _entry.AllowedTemplateIdsAsync(cancellationToken) is { } allowed)
+            versions = versions.Where(v => allowed.Contains(v.TemplateId)).ToList();
+
+        var versionIds = versions.Select(v => v.Id).ToHashSet();
 
         var profiles = await _db.MappingProfiles
             .AsNoTracking()
@@ -45,6 +57,7 @@ public sealed class GetImportLookupsHandler
             .OrderBy(p => p.Name)
             .Select(p => new ImportProfileOption(p.Id, p.TemplateVersionId, p.Name))
             .ToListAsync(cancellationToken);
+        profiles = profiles.Where(p => versionIds.Contains(p.VersionId)).ToList();
 
         return Result<ImportLookupsDto>.Ok(new ImportLookupsDto(
             versions.Select(v => new ImportVersionOption(v.Id, $"{v.Name} — نسخه {v.VersionNo}")).ToList(),

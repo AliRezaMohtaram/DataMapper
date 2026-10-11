@@ -19,6 +19,7 @@ public interface IAppDbContext
     DbSet<TemplateField> TemplateFields { get; }
     DbSet<TemplateFieldAlias> TemplateFieldAliases { get; }
     DbSet<TemplateLayout> TemplateLayouts { get; }
+    DbSet<TemplateOrgUnit> TemplateOrgUnits { get; }
     DbSet<PredefinedRegex> PredefinedRegexes { get; }
 
     DbSet<DataSource> DataSources { get; }

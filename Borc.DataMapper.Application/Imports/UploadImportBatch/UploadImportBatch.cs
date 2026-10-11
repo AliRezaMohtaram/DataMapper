@@ -3,6 +3,7 @@ using Borc.DataMapper.Application.Abstractions.Files;
 using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Application.Imports.Common;
+using Borc.DataMapper.Application.Templates.Entry;
 using Borc.DataMapper.Domain.Imports;
 using Borc.DataMapper.Domain.Templates;
 using MediatR;
@@ -26,11 +27,13 @@ public sealed class UploadImportBatchHandler
 {
     private readonly IAppDbContext _db;
     private readonly IExcelReader _excel;
+    private readonly ITemplateEntryPolicy _entry;
 
-    public UploadImportBatchHandler(IAppDbContext db, IExcelReader excel)
+    public UploadImportBatchHandler(IAppDbContext db, IExcelReader excel, ITemplateEntryPolicy entry)
     {
         _db = db;
         _excel = excel;
+        _entry = entry;
     }
 
     public async Task<Result<long>> Handle(
@@ -46,6 +49,10 @@ public sealed class UploadImportBatchHandler
 
         if (version.Status != TemplateVersionStatus.Published)
             return Result<long>.Failure("ایمپورت فقط برای نسخهٔ منتشرشده ممکن است.");
+
+        var entry = await _entry.DecideAsync(version.TemplateId, cancellationToken);
+        if (!entry.Allowed)
+            return Result<long>.Failure(TemplateEntryPolicy.DeniedMessage);
 
         if (request.Content.Length == 0)
             return Result<long>.Failure("فایل خالی است.");
@@ -106,6 +113,7 @@ public sealed class UploadImportBatchHandler
                     request.MappingProfileId);
 
                 batch.SetRowCount(sheet.Rows.Count);
+                batch.AssignOrgUnit(entry.OrgUnitKey);
 
                 _db.ImportBatches.Add(batch);
                 await _db.SaveChangesAsync(cancellationToken);

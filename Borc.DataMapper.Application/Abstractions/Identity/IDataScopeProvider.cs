@@ -1,9 +1,10 @@
 namespace Borc.DataMapper.Application.Abstractions.Identity;
 
 /// <summary>
-/// کدام ردیف‌ها برای کاربر جاری قابل دیدن است (برای فیلتر پایگاه داده). پیاده‌سازی وب از Acl می‌خواند.
-/// Which rows the current user may see, per resource key (e.g. "Mapper.Templates"). Rows without an org unit are
-/// public and always visible; this decides the rest. The web host implements it over Acl's data scope.
+/// کدام ایمپورت‌ها و رکوردها برای کاربر جاری قابل دیدن است (فیلتر پایگاه داده).
+/// Which imports and records the current user may see, per resource key (e.g. "Mapper.DataRecords"): always the rows
+/// they created, plus the units their Acl data scope or — as a unit head — the org chart gives them. Definitions
+/// (templates, data sources, mapping profiles) are not filtered.
 /// </summary>
 public interface IDataScopeProvider
 {
@@ -11,13 +12,13 @@ public interface IDataScopeProvider
 }
 
 /// <param name="All">Every row.</param>
-/// <param name="OwnerUserId">Rows created by this user (scope "own"), or null.</param>
-/// <param name="OrgUnitKeys">Rows of these units (already including sub-units where the rule says so).</param>
+/// <param name="OwnerUserId">Rows created by this user (the current user), or null.</param>
+/// <param name="OrgUnitKeys">Rows of these units (sub-units already included).</param>
 public sealed record DataScopeView(bool All, long? OwnerUserId, IReadOnlyCollection<string> OrgUnitKeys)
 {
     public static DataScopeView Everything { get; } = new(true, null, []);
 
-    public static DataScopeView PublicOnly { get; } = new(false, null, []);
+    public static DataScopeView Nothing { get; } = new(false, null, []);
 }
 
 /// <summary>

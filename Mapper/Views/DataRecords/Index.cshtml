@@ -2,6 +2,7 @@
 @using Borc.DataMapper.Web.ViewModels.DataRecords
 @using Borc.DataMapper.Domain.Records
 @inject OrgChart.Core.Chart.IOrgChartReader Chart
+@inject Borc.DataMapper.Web.Modules.UserNames UserNames
 @* همهٔ رکوردها: قالب، نسخه، واحد، منبع، زمان ثبت. کلیک روی ردیف → صفحهٔ رکوردهای همان نسخه (DataRecords/Version). *@
 @{
     ViewData["Title"] = "داده‌های ثبت‌شده";
@@ -9,7 +10,9 @@
     var result = Model.Result;
     var filter = Model.Filter;
     var chart = await Chart.GetSnapshotAsync();
-    string UnitTitle(string? key) => key is null ? "عمومی" : chart.FindUnit(key)?.Title ?? key;
+    string UnitTitle(string? key) => key is null ? "بدون واحد" : chart.FindUnit(key)?.Title ?? key;
+    var names = await UserNames.GetAsync(result.Items.Select(r => r.CreatedBy));
+    string Creator(long? id) => id is { } i && names.TryGetValue(i, out var n) ? n : "—";
 
     var errors = ViewData.ModelState.Values
         .SelectMany(v => v.Errors)
@@ -26,6 +29,7 @@
 }
 
 @section TopbarActions {
+    <partial name="_ViewMode" />
     <a acl-res="Mapper.DataRecords" acl-act="Create" class="btn btn-soft" asp-action="Create" data-modal><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>
 }
 
@@ -88,7 +92,7 @@
     {
         <div class="tbl-wrap">
             <table class="tbl">
-                <thead><tr><th>قالب</th><th>نسخه</th><th>واحد سازمانی</th><th>منبع</th><th>ثبت</th><th></th></tr></thead>
+                <thead><tr><th>قالب</th><th>نسخه</th><th>واحد سازمانی</th><th>ثبت‌کننده</th><th>منبع</th><th>ثبت</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var r in result.Items)
                     {
@@ -96,6 +100,7 @@
                             <td><a acl-res="Mapper.DataRecords" acl-act="View" class="cell-main" asp-action="Version" asp-route-templateVersionId="@r.TemplateVersionId">@r.TemplateName</a></td>
                             <td class="nums">نسخهٔ @r.VersionNo.ToPersianNumber()</td>
                             <td><span class="tag @(r.OrgUnitKey is null ? "tone-info" : "tone-primary")">@UnitTitle(r.OrgUnitKey)</span></td>
+                            <td>@Creator(r.CreatedBy)</td>
                             <td>
                                 @if (r.Source == RecordSource.Import)
                                 {

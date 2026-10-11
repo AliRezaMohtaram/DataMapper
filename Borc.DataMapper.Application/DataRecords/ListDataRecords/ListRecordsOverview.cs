@@ -31,7 +31,8 @@ public sealed record RecordOverviewItemDto(
     RecordSource Source,
     long? ImportBatchId,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    long? CreatedBy);
 
 public sealed class ListRecordsOverviewHandler
     : IRequestHandler<ListRecordsOverviewQuery, Result<PagedResult<RecordOverviewItemDto>>>
@@ -79,7 +80,7 @@ public sealed class ListRecordsOverviewHandler
             .Take(pageSize)
             .Select(x => new RecordOverviewItemDto(
                 x.r.Id, x.t.Id, x.t.Name, x.v.Id, x.v.VersionNo, x.r.OrgUnitKey,
-                x.r.SourceType, x.r.ImportBatchId, x.r.CreatedAt, x.r.UpdatedAt))
+                x.r.SourceType, x.r.ImportBatchId, x.r.CreatedAt, x.r.UpdatedAt, x.r.CreatedBy))
             .ToListAsync(cancellationToken);
 
         return Result<PagedResult<RecordOverviewItemDto>>.Ok(

@@ -25,6 +25,7 @@ public static class DependencyInjection
 
         services.AddMemoryCache();
         services.AddScoped<DataSources.Common.DataSourceOptionService>();
+        services.AddScoped<Templates.Entry.ITemplateEntryPolicy, Templates.Entry.TemplateEntryPolicy>();
 
         return services;
     }

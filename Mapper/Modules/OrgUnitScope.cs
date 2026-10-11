@@ -6,38 +6,6 @@ using OrgChart.Core.Model;
 
 namespace Borc.DataMapper.Web.Modules;
 
-/// <summary>
-/// محدودهٔ دادهٔ Acl برای فیلتر جدول‌های Mapper. Mapper's row filter over Acl's data scope rules (per resource):
-/// All, Own (rows the user created) or org units (sub-units included where the rule says so). Outside an HTTP request
-/// (startup, tools) everything is visible; inside one without loaded access only public rows are.
-/// </summary>
-public sealed class AclDataScopeProvider(IAccessContext access, IHttpContextAccessor http) : IDataScopeProvider
-{
-    private readonly Dictionary<string, DataScopeView> _cache = new(StringComparer.OrdinalIgnoreCase);
-
-    public DataScopeView For(string resourceKey)
-    {
-        if (http.HttpContext is null)
-        {
-            return DataScopeView.Everything;
-        }
-
-        if (access.Current is not { } current)
-        {
-            return DataScopeView.PublicOnly;
-        }
-
-        if (!_cache.TryGetValue(resourceKey, out DataScopeView? view))
-        {
-            var scope = current.GetDataScope(resourceKey);
-            long? owner = scope.Own && long.TryParse(current.UserId, NumberStyles.None, CultureInfo.InvariantCulture, out long id) ? id : null;
-            _cache[resourceKey] = view = new DataScopeView(scope.All, owner, scope.OrgUnitKeys);
-        }
-
-        return view;
-    }
-}
-
 /// <param name="Key">Unit key; null = public.</param>
 public sealed record OrgUnitOption(string? Key, string Title, string? Path);
 

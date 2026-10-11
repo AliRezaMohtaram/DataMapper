@@ -40,7 +40,11 @@ builder.Services.AddBorcUsersUi(ui =>
     ui.ShowAdministratorFlag = false;
 });
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
-builder.Services.AddScoped<IDataScopeProvider, AclDataScopeProvider>(); // row filter by org unit (Acl data scope)
+builder.Services.Configure<VisibilityOptions>(builder.Configuration.GetSection("Mapper:Visibility"));
+builder.Services.AddScoped<UserNames>();
+builder.Services.AddScoped<DataVisibility>();   // who sees which records/imports (own, unit head, Acl data scope)
+builder.Services.AddScoped<IDataScopeProvider>(sp => sp.GetRequiredService<DataVisibility>());
+builder.Services.AddScoped<ICurrentUserUnits>(sp => sp.GetRequiredService<DataVisibility>());
 builder.Services.AddScoped<OrgUnitChoices>();
 builder.Services.AddScoped<IOrgUnitSelection>(sp => sp.GetRequiredService<OrgUnitChoices>());
 
@@ -99,6 +103,12 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAccessControl();
+app.Use(async (context, next) =>
+{
+    // the user's units and the units they head, before any query is filtered
+    await context.RequestServices.GetRequiredService<DataVisibility>().LoadAsync(context.RequestAborted);
+    await next();
+});
 app.UseAuthorization();
 
 app.MapControllerRoute(

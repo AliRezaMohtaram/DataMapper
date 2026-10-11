@@ -90,16 +90,13 @@ public sealed class DataRecordsController : Controller
 
     // ---------- ورود دستی ----------
 
-    /// <summary>نسخهٔ قالبی که کاربر آخرین بار برایش رکورد ثبت کرد؛ «ورود دستی» مستقیم همان فرم را باز می‌کند.</summary>
-    private const string LastVersionCookie = "mapper.record-version";
-
     /// <summary>
-    /// فرم رکورد جدید (در مودال یا صفحهٔ کامل). بدون versionId: قالبی که آخرین بار استفاده شد، وگرنه انتخاب قالب
-    /// (choose=true همیشه انتخاب را نشان می‌دهد). copyFrom: رکورد جدید با مقدارهای یک رکورد موجود (رونوشت).
+    /// فرم رکورد جدید (در مودال یا صفحهٔ کامل). بدون versionId: انتخاب قالب (فقط قالب‌هایی که واحد کاربر مجاز است).
+    /// copyFrom: رکورد جدید با مقدارهای یک رکورد موجود (رونوشت).
     /// </summary>
     [HttpGet]
     [RequirePermission(MapperResources.DataRecords, WellKnownActions.Create)]
-    public async Task<IActionResult> Create(long? versionId, long? copyFrom, bool choose, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(long? versionId, long? copyFrom, CancellationToken cancellationToken)
     {
         Application.Common.Results.Result<RecordFormDto> form;
 
@@ -120,17 +117,8 @@ public sealed class DataRecordsController : Controller
                 var lookups = await _sender.Send(new GetImportLookupsQuery(), cancellationToken);
                 var versions = lookups.Data?.Versions ?? Array.Empty<ImportVersionOption>();
 
-                if (!choose
-                    && long.TryParse(Request.Cookies[LastVersionCookie], out var last)
-                    && versions.Any(v => v.Id == last))
-                {
-                    versionId = last;
-                }
-                else
-                {
-                    // انتخاب قالب در مودال باز می‌شود؛ بدون JavaScript صفحهٔ کامل SelectVersion
-                    return this.ModalOrView("_SelectVersion", versions, "SelectVersion");
-                }
+                // انتخاب قالب در مودال باز می‌شود؛ بدون JavaScript صفحهٔ کامل SelectVersion
+                return this.ModalOrView("_SelectVersion", versions, "SelectVersion");
             }
 
             form = await _sender.Send(new GetRecordFormQuery(TemplateVersionId: versionId), cancellationToken);
@@ -139,13 +127,10 @@ public sealed class DataRecordsController : Controller
         if (!form.Success || form.Data is null)
         {
             TempData["Error"] = form.Message ?? "فرم ورود داده ساخته نشد.";
-            return RedirectToAction(nameof(Create), new { choose = true });
+            return RedirectToAction(nameof(Create));
         }
 
         var data = form.Data with { RecordId = null };
-
-        Response.Cookies.Append(LastVersionCookie, data.TemplateVersionId.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            new CookieOptions { HttpOnly = true, IsEssential = true, SameSite = SameSiteMode.Lax, MaxAge = TimeSpan.FromDays(180) });
 
         var page = BuildFormPage(data) with { CopiedFrom = copyFrom };
 
@@ -252,7 +237,7 @@ public sealed class DataRecordsController : Controller
 
     private async Task<IReadOnlyList<VersionFilterOption>> LoadVersionOptionsAsync(CancellationToken ct)
     {
-        var lookups = await _sender.Send(new GetImportLookupsQuery(), ct);
+        var lookups = await _sender.Send(new GetImportLookupsQuery(ForEntry: false), ct);
 
         return lookups.Data?.Versions.Select(v => new VersionFilterOption(v.Id, v.Label)).ToList()
                ?? new List<VersionFilterOption>();

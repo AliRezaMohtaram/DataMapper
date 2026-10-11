@@ -21,19 +21,20 @@
 	
 
 	<ItemGroup>
-		<PackageReference Include="OrgChart.AspNetCore" Version="0.2.1" />
-		<PackageReference Include="OrgChart.EFCore" Version="0.2.1" />
-		<PackageReference Include="OrgChart.Razor" Version="0.2.1" />
-		<PackageReference Include="OrgChart.Acl" Version="0.2.1" />
-		<PackageReference Include="Acl.AspNetCore" Version="0.5.1" />
-		<PackageReference Include="Acl.EFCore" Version="0.5.1" />
-		<PackageReference Include="Acl.Razor" Version="0.5.1" />
+		<PackageReference Include="OrgChart.AspNetCore" Version="0.2.2" />
+		<PackageReference Include="OrgChart.EFCore" Version="0.2.2" />
+		<PackageReference Include="OrgChart.Razor" Version="0.2.2" />
+		<PackageReference Include="OrgChart.Acl" Version="0.2.2" />
+		<PackageReference Include="Acl.AspNetCore" Version="0.5.2" />
+		<PackageReference Include="Acl.EFCore" Version="0.5.2" />
+		<PackageReference Include="Acl.Razor" Version="0.5.2" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<!-- Mapper schema patches applied at startup by ModuleDatabaseMigrator (idempotent). -->
 		<EmbeddedResource Include="..\Scripts\009_OrgUnits.sql" LogicalName="Scripts.009_OrgUnits.sql" />
 		<EmbeddedResource Include="..\Scripts\010_ImportFiles.sql" LogicalName="Scripts.010_ImportFiles.sql" />
+		<EmbeddedResource Include="..\Scripts\011_TemplateUnits.sql" LogicalName="Scripts.011_TemplateUnits.sql" />
 	</ItemGroup>
 
 </Project>

@@ -53,7 +53,7 @@ public sealed class ModuleDatabaseMigrator(IServiceProvider services, IConfigura
     /// </summary>
     private async Task ApplyMapperPatchesAsync(DbContext db, CancellationToken cancellationToken)
     {
-        foreach (string name in new[] { "Scripts.009_OrgUnits.sql", "Scripts.010_ImportFiles.sql" })
+        foreach (string name in new[] { "Scripts.009_OrgUnits.sql", "Scripts.010_ImportFiles.sql", "Scripts.011_TemplateUnits.sql" })
         {
             await using Stream stream = typeof(ModuleDatabaseMigrator).Assembly.GetManifestResourceStream(name)
                 ?? throw new InvalidOperationException($"Embedded script {name} is missing.");

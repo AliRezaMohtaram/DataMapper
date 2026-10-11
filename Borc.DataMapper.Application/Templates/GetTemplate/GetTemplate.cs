@@ -17,7 +17,11 @@ public sealed record TemplateDetailDto(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     IReadOnlyList<TemplateStatus> AllowedStatuses,
-    IReadOnlyList<TemplateVersionItemDto> Versions);
+    IReadOnlyList<TemplateVersionItemDto> Versions)
+{
+    /// <summary>Units whose members may enter records and import with this template.</summary>
+    public IReadOnlyList<string> OrgUnitKeys { get; init; } = [];
+}
 
 public sealed record TemplateVersionItemDto(
     long Id,
@@ -78,6 +82,11 @@ public sealed class GetTemplateHandler
             allowed,
             versions);
 
-        return Result<TemplateDetailDto>.Ok(dto);
+        var units = await _db.TemplateOrgUnits.AsNoTracking()
+            .Where(u => u.TemplateId == dto.Id)
+            .Select(u => u.OrgUnitKey)
+            .ToListAsync(cancellationToken);
+
+        return Result<TemplateDetailDto>.Ok(dto with { OrgUnitKeys = units });
     }
 }

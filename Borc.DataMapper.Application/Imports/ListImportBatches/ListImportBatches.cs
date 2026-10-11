@@ -25,7 +25,11 @@ public sealed record ImportBatchListItemDto(
     int ValidRows,
     int InvalidRows,
     ImportBatchStatus Status,
-    DateTime CreatedAt);
+    DateTime CreatedAt)
+{
+    /// <summary>Who uploaded it.</summary>
+    public long? CreatedBy { get; init; }
+}
 
 public sealed class ListImportBatchesHandler
     : IRequestHandler<ListImportBatchesQuery, Result<PagedResult<ImportBatchListItemDto>>>
@@ -81,7 +85,7 @@ public sealed class ListImportBatchesHandler
                 x.Batch.ValidRows,
                 x.Batch.InvalidRows,
                 x.Batch.Status,
-                x.Batch.CreatedAt))
+                x.Batch.CreatedAt) { CreatedBy = x.Batch.CreatedBy })
             .ToListAsync(cancellationToken);
 
         return Result<PagedResult<ImportBatchListItemDto>>.Ok(

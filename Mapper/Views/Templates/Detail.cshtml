@@ -1,5 +1,6 @@
 @model Borc.DataMapper.Application.Templates.GetTemplate.TemplateDetailDto
 @using Borc.DataMapper.Web.ViewModels.Dashboard
+@inject OrgChart.Core.Chart.IOrgChartReader Chart
 @{
     ViewData["Title"] = Model.Name;
     ViewData["Subtitle"] = $"قالب {Model.Code} · {Model.Versions.Count.ToPersianNumber()} نسخه";
@@ -7,6 +8,7 @@
     var published = Model.Versions.FirstOrDefault(v => v.Status == TemplateVersionStatus.Published);
     var draft = Model.Versions.FirstOrDefault(v => v.Status == TemplateVersionStatus.Draft);
     var here = Context.Request.Path.ToString();
+    var chart = await Chart.GetSnapshotAsync();
 }
 
 @section TopbarActions {
@@ -101,7 +103,24 @@
                 }
 
                 <dl class="dl stacked" style="margin-top:1rem">
-                    <div><dt>واحد سازمانی</dt><dd><partial name="_OrgUnitBadge" model="(Borc.DataMapper.Application.OrgUnits.OrgUnitOwnedKind.Template, Model.Id)" /></dd></div>
+                    <div>
+                        <dt>واحدهای مجاز ثبت داده</dt>
+                        <dd>
+                            @if (Model.OrgUnitKeys.Count == 0)
+                            {
+                                <span class="faint">تعیین نشده؛ فقط مدیران با دسترسی «همه»</span>
+                            }
+                            else
+                            {
+                                <span class="row" style="gap:.3rem;flex-wrap:wrap">
+                                    @foreach (var key in Model.OrgUnitKeys)
+                                    {
+                                        <span class="tag tone-primary">@(chart.FindUnit(key)?.Title ?? key)</span>
+                                    }
+                                </span>
+                            }
+                        </dd>
+                    </div>
                     <div><dt>نسخهٔ منتشرشده</dt><dd>@(published is null ? "—" : $"نسخهٔ {published.VersionNo.ToPersianNumber()} · {published.FieldCount.ToPersianNumber()} فیلد")</dd></div>
                     <div><dt>تاریخ ایجاد</dt><dd class="nums">@Model.CreatedAt.ToJalali().ToPersianDigits()</dd></div>
                     <div><dt>آخرین ویرایش</dt><dd class="nums">@Model.UpdatedAt.ToJalali().ToPersianDigits()</dd></div>

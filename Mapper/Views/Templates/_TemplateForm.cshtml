@@ -61,7 +61,9 @@
                 <span class="field-error" asp-validation-for="Description"></span>
             </div>
         </div>
-        <partial name="_OrgUnitField" />
+        <div class="fieldset-title">واحدهای مجاز برای ثبت داده و ایمپورت</div>
+        <partial name="_UnitsPicker" model="@((nameof(Model.OrgUnitKeys), (IReadOnlyCollection<string>)Model.OrgUnitKeys))" />
+        <span class="hint" style="display:block;margin-top:.4rem">فقط کسانی که در یکی از این واحدها سمت دارند می‌توانند با این قالب داده ثبت یا ایمپورت کنند. بدون واحد، فقط مدیران با دسترسی «همه».</span>
     </div>
 
     <div class="modal-foot">

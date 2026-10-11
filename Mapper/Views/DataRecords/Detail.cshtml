@@ -3,6 +3,7 @@
 @using Borc.DataMapper.Web.ViewModels.DataRecords
 @using Borc.DataMapper.Web.ViewModels.Dashboard
 @using Borc.DataMapper.Domain.Records
+@inject Borc.DataMapper.Web.Modules.UserNames UserNames
 @* مقدارها به‌صورت جدول افقی (سرستون = فیلد قالب، مثل فهرست رکوردها)؛ مشخصات رکورد در کارت بالای صفحه. *@
 @{
     ViewData["Title"] = $"رکورد {Model.Id}";
@@ -129,6 +130,7 @@
                     </dd>
                 </div>
             }
+            <div><dt>ثبت‌کننده</dt><dd>@(Model.CreatedBy is { } by && (await UserNames.GetAsync([by])).TryGetValue(by, out var who) ? who : "—")</dd></div>
             <div><dt>تاریخ ثبت</dt><dd class="nums">@Model.CreatedAt.ToJalali().ToPersianDigits()</dd></div>
             <div><dt>آخرین ویرایش</dt><dd class="nums">@(Model.UpdatedAt.HasValue ? Model.UpdatedAt.ToJalali().ToPersianDigits() : "—")</dd></div>
         </dl>

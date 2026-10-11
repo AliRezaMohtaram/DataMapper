@@ -2,6 +2,7 @@
 @using Borc.DataMapper.Web.ViewModels.Imports
 @using Borc.DataMapper.Web.ViewModels.Dashboard
 @using Borc.DataMapper.Domain.Imports
+@inject Borc.DataMapper.Web.Modules.UserNames UserNames
 @{
     ViewData["Title"] = "ایمپورت داده";
 
@@ -20,6 +21,12 @@
     var pageSizes = new[] { 10, 20, 50, 100 };
 
     ViewData["Subtitle"] = $"{result.TotalCount.ToPersianNumber()} ایمپورت · بارگذاری، تطبیق، اعتبارسنجی و ثبت فایل‌های Excel";
+}
+
+@{ var names = await UserNames.GetAsync(Model.Result.Items.Select(b => b.CreatedBy)); }
+
+@section TopbarActions {
+    <partial name="_ViewMode" />
 }
 
 @if (errors.Count > 0)
@@ -78,7 +85,7 @@
     {
         <div class="tbl-wrap">
             <table class="tbl">
-                <thead><tr><th>فایل</th><th>قالب</th><th>سطرها</th><th>وضعیت</th><th>آپلود</th><th></th></tr></thead>
+                <thead><tr><th>فایل</th><th>قالب</th><th>سطرها</th><th>وضعیت</th><th>آپلودکننده</th><th>آپلود</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var b in result.Items)
                     {
@@ -119,6 +126,7 @@
                                 </div>
                             </td>
                             <td><span class="badge @b.Status.BadgeClass()" title="@b.Status.ToLabel()">@b.Status.ShortLabel()</span></td>
+                            <td style="white-space:nowrap">@(b.CreatedBy is { } by && names.TryGetValue(by, out var who) ? who : "—")</td>
                             <td class="cell-sub">@b.CreatedAt.ToRelative()</td>
                             <td>
                                 <div class="row-actions">

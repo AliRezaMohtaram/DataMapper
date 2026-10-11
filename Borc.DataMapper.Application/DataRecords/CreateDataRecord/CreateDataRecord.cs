@@ -1,3 +1,4 @@
+using Borc.DataMapper.Application.Templates.Entry;
 using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Application.DataRecords.Common;
@@ -29,11 +30,13 @@ public sealed class CreateDataRecordHandler
 {
     private readonly IAppDbContext _db;
     private readonly DataSourceOptionService _options;
+    private readonly ITemplateEntryPolicy _entry;
 
-    public CreateDataRecordHandler(IAppDbContext db, DataSourceOptionService options)
+    public CreateDataRecordHandler(IAppDbContext db, DataSourceOptionService options, ITemplateEntryPolicy entry)
     {
         _db = db;
         _options = options;
+        _entry = entry;
     }
 
     public async Task<Result<SaveRecordOutcome>> Handle(
@@ -49,6 +52,11 @@ public sealed class CreateDataRecordHandler
 
         if (version.Status != TemplateVersionStatus.Published)
             return Result<SaveRecordOutcome>.Failure("ثبت داده فقط برای نسخهٔ منتشرشده ممکن است.");
+
+        // فقط اعضای واحدهای مجاز قالب؛ رکورد واحد همان سمت را می‌گیرد
+        var entry = await _entry.DecideAsync(version.TemplateId, cancellationToken);
+        if (!entry.Allowed)
+            return Result<SaveRecordOutcome>.Failure(TemplateEntryPolicy.DeniedMessage);
 
         var fields = await RecordDataBuilder.LoadFieldsAsync(_db, version.Id, cancellationToken);
 
@@ -68,6 +76,7 @@ public sealed class CreateDataRecordHandler
                 "برخی فیلدها نامعتبرند.");
 
         var record = DataRecord.CreateManual(version.TemplateId, version.Id, built.Json);
+        record.AssignOrgUnit(entry.OrgUnitKey);
         _db.DataRecords.Add(record);
 
         try

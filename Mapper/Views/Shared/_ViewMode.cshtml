@@ -1,0 +1,14 @@
+@inject Borc.DataMapper.Web.Modules.DataVisibility Visibility
+@*
+    برای کسی که بیش از داده‌های خودش را می‌بیند (مدیر واحد یا نقش با محدودهٔ داده): انتخاب «همه» یا «فقط داده‌های من».
+    Shown only to users with a wider view than their own rows.
+*@
+@if (Visibility.HasWiderView)
+{
+    var here = Context.Request.Path + Context.Request.QueryString;
+    <form method="post" asp-area="" asp-controller="ViewMode" asp-action="Set" class="seg" role="group" aria-label="دامنهٔ نمایش داده‌ها" style="display:inline-flex">
+        <input type="hidden" name="returnUrl" value="@here" />
+        <button type="submit" name="mine" value="false" class="@(Visibility.OnlyMine ? "" : "active")" aria-pressed="@((!Visibility.OnlyMine).ToString().ToLowerInvariant())" title="داده‌های من و زیرمجموعه یا واحدهایی که دسترسی دارم">من و زیرمجموعه</button>
+        <button type="submit" name="mine" value="true" class="@(Visibility.OnlyMine ? "active" : "")" aria-pressed="@Visibility.OnlyMine.ToString().ToLowerInvariant()" title="فقط داده‌هایی که خودم ثبت کرده‌ام">فقط داده‌های من</button>
+    </form>
+}

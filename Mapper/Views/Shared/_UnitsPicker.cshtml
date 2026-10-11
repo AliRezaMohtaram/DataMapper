@@ -1,0 +1,32 @@
+@model (string Name, IReadOnlyCollection<string> Selected)
+@inject OrgChart.Core.Chart.IOrgChartReader Chart
+@*
+    انتخاب چند واحد سازمانی با جستجو (کامپوننت filter-list در mx.js): فهرست واحدهای فعال چارت به ترتیب درخت،
+    هر کدام یک چک‌باکس با name یکسان. Several org units, searchable; posts every checked key under one name.
+*@
+@{
+    var chart = await Chart.GetSnapshotAsync();
+    var selected = new HashSet<string>(Model.Selected, StringComparer.OrdinalIgnoreCase);
+    var units = chart.Units.Where(u => u.IsActive || selected.Contains(u.Key)).ToList();
+}
+<div class="units-picker" data-mx-init="filter-list">
+    <div class="input-wrap">
+        <svg class="ico"><use href="#i-search" /></svg>
+        <input class="input" type="search" data-filter-input placeholder="جستجوی واحد…" aria-label="جستجوی واحد" autocomplete="off" />
+    </div>
+    <div class="units-picker-list" role="group" aria-label="واحدهای سازمانی">
+        @foreach (var unit in units)
+        {
+            var path = string.Join(" › ", chart.GetPath(unit.Key).Select(u => u.Title));
+            <label class="units-picker-item" data-filter-item data-k="@path" style="padding-inline-start:@(0.6 + chart.GetLevel(unit.Key) * 1.1)rem">
+                <input type="checkbox" name="@Model.Name" value="@unit.Key" checked="@selected.Contains(unit.Key)" />
+                <span>@unit.Title</span>
+            </label>
+        }
+        @if (units.Count == 0)
+        {
+            <p class="empty">هنوز واحدی در چارت سازمانی تعریف نشده است.</p>
+        }
+        <p class="empty" data-filter-empty hidden>واحدی با این نام پیدا نشد.</p>
+    </div>
+</div>

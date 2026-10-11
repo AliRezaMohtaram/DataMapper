@@ -17,6 +17,10 @@
         + (k.ImportsInProgress > 0 ? $" · {Fa(k.ImportsInProgress)} ایمپورت در جریان" : "");
 }
 
+@section TopbarActions {
+    <partial name="_ViewMode" />
+}
+
 @if (errors.Count > 0)
 {
     <div class="callout tone-danger" role="alert" style="margin-bottom:1rem">

@@ -55,6 +55,9 @@ public sealed class TemplateFormViewModel : System.ComponentModel.DataAnnotation
 
     public string? Description { get; set; }
 
+    /// <summary>واحدهای مجاز برای ثبت داده و ایمپورت (کلیدهای چارت).</summary>
+    public List<string> OrgUnitKeys { get; set; } = [];
+
     /// <summary>مقصد پس از ذخیره/انصراف در ویرایش (فقط آدرس داخلی پذیرفته می‌شود).</summary>
     public string? ReturnUrl { get; set; }
 

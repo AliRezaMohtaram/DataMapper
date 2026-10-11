@@ -43,7 +43,8 @@ public sealed record DataRecordListItemDto(
     long? ImportBatchId,
     IReadOnlyDictionary<string, string?> Values,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    long? CreatedBy = null);
 
 public sealed class ListDataRecordsHandler
     : IRequestHandler<ListDataRecordsQuery, Result<DataRecordListDto>>
@@ -125,7 +126,8 @@ public sealed class ListDataRecordsHandler
                 x.r.ImportBatchId,
                 x.r.DataJson,
                 x.r.CreatedAt,
-                x.r.UpdatedAt
+                x.r.UpdatedAt,
+                x.r.CreatedBy
             })
             .ToListAsync(cancellationToken);
 
@@ -164,7 +166,7 @@ public sealed class ListDataRecordsHandler
         var items = rows
             .Select((x, i) => new DataRecordListItemDto(
                 x.Id, x.TemplateName, x.VersionNo, x.TemplateVersionId, x.SourceType,
-                x.ImportBatchId, values[i], x.CreatedAt, x.UpdatedAt))
+                x.ImportBatchId, values[i], x.CreatedAt, x.UpdatedAt, x.CreatedBy))
             .ToList();
 
         var columns = fields

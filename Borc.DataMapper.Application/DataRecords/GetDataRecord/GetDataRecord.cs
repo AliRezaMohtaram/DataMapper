@@ -26,7 +26,10 @@ public sealed record DataRecordDetailDto(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     IReadOnlyList<DataRecordValueDto> Values,
-    RecordNeighborsDto Neighbors);
+    RecordNeighborsDto Neighbors)
+{
+    public long? CreatedBy { get; init; }
+}
 
 /// <summary>
 /// جای رکورد در فهرست رکوردهای همان نسخه (همان ترتیب فهرست: جدیدترین اول) برای «قبلی / بعدی».
@@ -146,6 +149,6 @@ public sealed class GetDataRecordHandler
         return Result<DataRecordDetailDto>.Ok(new DataRecordDetailDto(
             head.r.Id, head.t.Id, head.t.Name, head.v.Id, head.v.VersionNo, head.v.Status,
             head.r.SourceType, head.r.ImportBatchId, fileName, rowNumber,
-            head.r.CreatedAt, head.r.UpdatedAt, values, neighbors));
+            head.r.CreatedAt, head.r.UpdatedAt, values, neighbors) { CreatedBy = head.r.CreatedBy });
     }
 }

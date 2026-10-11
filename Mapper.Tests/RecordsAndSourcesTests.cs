@@ -101,9 +101,9 @@ public sealed class RecordsAndSourcesTests(MapperApp app) : IClassFixture<Mapper
         HttpClient admin = await app.AdminAsync();
         // Overview: one row per record with template, version, unit and source; a row leads to the version's table.
         string overview = await TextAsync(await admin.GetAsync("/DataRecords"));
-        Assert.Contains("<th>قالب</th><th>نسخه</th><th>واحد سازمانی</th><th>منبع</th><th>ثبت</th>", overview);
+        Assert.Contains("<th>قالب</th><th>نسخه</th><th>واحد سازمانی</th><th>ثبت‌کننده</th><th>منبع</th><th>ثبت</th>", overview);
         Assert.Contains($"data-row-href=\"/DataRecords/Version?templateVersionId={versionId}\"", overview);
-        Assert.Contains("عمومی", overview);
+        Assert.Contains("بدون واحد", overview);   // created outside a request: no unit
 
         string list = await TextAsync(await admin.GetAsync($"/DataRecords/Version?templateVersionId={versionId}"));
         Assert.Contains("<th>نام کارگاه</th>", list);
@@ -163,10 +163,8 @@ public sealed class RecordsAndSourcesTests(MapperApp app) : IClassFixture<Mapper
         Assert.Contains("\"values\":{\"F001\":", copy);   // the copied values (JSON escapes Persian text)
         Assert.Contains("\"recordId\":null", copy);
 
-        // "Manual entry" without a version opens the template used last; choose=true asks again.
-        string direct = await TextAsync(await admin.SendAsync(Modal("/DataRecords/Create")));
-        Assert.Contains("data-rf-data", direct);
-        string choose = await TextAsync(await admin.SendAsync(Modal("/DataRecords/Create?choose=true")));
+        // "Manual entry" without a version always asks for the template (no automatic choice).
+        string choose = await TextAsync(await admin.SendAsync(Modal("/DataRecords/Create")));
         Assert.Contains("name=\"versionId\"", choose);
 
         // Detail: breadcrumb back to this version's list, and previous/next in list order (newest first).

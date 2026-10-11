@@ -62,7 +62,6 @@ public sealed class DataSourcesController : Controller
 
     [HttpGet]
     [RequirePermission(MapperResources.DataSources, WellKnownActions.Create)]
-    [OrgUnitField(MapperResources.DataSources, allowPublic: true)]
     public async Task<IActionResult> Create(DataSourceType? type, CancellationToken cancellationToken)
     {
         var vm = new DataSourceFormViewModel { SourceType = type ?? DataSourceType.StaticList };
@@ -74,7 +73,6 @@ public sealed class DataSourcesController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission(MapperResources.DataSources, WellKnownActions.Create)]
-    [OrgUnitField(MapperResources.DataSources, allowPublic: true)]
     public async Task<IActionResult> CreateAsync(
         DataSourceFormViewModel model,
         CancellationToken cancellationToken)

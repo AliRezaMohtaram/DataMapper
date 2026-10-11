@@ -18,7 +18,7 @@ Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Passwor
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.1) and /Acl (0.5.1) as NuGet packages **committed in this
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.2) and /Acl (0.5.2) as NuGet packages **committed in this
 repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
 `OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
 To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
@@ -53,29 +53,27 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
 - `MapperAccessBootstrapper` (first run only): role "مدیر Mapper" with every action on `Mapper`, given to
   `Acl:SuperAdminUserIds`; left alone once it exists.
 
-## Data scope by org unit (user decisions: all five kinds; default unit + choice; rows without a unit are public)
+## Who enters and who sees what (user decisions, replacing the earlier "data scope by unit" for definitions)
 
-- `Template`, `DataSource`, `MappingProfile`, `ImportBatch`, `DataRecord` implement `IOrgUnitOwned` (`OrgUnitKey`
-  nvarchar(256) = the chart's stable unit key, null = public). Script `Scripts/009_OrgUnits.sql` (idempotent; also run at
-  startup by `ModuleDatabaseMigrator` as an embedded resource).
-- Row filter in `BorcDataMapperDbContext` (soft delete AND (unit null OR scope)) over `IDataScopeProvider` (Application);
-  Mapper's `AclDataScopeProvider` reads Acl's data scope per resource (`Mapper.Templates`, …): All, Own (`CreatedBy`),
-  OrgUnit / OrgUnitAndChildren. No HTTP request → everything; request without loaded access → public rows only.
-  No data-scope rule for a resource → only public rows (Acl fails closed). Rules are set per role in Acl
-  ("محدودهٔ داده"); a rule on `Mapper` is inherited by every page.
-- New rows: `AuditStampInterceptor` stamps the unit from `IOrgUnitSelection` (`OrgUnitChoices`): the form's validated
-  choice (`[OrgUnitField(resource, allowPublic)]` on create actions + `_OrgUnitField` partial in the create forms of
-  templates, data sources, mapping profiles, imports), else the user's current primary (else acting) position's unit.
-  Choices = units of positions held now ∪ units of the data scope (all active units with "all"); "public" only for
-  definitions and only with scope "all". Import records take the import's unit (`DataRecord.CreateFromImport`).
-- Existing rows: `_OrgUnitBadge` on the detail pages + `OrgUnitsController.Change` (modal; Edit on the resource, row
-  visible, new unit among the choices). Application: `OrgUnits/OrgUnitOwnership.cs`.
-- `MapperAccessBootstrapper`: the "مدیر Mapper" role gets data scope All on `Mapper` (also added once to an existing role
-  that has no data-scope rule).
-- Acl 0.4.0: role assignments pick users by name (search over `MapperUserDirectory`); unknown user ids are rejected.
-- DI gotcha: `UserAdministration` resolves `IUserStatusListener`s lazily — the org chart listener depends (via Acl) on
-  `IUserDirectory` → `IUserLookup`, and constructor injection made a cycle that crashed startup (stack overflow).
-- Known limit: lookups follow the scope too (a field's data source in another unit gives no options).
+- Definitions (templates, data sources, mapping profiles) have no unit and no "public" state: anyone with View on the page
+  sees them (their `OrgUnitKey` column is unused). The template/data source/profile/import forms no longer ask for a unit.
+- Each template has allowed units (`TemplateOrgUnit`, `Scripts/011_TemplateUnits.sql` — seeded from the old
+  `Template.OrgUnitKey`; set in the template form with the searchable multi-select `_UnitsPicker`,
+  `SetTemplateUnitsCommand`). `ITemplateEntryPolicy` (Application): only holders of a position (primary/acting, now) in one
+  of them may enter records or import; the record/import gets that unit. Data scope "all" on `Mapper.DataRecords` (Acl)
+  may enter for every template. `GetImportLookupsQuery(ForEntry)` lists only the allowed templates (picker, upload form).
+- Records and imports are seen by (`DataVisibility`, Mapper/Modules — the `IDataScopeProvider` and `ICurrentUserUnits`):
+  the user who entered them (always), unit heads for their unit and all sub-units (org chart `ManagerPositionKey`;
+  `Mapper:Visibility:ManagersSeeSubordinates`, default true), and the units an Acl data-scope rule gives. Rows without a
+  unit are only seen by their author (or scope "all"). Loaded per request by a middleware after `UseAccessControl`.
+  "Only my data" toggle (`_ViewMode`, cookie `mapper.view=mine`, `ViewModeController`) on the dashboard, records and
+  imports — shown only to users who could see more than their own rows. Lists show who entered each row (`UserNames`).
+- An Acl role bound to a unit "with sub-units" does reach people in the sub-units (test in DataScopeTests); it gives
+  permissions — which rows are visible is the rule above.
+- `AccessLinksTests` crawls every page a restricted user reaches and fails on any link to "access denied" (user: a user
+  must never see what they cannot open).
+- Known limit: lookups follow the scope too (a field's data source in another unit gives no options) — no longer applies to
+  data sources (unfiltered); records used as a "template" data source follow the record visibility.
 
 ## No typed keys (user decision: nothing is keyed in by hand)
 
@@ -105,8 +103,8 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   a page lacks them (`data-rf-deps`; ui.js, jalali-picker.js, combobox.js, layout-designer.js) — `_RecordFormScripts`
   preloads them. Keys: Enter = next field, Ctrl+S = save, Ctrl+Enter = save and new. In a modal, saving reloads the page
   behind it (filters kept); "save and new" (`SaveRecordRequest.Stay`) keeps the form and sets no TempData message.
-  `Create?copyFrom=` (copy, published versions only), `Create` without a version opens the version used last (cookie
-  `mapper.record-version`), `choose=true` always shows the template picker. Detail: previous/next in list order
+  `Create?copyFrom=` (copy, published versions only), `Create` without a version always shows the template picker (the
+  automatic "last template" was removed at the user's request). Detail: previous/next in list order
   (`RecordNeighborsDto`).
 - Navigation: `_Layout` renders a breadcrumb (`.crumbs`, in mx.css) on every page below a menu section's home: menu
   section › `ViewData["Crumbs"]` (`Crumb(Label, Url)`) › title. `wwwroot/js/nav.js` remembers each list's URL (search,

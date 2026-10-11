@@ -19,13 +19,34 @@ namespace Borc.DataMapper.Web.Controllers;
 public sealed class TemplatesController : Controller
 {
     private readonly ISender _sender;
+    private readonly OrgChart.Core.Chart.IOrgChartReader _chart;
 
     /// <summary>فرم مشترک ایجاد/ویرایش؛ هم در مودال و هم در صفحهٔ کامل استفاده می‌شود.</summary>
     private const string FormPartial = "_TemplateForm";
 
-    public TemplatesController(ISender sender)
+    public TemplatesController(ISender sender, OrgChart.Core.Chart.IOrgChartReader chart)
     {
         _sender = sender;
+        _chart = chart;
+    }
+
+    /// <summary>واحدهای انتخاب‌شده باید در چارت باشند؛ کلید با نگارش چارت ذخیره می‌شود.</summary>
+    private async Task<IReadOnlyList<string>?> ValidUnitsAsync(TemplateFormViewModel model, CancellationToken ct)
+    {
+        var chart = await _chart.GetSnapshotAsync(ct);
+        var keys = new List<string>();
+        foreach (var key in model.OrgUnitKeys.Where(k => !string.IsNullOrWhiteSpace(k)).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (chart.FindUnit(key) is not { } unit)
+            {
+                ModelState.AddModelError(string.Empty, "واحد انتخاب‌شده در چارت سازمانی پیدا نشد.");
+                return null;
+            }
+
+            keys.Add(unit.Key);
+        }
+
+        return keys;
     }
 
     [HttpGet]
@@ -56,7 +77,6 @@ public sealed class TemplatesController : Controller
 
     [HttpGet]
     [RequirePermission(MapperResources.Templates, WellKnownActions.Create)]
-    [OrgUnitField(MapperResources.Templates, allowPublic: true)]
     public IActionResult Create()
     {
         return this.ModalOrView(FormPartial, new TemplateFormViewModel());
@@ -65,12 +85,12 @@ public sealed class TemplatesController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission(MapperResources.Templates, WellKnownActions.Create)]
-    [OrgUnitField(MapperResources.Templates, allowPublic: true)]
     public async Task<IActionResult> CreateAsync(
         TemplateFormViewModel model,
         CancellationToken cancellationToken)
     {
-        if (ModelState.IsValid)
+        var units = await ValidUnitsAsync(model, cancellationToken);
+        if (ModelState.IsValid && units is not null)
         {
             var result = await _sender.Send(
                 new CreateTemplateCommand(null, model.Name!.Trim(), model.Description),
@@ -78,6 +98,7 @@ public sealed class TemplatesController : Controller
 
             if (result.Success)
             {
+                await _sender.Send(new Application.Templates.SetTemplateUnits.SetTemplateUnitsCommand(result.Data, units), cancellationToken);
                 TempData["Success"] = result.Message ?? "قالب ایجاد شد. حالا نسخه و فیلدهای آن را تعریف کنید.";
 
                 // قدم بعدی ساخت قالب، تعریف نسخه و فیلدهاست؛ به صفحهٔ جزئیات می‌رویم
@@ -144,6 +165,7 @@ public sealed class TemplatesController : Controller
             Code = result.Data.Code,
             Name = result.Data.Name,
             Description = result.Data.Description,
+            OrgUnitKeys = result.Data.OrgUnitKeys.ToList(),
             ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null
         });
     }
@@ -155,13 +177,15 @@ public sealed class TemplatesController : Controller
         TemplateFormViewModel model,
         CancellationToken cancellationToken)
     {
-        if (ModelState.IsValid)
+        var units = await ValidUnitsAsync(model, cancellationToken);
+        if (ModelState.IsValid && units is not null)
         {
             var result = await _sender.Send(
                 new UpdateTemplateCommand(model.Id, model.Name!.Trim(), model.Description), cancellationToken);
 
             if (result.Success)
             {
+                await _sender.Send(new Application.Templates.SetTemplateUnits.SetTemplateUnitsCommand(model.Id, units), cancellationToken);
                 TempData["Success"] = result.Message ?? "قالب ویرایش شد.";
                 return this.ModalOrRedirect(Url.IsLocalUrl(model.ReturnUrl)
                     ? model.ReturnUrl!

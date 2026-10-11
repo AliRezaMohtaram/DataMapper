@@ -213,10 +213,10 @@
             </div>
             <div class="cmdk-list">
                 <div class="cmdk-group">جستجو</div>
-                <a class="cmdk-item" data-search-href="@Url.Action("Index", "Templates")?search="><span class="src-ico tone-violet"><svg class="ico"><use href="#i-template" /></svg></span><span>جستجوی «<b data-q></b>» در قالب‌ها</span></a>
-                <a class="cmdk-item" data-search-href="@Url.Action("Index", "DataRecords")?search="><span class="src-ico tone-success"><svg class="ico"><use href="#i-rows" /></svg></span><span>جستجوی «<b data-q></b>» در داده‌های ثبت‌شده</span></a>
-                <a class="cmdk-item" data-search-href="@Url.Action("Index", "Imports")?search="><span class="src-ico tone-primary"><svg class="ico"><use href="#i-upload" /></svg></span><span>جستجوی «<b data-q></b>» در ایمپورت‌ها</span></a>
-                <a class="cmdk-item" data-search-href="@Url.Action("Index", "DataSources")?search="><span class="src-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span><span>جستجوی «<b data-q></b>» در منابع داده</span></a>
+                <a acl-res="Mapper.Templates" acl-act="View" class="cmdk-item" data-search-href="@Url.Action("Index", "Templates")?search="><span class="src-ico tone-violet"><svg class="ico"><use href="#i-template" /></svg></span><span>جستجوی «<b data-q></b>» در قالب‌ها</span></a>
+                <a acl-res="Mapper.DataRecords" acl-act="View" class="cmdk-item" data-search-href="@Url.Action("Index", "DataRecords")?search="><span class="src-ico tone-success"><svg class="ico"><use href="#i-rows" /></svg></span><span>جستجوی «<b data-q></b>» در داده‌های ثبت‌شده</span></a>
+                <a acl-res="Mapper.Imports" acl-act="View" class="cmdk-item" data-search-href="@Url.Action("Index", "Imports")?search="><span class="src-ico tone-primary"><svg class="ico"><use href="#i-upload" /></svg></span><span>جستجوی «<b data-q></b>» در ایمپورت‌ها</span></a>
+                <a acl-res="Mapper.DataSources" acl-act="View" class="cmdk-item" data-search-href="@Url.Action("Index", "DataSources")?search="><span class="src-ico tone-info"><svg class="ico"><use href="#i-db" /></svg></span><span>جستجوی «<b data-q></b>» در منابع داده</span></a>
 
                 <div class="cmdk-group">اقدامات سریع</div>
                 <a acl-res="Mapper.Imports" acl-act="Create" class="cmdk-item" asp-area="" asp-controller="Imports" asp-action="Upload" data-modal data-k="import upload excel csv آپلود فایل"><span class="src-ico tone-primary"><svg class="ico"><use href="#i-upload" /></svg></span>ایمپورت فایل جدید</a>

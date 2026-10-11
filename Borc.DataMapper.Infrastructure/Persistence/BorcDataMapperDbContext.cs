@@ -23,9 +23,6 @@ public sealed class BorcDataMapperDbContext : DbContext, IAppDbContext
 
     // محدودهٔ دادهٔ هر منبع؛ فیلترهای کوئری این ویژگی‌ها را در هر کوئری دوباره می‌خوانند.
     // Read by the query filters on every query (EF re-evaluates context members per query).
-    internal DataScopeView TemplatesScope => _scope.For(DataScopeResources.Templates);
-    internal DataScopeView DataSourcesScope => _scope.For(DataScopeResources.DataSources);
-    internal DataScopeView MappingProfilesScope => _scope.For(DataScopeResources.MappingProfiles);
     internal DataScopeView ImportsScope => _scope.For(DataScopeResources.Imports);
     internal DataScopeView DataRecordsScope => _scope.For(DataScopeResources.DataRecords);
 
@@ -34,6 +31,7 @@ public sealed class BorcDataMapperDbContext : DbContext, IAppDbContext
     public DbSet<TemplateField> TemplateFields => Set<TemplateField>();
     public DbSet<TemplateFieldAlias> TemplateFieldAliases => Set<TemplateFieldAlias>();
     public DbSet<TemplateLayout> TemplateLayouts => Set<TemplateLayout>();
+    public DbSet<TemplateOrgUnit> TemplateOrgUnits => Set<TemplateOrgUnit>();
     public DbSet<PredefinedRegex> PredefinedRegexes => Set<PredefinedRegex>();
     
     public DbSet<DataSource> DataSources => Set<DataSource>();
@@ -54,22 +52,17 @@ public sealed class BorcDataMapperDbContext : DbContext, IAppDbContext
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(BorcDataMapperDbContext).Assembly);
 
-        // واحد سازمانی: ستون، ایندکس و فیلتر (بدون واحد = عمومی، وگرنه طبق محدودهٔ دادهٔ کاربر).
-        modelBuilder.Entity<Template>().HasOrgUnitScope(e => !e.IsDeleted && (e.OrgUnitKey == null || TemplatesScope.All
-            || (TemplatesScope.OwnerUserId != null && e.CreatedBy == TemplatesScope.OwnerUserId)
-            || TemplatesScope.OrgUnitKeys.Contains(e.OrgUnitKey)));
-        modelBuilder.Entity<DataSource>().HasOrgUnitScope(e => !e.IsDeleted && (e.OrgUnitKey == null || DataSourcesScope.All
-            || (DataSourcesScope.OwnerUserId != null && e.CreatedBy == DataSourcesScope.OwnerUserId)
-            || DataSourcesScope.OrgUnitKeys.Contains(e.OrgUnitKey)));
-        modelBuilder.Entity<MappingProfile>().HasOrgUnitScope(e => !e.IsDeleted && (e.OrgUnitKey == null || MappingProfilesScope.All
-            || (MappingProfilesScope.OwnerUserId != null && e.CreatedBy == MappingProfilesScope.OwnerUserId)
-            || MappingProfilesScope.OrgUnitKeys.Contains(e.OrgUnitKey)));
-        modelBuilder.Entity<ImportBatch>().HasOrgUnitScope(e => !e.IsDeleted && (e.OrgUnitKey == null || ImportsScope.All
+        // تعریف‌ها (قالب، منبع داده، پروفایل) واحد ندارند: هر کس مجوز دیدن صفحه را دارد همه را می‌بیند.
+        // ایمپورت‌ها و رکوردها: آنچه خود کاربر ثبت کرده، به‌علاوهٔ واحدهایی که محدودهٔ داده یا مدیریتش (چارت) می‌دهد.
+        modelBuilder.Entity<Template>().HasOrgUnitScope(e => !e.IsDeleted);
+        modelBuilder.Entity<DataSource>().HasOrgUnitScope(e => !e.IsDeleted);
+        modelBuilder.Entity<MappingProfile>().HasOrgUnitScope(e => !e.IsDeleted);
+        modelBuilder.Entity<ImportBatch>().HasOrgUnitScope(e => !e.IsDeleted && (ImportsScope.All
             || (ImportsScope.OwnerUserId != null && e.CreatedBy == ImportsScope.OwnerUserId)
-            || ImportsScope.OrgUnitKeys.Contains(e.OrgUnitKey)));
-        modelBuilder.Entity<DataRecord>().HasOrgUnitScope(e => !e.IsDeleted && (e.OrgUnitKey == null || DataRecordsScope.All
+            || (e.OrgUnitKey != null && ImportsScope.OrgUnitKeys.Contains(e.OrgUnitKey))));
+        modelBuilder.Entity<DataRecord>().HasOrgUnitScope(e => !e.IsDeleted && (DataRecordsScope.All
             || (DataRecordsScope.OwnerUserId != null && e.CreatedBy == DataRecordsScope.OwnerUserId)
-            || DataRecordsScope.OrgUnitKeys.Contains(e.OrgUnitKey)));
+            || (e.OrgUnitKey != null && DataRecordsScope.OrgUnitKeys.Contains(e.OrgUnitKey))));
 
         base.OnModelCreating(modelBuilder);
     }
