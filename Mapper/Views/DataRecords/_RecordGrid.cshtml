@@ -9,7 +9,7 @@
 @{
     // کلیک روی ردیف = ویرایش در مودال (فقط با مجوز ویرایش؛ سرور دوباره بررسی می‌کند)
     var canEdit = (await AccessService.GetCurrentUserAccessAsync()).IsAllowed("Mapper.DataRecords", "Edit");
-    var names = await UserNames.GetAsync(Model.Items.Select(r => r.CreatedBy));
+    var names = await UserNames.GetAsync(Model.Items.SelectMany(r => new[] { r.CreatedBy, r.UpdatedBy }));
     bool IsLtr(FieldDataType type) => type is FieldDataType.Number or FieldDataType.Date or FieldDataType.DateTime;
 }
 
@@ -71,7 +71,13 @@
                             }
                         </td>
                     }
-                    <td style="white-space:nowrap">@(r.CreatedBy is { } by && names.TryGetValue(by, out var who) ? who : "—")</td>
+                    <td style="white-space:nowrap">
+                        @(r.CreatedBy is { } by && names.TryGetValue(by, out var who) ? who : "—")
+                        @if (r.UpdatedAt.HasValue && r.UpdatedBy is { } ub && ub != r.CreatedBy && names.TryGetValue(ub, out var editor))
+                        {
+                            <div class="cell-sub">ویرایش: @editor</div>
+                        }
+                    </td>
                     <td class="cell-sub" style="white-space:nowrap">@((r.UpdatedAt ?? r.CreatedAt).ToRelative())</td>
                     <td>
                         <div class="row-actions">

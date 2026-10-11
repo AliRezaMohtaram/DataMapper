@@ -130,9 +130,14 @@
                     </dd>
                 </div>
             }
-            <div><dt>ثبت‌کننده</dt><dd>@(Model.CreatedBy is { } by && (await UserNames.GetAsync([by])).TryGetValue(by, out var who) ? who : "—")</dd></div>
+            @{
+                var people = await UserNames.GetAsync([Model.CreatedBy, Model.UpdatedBy]);
+                string Person(long? id) => id is { } i && people.TryGetValue(i, out var n) ? n : "—";
+            }
+            <div><dt>ثبت‌کننده</dt><dd>@Person(Model.CreatedBy)</dd></div>
             <div><dt>تاریخ ثبت</dt><dd class="nums">@Model.CreatedAt.ToJalali().ToPersianDigits()</dd></div>
-            <div><dt>آخرین ویرایش</dt><dd class="nums">@(Model.UpdatedAt.HasValue ? Model.UpdatedAt.ToJalali().ToPersianDigits() : "—")</dd></div>
+            <div><dt>آخرین ویرایش‌کننده</dt><dd>@(Model.UpdatedAt.HasValue ? Person(Model.UpdatedBy) : "—")</dd></div>
+            <div><dt>تاریخ آخرین ویرایش</dt><dd class="nums">@(Model.UpdatedAt.HasValue ? Model.UpdatedAt.ToJalali().ToPersianDigits() : "—")</dd></div>
         </dl>
     </footer>
 </article>

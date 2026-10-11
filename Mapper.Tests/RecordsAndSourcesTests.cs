@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.RegularExpressions;
 using Acl.Core.Admin;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Application.DataRecords.Common;
@@ -99,10 +100,12 @@ public sealed class RecordsAndSourcesTests(MapperApp app) : IClassFixture<Mapper
         }
 
         HttpClient admin = await app.AdminAsync();
-        // Overview: one row per record with template, version, unit and source; a row leads to the version's table.
+        // Overview (master): a row leads to the version's table (detail).
         string overview = await TextAsync(await admin.GetAsync("/DataRecords"));
-        Assert.Contains("<th>قالب</th><th>نسخه</th><th>واحد سازمانی</th><th>ثبت‌کننده</th><th>منبع</th><th>ثبت</th>", overview);
-        Assert.Contains($"data-row-href=\"/DataRecords/Version?templateVersionId={versionId}\"", overview);
+        // master/detail: one row per template version (not per record), with the record count
+        Assert.Contains("<th>قالب</th><th>نسخه</th><th>رکوردها</th><th>واحدهای سازمانی</th><th>آخرین تغییر</th>", overview);
+        Assert.Single(Regex.Matches(overview, $"data-row-href=\"/DataRecords/Version\\?templateVersionId={versionId}\""));
+        Assert.Contains("<span class=\"cell-main\">۲</span>", overview);
         Assert.Contains("بدون واحد", overview);   // created outside a request: no unit
 
         string list = await TextAsync(await admin.GetAsync($"/DataRecords/Version?templateVersionId={versionId}"));

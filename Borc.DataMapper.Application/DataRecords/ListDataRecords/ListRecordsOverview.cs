@@ -7,8 +7,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Borc.DataMapper.Application.DataRecords.ListDataRecords;
 
 /// <summary>
-/// صفحهٔ اصلی «داده‌های ثبت‌شده»: رکوردهای همهٔ قالب‌ها با قالب، نسخه، واحد، منبع و زمان ثبت (بدون مقدار فیلدها؛
-/// جدول مقدارها در صفحهٔ هر نسخه است).
+/// Main "recorded data" page, master/detail: one row per template version that has records the user may see
+/// (record count, imported count, units, last change and who made it). The records themselves (detail) are on the
+/// version page. Search matches the template name or record values; counts then cover the matching records.
 /// </summary>
 public sealed record ListRecordsOverviewQuery(
     string? Search = null,
@@ -16,26 +17,26 @@ public sealed record ListRecordsOverviewQuery(
     RecordSource? Source = null,
     int Page = 1,
     int PageSize = 20
-) : IRequest<Result<PagedResult<RecordOverviewItemDto>>>
+) : IRequest<Result<PagedResult<RecordVersionSummaryDto>>>
 {
     public const int MaxPageSize = 100;
 }
 
-public sealed record RecordOverviewItemDto(
-    long Id,
+/// <param name="LastChangedAt">Latest creation or edit among the records.</param>
+/// <param name="LastChangedBy">Who created or edited that record last.</param>
+public sealed record RecordVersionSummaryDto(
     long TemplateId,
     string TemplateName,
     long TemplateVersionId,
     int VersionNo,
-    string? OrgUnitKey,
-    RecordSource Source,
-    long? ImportBatchId,
-    DateTime CreatedAt,
-    DateTime? UpdatedAt,
-    long? CreatedBy);
+    int RecordCount,
+    int ImportedCount,
+    DateTime LastChangedAt,
+    long? LastChangedBy,
+    IReadOnlyList<string?> OrgUnitKeys);
 
 public sealed class ListRecordsOverviewHandler
-    : IRequestHandler<ListRecordsOverviewQuery, Result<PagedResult<RecordOverviewItemDto>>>
+    : IRequestHandler<ListRecordsOverviewQuery, Result<PagedResult<RecordVersionSummaryDto>>>
 {
     private readonly IAppDbContext _db;
 
@@ -44,7 +45,7 @@ public sealed class ListRecordsOverviewHandler
         _db = db;
     }
 
-    public async Task<Result<PagedResult<RecordOverviewItemDto>>> Handle(
+    public async Task<Result<PagedResult<RecordVersionSummaryDto>>> Handle(
         ListRecordsOverviewQuery request,
         CancellationToken cancellationToken)
     {
@@ -52,38 +53,81 @@ public sealed class ListRecordsOverviewHandler
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Clamp(request.PageSize, 1, ListRecordsOverviewQuery.MaxPageSize);
 
-        var query =
-            from r in _db.DataRecords.AsNoTracking()
-            join v in _db.TemplateVersions on r.TemplateVersionId equals v.Id
-            join t in _db.Templates on r.TemplateId equals t.Id
-            select new { r, v, t };
+        var records = _db.DataRecords.AsNoTracking();
 
         if (request.TemplateVersionId.HasValue)
-            query = query.Where(x => x.r.TemplateVersionId == request.TemplateVersionId.Value);
+            records = records.Where(r => r.TemplateVersionId == request.TemplateVersionId.Value);
 
         if (request.Source.HasValue)
-            query = query.Where(x => x.r.SourceType == request.Source.Value);
+            records = records.Where(r => r.SourceType == request.Source.Value);
 
         if (search is not null)
         {
-            // نام قالب یا مقدارهای رکورد
             var pattern = $"%{search}%";
-            query = query.Where(x => EF.Functions.Like(x.t.Name, pattern) || EF.Functions.Like(x.r.DataJson, pattern));
+            records = records.Where(r =>
+                EF.Functions.Like(r.DataJson, pattern)
+                || _db.Templates.Any(t => t.Id == r.TemplateId && EF.Functions.Like(t.Name, pattern)));
         }
 
-        var total = await query.CountAsync(cancellationToken);
+        var groups = records
+            .GroupBy(r => r.TemplateVersionId)
+            .Select(g => new
+            {
+                VersionId = g.Key,
+                Count = g.Count(),
+                Imported = g.Count(r => r.SourceType == RecordSource.Import),
+                LastAt = g.Max(r => r.UpdatedAt ?? r.CreatedAt)
+            });
 
-        var items = await query
-            .OrderByDescending(x => x.r.CreatedAt)
-            .ThenByDescending(x => x.r.Id)
+        var total = await groups.CountAsync(cancellationToken);
+
+        var pageRows = await groups
+            .OrderByDescending(x => x.LastAt)
+            .ThenByDescending(x => x.VersionId)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(x => new RecordOverviewItemDto(
-                x.r.Id, x.t.Id, x.t.Name, x.v.Id, x.v.VersionNo, x.r.OrgUnitKey,
-                x.r.SourceType, x.r.ImportBatchId, x.r.CreatedAt, x.r.UpdatedAt, x.r.CreatedBy))
             .ToListAsync(cancellationToken);
 
-        return Result<PagedResult<RecordOverviewItemDto>>.Ok(
-            new PagedResult<RecordOverviewItemDto>(items, page, pageSize, total));
+        var ids = pageRows.Select(x => x.VersionId).ToList();
+
+        var versions = await (
+                from v in _db.TemplateVersions.AsNoTracking()
+                join t in _db.Templates on v.TemplateId equals t.Id
+                where ids.Contains(v.Id)
+                select new { v.Id, v.VersionNo, TemplateId = t.Id, t.Name })
+            .ToDictionaryAsync(x => x.Id, cancellationToken);
+
+        // who made the latest change in each version
+        var lastBy = await records
+            .Where(r => ids.Contains(r.TemplateVersionId))
+            .GroupBy(r => r.TemplateVersionId)
+            .Select(g => g
+                .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt)
+                .ThenByDescending(r => r.Id)
+                .Select(r => new { r.TemplateVersionId, By = r.UpdatedAt != null ? r.UpdatedBy : r.CreatedBy })
+                .First())
+            .ToDictionaryAsync(x => x.TemplateVersionId, x => x.By, cancellationToken);
+
+        var units = (await records
+                .Where(r => ids.Contains(r.TemplateVersionId))
+                .Select(r => new { r.TemplateVersionId, r.OrgUnitKey })
+                .Distinct()
+                .ToListAsync(cancellationToken))
+            .ToLookup(x => x.TemplateVersionId, x => x.OrgUnitKey);
+
+        var items = pageRows
+            .Where(x => versions.ContainsKey(x.VersionId))
+            .Select(x =>
+            {
+                var v = versions[x.VersionId];
+                return new RecordVersionSummaryDto(
+                    v.TemplateId, v.Name, v.Id, v.VersionNo, x.Count, x.Imported, x.LastAt,
+                    lastBy.GetValueOrDefault(x.VersionId),
+                    units[x.VersionId].OrderBy(k => k is null).ThenBy(k => k, StringComparer.Ordinal).ToList());
+            })
+            .ToList();
+
+        return Result<PagedResult<RecordVersionSummaryDto>>.Ok(
+            new PagedResult<RecordVersionSummaryDto>(items, page, pageSize, total));
     }
 }

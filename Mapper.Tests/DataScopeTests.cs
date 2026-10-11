@@ -141,17 +141,42 @@ public sealed partial class DataScopeTests : IClassFixture<MapperApp>, IAsyncLif
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/DataRecords")).StatusCode);
     }
 
+    [Fact]
+    public async Task A_head_editing_a_subordinates_record_is_shown_as_the_last_editor()
+    {
+        HttpClient fin1 = await _app.SignInAsync("fin1", "Secret123");
+        string detailUrl;
+        using (JsonDocument saved = await SaveAsync(fin1, "رکورد برای ویرایش"))
+        {
+            detailUrl = saved.RootElement.GetProperty("redirect").GetString()!;
+        }
+        long id = long.Parse(detailUrl[(detailUrl.LastIndexOf('/') + 1)..], CultureInfo.InvariantCulture);
+
+        HttpClient boss = await _app.SignInAsync("boss", "Secret123");
+        using (JsonDocument edited = await SaveAsync(boss, "ویرایش‌شده توسط مدیر", id))
+        {
+            Assert.True(edited.RootElement.GetProperty("success").GetBoolean());
+        }
+
+        string detail = await TextAsync(await boss.GetAsync(detailUrl));
+        Assert.Matches("ثبت‌کننده</dt><dd>کاربر fin1</dd>", detail);
+        Assert.Matches("آخرین ویرایش‌کننده</dt><dd>کاربر boss</dd>", detail);
+
+        // the version table names the editor under the author
+        Assert.Contains("ویرایش: کاربر boss", await TextAsync(await boss.GetAsync($"/DataRecords/Version?templateVersionId={_version}")));
+    }
+
     private static HttpRequestMessage Modal(string url) => new(HttpMethod.Get, url) { Headers = { { "X-MX-Modal", "1" } } };
 
     /// <summary>Saves a record through the form's JSON endpoint, as record-form.js does.</summary>
-    private async Task<JsonDocument> SaveAsync(HttpClient client, string title)
+    private async Task<JsonDocument> SaveAsync(HttpClient client, string title, long? recordId = null)
     {
         string page = await (await client.GetAsync($"/DataRecords/Create?versionId={_version}")).Content.ReadAsStringAsync();
         string token = Token().Match(page).Groups[1].Value;
         Assert.False(string.IsNullOrEmpty(token), "no record form");
         using HttpRequestMessage request = new(HttpMethod.Post, "/DataRecords/Save")
         {
-            Content = JsonContent.Create(new { versionId = _version, values = new Dictionary<string, string?> { ["F001"] = title } }),
+            Content = JsonContent.Create(new { versionId = _version, recordId, values = new Dictionary<string, string?> { ["F001"] = title } }),
         };
         request.Headers.Add("RequestVerificationToken", token);
         HttpResponseMessage response = await client.SendAsync(request);

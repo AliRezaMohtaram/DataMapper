@@ -85,9 +85,13 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
 
 ## Records, imports, data sources
 
-- `/DataRecords` (Index) = overview of all records (`ListRecordsOverviewQuery`): template, version, org unit, source, time,
-  row actions; a row click (`tr[data-row-href]`) opens `/DataRecords/Version?templateVersionId=` — the per-version table
-  where records are added, edited, copied and deleted. `importBatchId` links redirect to Version.
+- `/DataRecords` (Index) is master/detail (user: never one row per record here): `ListRecordsOverviewQuery` returns one
+  `RecordVersionSummaryDto` per template version with visible records — count, imported count, units, last change and who
+  made it (search/source filters narrow the counted records). A row click (`tr[data-row-href]`) opens the detail
+  `/DataRecords/Version?templateVersionId=` — the per-version table where records are added, edited, copied and deleted.
+  `importBatchId` links redirect to Version.
+- Last editor: record detail shows "آخرین ویرایش‌کننده" (`DataRecordDetailDto.UpdatedBy`), the version table shows
+  "ویرایش: …" under the author when someone else edited (e.g. a unit head editing a subordinate's record).
 - `ListDataRecordsQuery` (Version page) returns one template version as a table (`Columns` = fields, `Values` per record, option titles for
   static/file sources); without a version: the filtered import's, else the latest record's. Partial `_RecordGrid` on
   `/DataRecords` and, compact, in `_RecentRecords` under the entry form (`DataRecords/Recent?versionId=`, refreshed by

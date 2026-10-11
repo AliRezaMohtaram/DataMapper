@@ -3,7 +3,7 @@
 @using Borc.DataMapper.Domain.Records
 @inject OrgChart.Core.Chart.IOrgChartReader Chart
 @inject Borc.DataMapper.Web.Modules.UserNames UserNames
-@* همهٔ رکوردها: قالب، نسخه، واحد، منبع، زمان ثبت. کلیک روی ردیف → صفحهٔ رکوردهای همان نسخه (DataRecords/Version). *@
+@* Master: one row per template version with records. Detail (the records) = DataRecords/Version. *@
 @{
     ViewData["Title"] = "داده‌های ثبت‌شده";
 
@@ -11,8 +11,8 @@
     var filter = Model.Filter;
     var chart = await Chart.GetSnapshotAsync();
     string UnitTitle(string? key) => key is null ? "بدون واحد" : chart.FindUnit(key)?.Title ?? key;
-    var names = await UserNames.GetAsync(result.Items.Select(r => r.CreatedBy));
-    string Creator(long? id) => id is { } i && names.TryGetValue(i, out var n) ? n : "—";
+    var names = await UserNames.GetAsync(result.Items.Select(r => r.LastChangedBy));
+    string Person(long? id) => id is { } i && names.TryGetValue(i, out var n) ? n : "—";
 
     var errors = ViewData.ModelState.Values
         .SelectMany(v => v.Errors)
@@ -25,7 +25,7 @@
     var pageSizes = new[] { 10, 20, 50, 100 };
     var hasFilter = !string.IsNullOrWhiteSpace(filter.Search) || filter.TemplateVersionId.HasValue || filter.Source.HasValue;
 
-    ViewData["Subtitle"] = $"{result.TotalCount.ToPersianNumber()} رکورد" + (hasFilter ? " با فیلتر فعلی" : "");
+    ViewData["Subtitle"] = $"{result.TotalCount.ToPersianNumber()} قالب و نسخه" + (hasFilter ? " با فیلتر فعلی" : "");
 }
 
 @section TopbarActions {
@@ -44,7 +44,7 @@
     <header class="card-head">
         <div class="card-title">
             <span class="card-ico"><svg class="ico"><use href="#i-rows" /></svg></span>
-            <div>داده‌های ثبت‌شده<div class="card-sub">رکوردهای همهٔ قالب‌ها — برای دیدن مقدارها و ثبت یا ویرایش، روی یک ردیف کلیک کنید.</div></div>
+            <div>داده‌های ثبت‌شده<div class="card-sub">هر ردیف یک قالب و نسخه است — برای دیدن رکوردهای آن و ثبت یا ویرایش، روی ردیف کلیک کنید.</div></div>
         </div>
     </header>
 
@@ -92,36 +92,37 @@
     {
         <div class="tbl-wrap">
             <table class="tbl">
-                <thead><tr><th>قالب</th><th>نسخه</th><th>واحد سازمانی</th><th>ثبت‌کننده</th><th>منبع</th><th>ثبت</th><th></th></tr></thead>
+                <thead><tr><th>قالب</th><th>نسخه</th><th>رکوردها</th><th>واحدهای سازمانی</th><th>آخرین تغییر</th><th></th></tr></thead>
                 <tbody>
                     @foreach (var r in result.Items)
                     {
-                        <tr data-row-href="@Url.Action("Version", new { templateVersionId = r.TemplateVersionId })" style="cursor:pointer" title="رکوردهای @r.TemplateName">
-                            <td><a acl-res="Mapper.DataRecords" acl-act="View" class="cell-main" asp-action="Version" asp-route-templateVersionId="@r.TemplateVersionId">@r.TemplateName</a></td>
+                        <tr data-row-href="@Url.Action("Version", new { templateVersionId = r.TemplateVersionId, search = filter.Search, source = filter.Source })" style="cursor:pointer" title="رکوردهای @r.TemplateName">
+                            <td><a acl-res="Mapper.DataRecords" acl-act="View" class="cell-main" asp-action="Version" asp-route-templateVersionId="@r.TemplateVersionId" asp-route-search="@filter.Search" asp-route-source="@filter.Source">@r.TemplateName</a></td>
                             <td class="nums">نسخهٔ @r.VersionNo.ToPersianNumber()</td>
-                            <td><span class="tag @(r.OrgUnitKey is null ? "tone-info" : "tone-primary")">@UnitTitle(r.OrgUnitKey)</span></td>
-                            <td>@Creator(r.CreatedBy)</td>
-                            <td>
-                                @if (r.Source == RecordSource.Import)
+                            <td class="nums">
+                                <span class="cell-main">@r.RecordCount.ToPersianNumber()</span>
+                                @if (r.ImportedCount > 0)
                                 {
-                                    <span class="badge st-uploaded">ایمپورت</span>
-                                    @if (r.ImportBatchId.HasValue)
-                                    {
-                                        <div class="cell-sub"><a acl-res="Mapper.Imports" acl-act="View" class="code" asp-controller="Imports" asp-action="Detail" asp-route-id="@r.ImportBatchId">IMP-@r.ImportBatchId.Value.ToString("0000")</a></div>
-                                    }
-                                }
-                                else
-                                {
-                                    <span class="badge st-validated">ورود دستی</span>
+                                    <div class="cell-sub">@r.ImportedCount.ToPersianNumber() از ایمپورت</div>
                                 }
                             </td>
-                            <td class="cell-sub" style="white-space:nowrap">@((r.UpdatedAt ?? r.CreatedAt).ToRelative())</td>
+                            <td>
+                                @foreach (var key in r.OrgUnitKeys.Take(3))
+                                {
+                                    <span class="tag @(key is null ? "tone-info" : "tone-primary")">@UnitTitle(key)</span>
+                                }
+                                @if (r.OrgUnitKeys.Count > 3)
+                                {
+                                    <span class="tag" title="@string.Join("، ", r.OrgUnitKeys.Skip(3).Select(UnitTitle))">+@((r.OrgUnitKeys.Count - 3).ToPersianNumber())</span>
+                                }
+                            </td>
+                            <td style="white-space:nowrap">
+                                <div>@Person(r.LastChangedBy)</div>
+                                <div class="cell-sub">@r.LastChangedAt.ToRelative()</div>
+                            </td>
                             <td>
                                 <div class="row-actions">
-                                    <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-action="Detail" asp-route-id="@r.Id" title="مشاهده" aria-label="مشاهدهٔ رکورد @r.Id"><svg class="ico"><use href="#i-eye" /></svg></a>
-                                    <a acl-res="Mapper.DataRecords" acl-act="Edit" class="icon-btn sm" asp-action="Edit" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
-                                    <a acl-res="Mapper.DataRecords" acl-act="Create" class="icon-btn sm" asp-action="Create" asp-route-copyFrom="@r.Id" data-modal title="رونوشت: رکورد جدید با همین مقدارها" aria-label="رونوشت رکورد @r.Id"><svg class="ico"><use href="#i-copy" /></svg></a>
-                                    <button class="icon-btn sm danger" type="button" data-delete-id="@r.Id" data-delete-name="رکورد @r.Id" title="حذف" aria-label="حذف رکورد @r.Id"><svg class="ico"><use href="#i-trash" /></svg></button>
+                                    <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-action="Version" asp-route-templateVersionId="@r.TemplateVersionId" title="رکوردها" aria-label="رکوردهای @r.TemplateName"><svg class="ico"><use href="#i-eye" /></svg></a>
                                 </div>
                             </td>
                         </tr>
@@ -170,9 +171,6 @@
     }
 </article>
 
-<partial name="_DeleteModal" />
-
 @section Scripts {
-    <script src="~/js/confirm-delete.js" asp-append-version="true"></script>
     <partial name="_RecordFormScripts" />
 }

@@ -31,7 +31,8 @@ public sealed class DataRecordsController : Controller
     // ---------- فهرست ----------
 
     /// <summary>
-    /// همهٔ رکوردها با قالب، نسخه، واحد، منبع و زمان ثبت. کلیک روی ردیف → صفحهٔ رکوردهای همان نسخه (Version).
+    /// Master list: one row per template version with records (count, units, last change). Row click → the records of
+    /// that version (Version, the detail).
     /// آدرس‌های قدیمی با نسخه یا ایمپورت به Version هدایت می‌شوند.
     /// </summary>
     [HttpGet]
@@ -54,7 +55,7 @@ public sealed class DataRecordsController : Controller
         if (!result.Success || result.Data is null)
         {
             ModelState.AddResultErrors(result, "خطا در دریافت رکوردها.", Request);
-            return View(new RecordOverviewViewModel(query, new(Array.Empty<RecordOverviewItemDto>(), 1, pageSize, 0), versions));
+            return View(new RecordOverviewViewModel(query, new(Array.Empty<RecordVersionSummaryDto>(), 1, pageSize, 0), versions));
         }
 
         return View(new RecordOverviewViewModel(query, result.Data, versions));

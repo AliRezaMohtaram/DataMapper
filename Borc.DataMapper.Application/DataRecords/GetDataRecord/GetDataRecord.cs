@@ -29,6 +29,9 @@ public sealed record DataRecordDetailDto(
     RecordNeighborsDto Neighbors)
 {
     public long? CreatedBy { get; init; }
+
+    /// <summary>Who saved the last change (null = never edited).</summary>
+    public long? UpdatedBy { get; init; }
 }
 
 /// <summary>
@@ -149,6 +152,6 @@ public sealed class GetDataRecordHandler
         return Result<DataRecordDetailDto>.Ok(new DataRecordDetailDto(
             head.r.Id, head.t.Id, head.t.Name, head.v.Id, head.v.VersionNo, head.v.Status,
             head.r.SourceType, head.r.ImportBatchId, fileName, rowNumber,
-            head.r.CreatedAt, head.r.UpdatedAt, values, neighbors) { CreatedBy = head.r.CreatedBy });
+            head.r.CreatedAt, head.r.UpdatedAt, values, neighbors) { CreatedBy = head.r.CreatedBy, UpdatedBy = head.r.UpdatedBy });
     }
 }
