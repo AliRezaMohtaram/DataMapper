@@ -106,6 +106,20 @@ public sealed class RecordsAndSourcesTests(MapperApp app) : IClassFixture<Mapper
         Assert.Contains("حفاری", list);            // the option's title, not the stored value
         Assert.DoesNotContain(">DRILL<", list);
 
+        long first;
+        await using (AsyncServiceScope scope = app.Services.CreateAsyncScope())
+        {
+            first = await scope.ServiceProvider.GetRequiredService<BorcDataMapperDbContext>().DataRecords
+                .Where(r => r.TemplateVersionId == versionId).OrderBy(r => r.Id).Select(r => r.Id).FirstAsync();
+        }
+
+        // The detail page is a horizontal table too: one header per field, the option's title as value.
+        string detail = await TextAsync(await admin.GetAsync($"/DataRecords/Detail/{first}"));
+        Assert.Contains("نام کارگاه", detail);
+        Assert.Contains("کارگاه اهواز", detail);
+        Assert.Contains("حفاری", detail);
+        Assert.DoesNotContain("<th>فیلد</th>", detail);
+
         string form = await TextAsync(await admin.GetAsync($"/DataRecords/Create?versionId={versionId}"));
         Assert.Contains("id=\"rfRecent\"", form);
         Assert.Contains("کارگاه اهواز", form);

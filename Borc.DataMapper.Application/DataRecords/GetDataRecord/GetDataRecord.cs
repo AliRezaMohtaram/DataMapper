@@ -80,7 +80,7 @@ public sealed class GetDataRecordHandler
             .Where(f => f.TemplateVersionId == head.v.Id)
             .OrderBy(f => f.SortOrder)
             .ThenBy(f => f.Id)
-            .Select(f => new { f.FieldKey, f.Label, f.DataType })
+            .Select(f => new { f.FieldKey, f.Label, f.DataType, f.DataSourceId })
             .ToListAsync(cancellationToken);
 
         Dictionary<string, string?> stored;
@@ -93,6 +93,21 @@ public sealed class GetDataRecordHandler
         catch (JsonException)
         {
             stored = new Dictionary<string, string?>();
+        }
+
+        // مقدار فیلدهای منبع‌دار معمولاً کد است؛ عنوان گزینه (فهرست ثابت/فایل) نمایش داده می‌شود، مثل فهرست رکوردها
+        foreach (var f in fields.Where(f => f.DataSourceId.HasValue))
+        {
+            if (!stored.TryGetValue(f.FieldKey, out var raw) || string.IsNullOrWhiteSpace(raw))
+                continue;
+
+            var title = await _db.DataSourceItems.AsNoTracking()
+                .Where(i => i.DataSourceId == f.DataSourceId!.Value && i.Value == raw)
+                .Select(i => i.Label)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (title is not null)
+                stored[f.FieldKey] = title;
         }
 
         var values = fields

@@ -88,6 +88,7 @@ Cloud container: the clones are /home/user/acl and /home/user/organization; a sy
   static/file sources); without a version: the filtered import's, else the latest record's. Partial `_RecordGrid` on
   `/DataRecords` and, compact, in `_RecentRecords` under the entry form (`DataRecords/Recent?versionId=`, refreshed by
   record-form.js after "save and new"). Dates/numbers shown via `ToRecordDisplay` (Jalali, Persian digits).
+  The record detail page is a horizontal table too (user: a vertical field list is not what users are used to).
 - Import files are kept in `dbo.ImportBatchFile` (one row per batch, varbinary; `Scripts/010_ImportFiles.sql`, also run at
   startup); download: `Imports/Download/{id}` (only for batches the user can see). Content type from the extension.
 - Data source pages (index, detail, map file, preview) are on MX; `vx.css` was removed (it was never loaded: `_Layout` has no
