@@ -72,6 +72,14 @@ public sealed class MapperReportSources(BorcDataMapperDbContext db) : IReportSou
         return found is null ? null : (RecordsPrefix + found.Code, found.VersionNo);
     }
 
+    /// <summary>The field keys of one template version, in form order.</summary>
+    public async Task<IReadOnlyList<string>> VersionFieldKeysAsync(long versionId, CancellationToken cancellationToken = default) =>
+        await db.TemplateFields.AsNoTracking()
+            .Where(f => f.TemplateVersionId == versionId)
+            .OrderBy(f => f.SortOrder).ThenBy(f => f.Id)
+            .Select(f => f.FieldKey)
+            .ToListAsync(cancellationToken);
+
     /// <summary>List fields of a template: field key → data source of the newest version that has the field.</summary>
     public async Task<IReadOnlyDictionary<string, long>> FieldSourcesAsync(long templateId, CancellationToken cancellationToken = default) =>
         (await (

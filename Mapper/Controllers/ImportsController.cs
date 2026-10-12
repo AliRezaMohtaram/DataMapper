@@ -75,6 +75,23 @@ public sealed class ImportsController : Controller
         return View(new ImportIndexViewModel(query, result.Data));
     }
 
+    /// <summary>خروجی اکسل ایمپورت‌های فیلتر فعلی (همهٔ ردیف‌ها، نه فقط این صفحه).</summary>
+    [HttpGet]
+    [RequirePermission(MapperResources.Imports, WellKnownActions.Export)]
+    public async Task<IActionResult> Export(
+        ImportBatchStatus? status,
+        string? search,
+        string? q,
+        [FromServices] ListFilters filters,
+        CancellationToken cancellationToken = default)
+    {
+        var (request, title, error) = await filters.ImportsExportAsync(q, search, status?.ToString(), cancellationToken);
+        if (request is null)
+            return error is null ? NotFound() : RedirectToAction(nameof(Index), new { status, q });
+
+        return new MReporter.Razor.Export.ReportExcelResult(request, title);
+    }
+
     // ---------- آپلود ----------
 
     /// <summary>فرم مشترک آپلود؛ هم در مودال (از هر صفحه) و هم در صفحهٔ کامل.</summary>

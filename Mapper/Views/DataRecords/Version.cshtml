@@ -32,6 +32,11 @@
 
 @section TopbarActions {
     <partial name="_ViewMode" />
+    @if (filter.TemplateVersionId.HasValue && result.TotalCount > 0)
+    {
+        @* Excel of every row the current filter gives (not only this page), made while it downloads *@
+        <a acl-res="Mapper.DataRecords" acl-act="Export" class="btn btn-ghost" asp-action="Export" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-q="@filterQuery" title="همهٔ ردیف‌های فیلتر فعلی"><svg class="ico"><use href="#i-download" /></svg><span class="lbl">خروجی اکسل</span></a>
+    }
     @if (filter.TemplateVersionId.HasValue)
     {
         <a acl-res="Mapper.DataRecords" acl-act="Create" class="btn btn-soft" asp-action="Create" asp-route-versionId="@filter.TemplateVersionId" data-modal><svg class="ico"><use href="#i-pen" /></svg><span class="lbl">ورود دستی</span></a>

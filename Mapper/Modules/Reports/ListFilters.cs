@@ -22,17 +22,54 @@ public sealed class ListFilters(IReportRunner runner, MapperReportSources source
     public async Task<(FilteredPage Page, string? SourceKey)> RecordsAsync(
         long versionId, string? q, string? search, RecordSource? source, long? importBatchId, int page, int pageSize, CancellationToken ct)
     {
+        var built = await BuildRecordsAsync(versionId, q, search, source, importBatchId, ct);
+        if (built is null)
+            return (new FilteredPage(null, 0, null, null), null);
+
+        var (sourceKey, _, info, run, json, filtered, error) = built.Value;
+        if (error is not null)
+            return (new FilteredPage(null, 0, null, error), sourceKey);
+        if (!filtered)
+            return (new FilteredPage(null, 0, null, null), sourceKey);
+
+        return (await RunAsync(sourceKey, run, json, info, page, pageSize, ct), sourceKey);
+    }
+
+    /// <summary>
+    /// Excel export of what the records page shows: the same filter, the version's fields (in form order) and the
+    /// system columns. Null request = the version is unknown; Error = the filter cannot be applied.
+    /// </summary>
+    public async Task<(RunRequest? Request, string Title, string? Error)> RecordsExportAsync(
+        long versionId, string? q, string? search, RecordSource? source, long? importBatchId, CancellationToken ct)
+    {
+        var built = await BuildRecordsAsync(versionId, q, search, source, importBatchId, ct);
+        if (built is null)
+            return (null, string.Empty, null);
+
+        var (sourceKey, versionNo, info, run, _, _, error) = built.Value;
+        string title = $"{info?.Title} - نسخهٔ {versionNo.ToString(CultureInfo.InvariantCulture)}";
+        if (error is not null)
+            return (null, title, error);
+
+        run.Columns = [.. await sources.VersionFieldKeysAsync(versionId, ct),
+            MapperReportSources.Sys.Unit, MapperReportSources.Sys.Author, MapperReportSources.Sys.CreatedAt,
+            MapperReportSources.Sys.Editor, MapperReportSources.Sys.UpdatedAt, MapperReportSources.Sys.Source, MapperReportSources.Sys.Import];
+        return (RunRequest.AdHoc(sourceKey, run), title, null);
+    }
+
+    /// <summary>The records query of a version page: the user's filter (Filtered = there is one) inside the page's own conditions.</summary>
+    private async Task<(string SourceKey, int VersionNo, ReportSourceInfo? Info, ReportQuery Run, string? Json, bool Filtered, string? Error)?> BuildRecordsAsync(
+        long versionId, string? q, string? search, RecordSource? source, long? importBatchId, CancellationToken ct)
+    {
         var target = await sources.VersionAsync(versionId, ct);
         if (target is null)
-            return (new FilteredPage(null, 0, null, null), null);
+            return null;
 
         var (sourceKey, versionNo) = target.Value;
         var info = await sources.FindAsync(sourceKey, ct);
         var query = Parse(q, search, info, out string? parseError);
         if (parseError is not null)
-            return (new FilteredPage(null, 0, null, parseError), sourceKey);
-        if (query is null && source is null && importBatchId is null)
-            return (new FilteredPage(null, 0, null, null), sourceKey);
+            return (sourceKey, versionNo, info, new ReportQuery(), null, false, parseError);
 
         string? json = query is null ? null : ReportQueryJson.Serialize(query);
         var run = query ?? new ReportQuery();
@@ -42,7 +79,7 @@ public sealed class ListFilters(IReportRunner runner, MapperReportSources source
         if (importBatchId is { } batch)
             run.Filter.Conditions.Add(Condition(MapperReportSources.Sys.Import, batch.ToString(CultureInfo.InvariantCulture)));
 
-        return (await RunAsync(sourceKey, run, json, info, page, pageSize, ct), sourceKey);
+        return (sourceKey, versionNo, info, run, json, query is not null || source is not null || importBatchId is not null, null);
     }
 
     /// <summary>Imports; null ids = no filter.</summary>
@@ -56,11 +93,26 @@ public sealed class ListFilters(IReportRunner runner, MapperReportSources source
             return new FilteredPage(null, 0, null, null);
 
         string json = ReportQueryJson.Serialize(query);
-        var run = query;
-        if (status is not null)
-            run.Filter = new FilterGroup { Conditions = [Condition(MapperReportSources.Imp.Status, status)], Groups = [run.Filter] };
+        return await RunAsync(MapperReportSources.ImportsKey, WithStatus(query, status), json, info, page, pageSize, ct);
+    }
 
-        return await RunAsync(MapperReportSources.ImportsKey, run, json, info, page, pageSize, ct);
+    /// <summary>Excel export of the imports list as filtered (every column of the imports source).</summary>
+    public async Task<(RunRequest? Request, string Title, string? Error)> ImportsExportAsync(string? q, string? search, string? status, CancellationToken ct)
+    {
+        var info = await sources.FindAsync(MapperReportSources.ImportsKey, ct);
+        string title = info?.Title ?? "ایمپورت‌ها";
+        var query = Parse(q, search, info, out string? parseError);
+        if (parseError is not null)
+            return (null, title, parseError);
+
+        return (RunRequest.AdHoc(MapperReportSources.ImportsKey, WithStatus(query ?? new ReportQuery(), status)), title, null);
+    }
+
+    private static ReportQuery WithStatus(ReportQuery query, string? status)
+    {
+        if (status is not null)
+            query.Filter = new FilterGroup { Conditions = [Condition(MapperReportSources.Imp.Status, status)], Groups = [query.Filter] };
+        return query;
     }
 
     private async Task<FilteredPage> RunAsync(string sourceKey, ReportQuery query, string? json, ReportSourceInfo? info, int page, int pageSize, CancellationToken ct)

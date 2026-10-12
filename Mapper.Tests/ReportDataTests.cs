@@ -237,6 +237,47 @@ public sealed partial class ReportDataTests(MapperApp app) : IClassFixture<Mappe
         Assert.DoesNotContain("فیلتر اعمال نشد", page);
     }
 
+    [Fact]
+    public async Task The_records_page_exports_the_filtered_rows_to_excel()
+    {
+        HttpClient boss = await app.SignInAsync("rboss", "Secret123");
+        string q = JsonSerializer.Serialize(new { filter = new { conditions = new object[] { new { column = "F004", @operator = "In", values = new[] { "EX2" } } } } });
+
+        // the button is on the page, with the filter
+        string page = await TextAsync(await boss.GetAsync($"/DataRecords/Version?templateVersionId={_version}&q=" + Uri.EscapeDataString(q)));
+        Assert.Contains("/DataRecords/Export?templateVersionId=" + _version, page);
+
+        HttpResponseMessage response = await boss.GetAsync($"/DataRecords/Export?templateVersionId={_version}&q=" + Uri.EscapeDataString(q));
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(MReporter.Razor.Export.ReportExcelExporter.ContentType, response.Content.Headers.ContentType?.MediaType);
+        Assert.EndsWith(".xlsx", response.Content.Headers.ContentDisposition?.FileNameStar);
+
+        using var book = new ClosedXML.Excel.XLWorkbook(new MemoryStream(await response.Content.ReadAsByteArrayAsync()));
+        var sheet = book.Worksheet(1);
+        Assert.True(sheet.RightToLeft);
+        Assert.StartsWith("هزینه‌های گزارش - نسخهٔ 1", sheet.Cell("A1").GetString());
+        Assert.Equal("شرط‌ها: نوع یکی از تعمیرات", sheet.Cell("A2").GetString());
+        Assert.Equal(["شرح", "مبلغ", "تاریخ", "نوع", "واحد سازمانی", "ثبت‌کننده"], Enumerable.Range(1, 6).Select(c => sheet.Cell(5, c).GetString()));
+        var rows = Enumerable.Range(6, 2).Select(r => (Text: sheet.Cell(r, 1).GetString(), Amount: sheet.Cell(r, 2).GetDouble(), Date: sheet.Cell(r, 3).GetString(), Kind: sheet.Cell(r, 4).GetString()))
+            .OrderBy(r => r.Text).ToList();
+        Assert.Equal(("تعمیر پمپ", 45000000d, "1405/07/03", "تعمیرات"), rows[0]); // both units below the head
+        Assert.Equal(("تعمیر کولر", 12000000d, "1405/07/15", "تعمیرات"), rows[1]);
+        Assert.True(sheet.Cell(8, 1).IsEmpty());
+
+        // another user exports only what they see
+        HttpClient hr = await app.SignInAsync("rhr", "Secret123");
+        using var own = new ClosedXML.Excel.XLWorkbook(new MemoryStream(await hr.GetByteArrayAsync($"/DataRecords/Export?templateVersionId={_version}")));
+        Assert.Equal("بدون شرط (همهٔ ردیف‌هایی که اجازهٔ دیدنشان را دارید)", own.Worksheet(1).Cell("A2").GetString());
+        Assert.Equal("تعمیر کولر", own.Worksheet(1).Cell(6, 1).GetString());
+        Assert.True(own.Worksheet(1).Cell(7, 1).IsEmpty());
+
+        // imports
+        HttpResponseMessage imports = await boss.GetAsync("/Imports/Export");
+        Assert.Equal(System.Net.HttpStatusCode.OK, imports.StatusCode);
+        using var importBook = new ClosedXML.Excel.XLWorkbook(new MemoryStream(await imports.Content.ReadAsByteArrayAsync()));
+        Assert.Equal("ایمپورت‌ها", importBook.Worksheet(1).Cell("A1").GetString());
+    }
+
     private static async Task<string> TextAsync(HttpResponseMessage response) => System.Net.WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
     /// <summary>Runs work in a scope that looks like a request of the user (visibility loaded as the middleware does).</summary>

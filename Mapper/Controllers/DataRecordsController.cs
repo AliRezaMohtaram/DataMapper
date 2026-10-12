@@ -61,6 +61,30 @@ public sealed class DataRecordsController : Controller
         return View(new RecordOverviewViewModel(query, result.Data, versions));
     }
 
+    /// <summary>
+    /// خروجی اکسل همهٔ رکوردهایی که فیلتر فعلی صفحهٔ نسخه می‌دهد (با همان قوانین دیدن داده)؛ فایل هنگام دانلود ساخته
+    /// می‌شود و روی سرور نمی‌ماند (MReporter).
+    /// </summary>
+    [HttpGet]
+    [RequirePermission(MapperResources.DataRecords, WellKnownActions.Export)]
+    public async Task<IActionResult> Export(
+        long templateVersionId,
+        string? search,
+        RecordSource? source,
+        long? importBatchId,
+        string? q,
+        [FromServices] Modules.Reports.ListFilters filters,
+        CancellationToken cancellationToken = default)
+    {
+        var (request, title, error) = await filters.RecordsExportAsync(templateVersionId, q, search, source, importBatchId, cancellationToken);
+        if (request is null)
+            return error is null
+                ? NotFound()
+                : RedirectToAction(nameof(Version), new { templateVersionId, source, importBatchId, q }); // the page shows why
+
+        return new MReporter.Razor.Export.ReportExcelResult(request, title, [Modules.Reports.MapperReportSources.Sys.Version]); // the title names the version
+    }
+
     /// <summary>رکوردهای یک نسخهٔ قالب به‌صورت جدول (ستون‌ها = فیلدها)؛ ثبت، ویرایش، رونوشت و حذف.</summary>
     [HttpGet]
     public async Task<IActionResult> Version(

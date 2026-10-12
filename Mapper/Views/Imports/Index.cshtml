@@ -28,6 +28,10 @@
 
 @section TopbarActions {
     <partial name="_ViewMode" />
+    @if (result.TotalCount > 0)
+    {
+        <a acl-res="Mapper.Imports" acl-act="Export" class="btn btn-ghost" asp-action="Export" asp-route-status="@filter.Status" asp-route-q="@filterQuery" title="همهٔ ردیف‌های فیلتر فعلی"><svg class="ico"><use href="#i-download" /></svg><span class="lbl">خروجی اکسل</span></a>
+    }
 }
 
 @if (errors.Count > 0)
