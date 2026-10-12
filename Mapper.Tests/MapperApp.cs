@@ -27,20 +27,44 @@ public sealed partial class MapperApp : WebApplicationFactory<Program>
     // and tests, which one shared in-memory connection cannot do. WAL lets readers and the writer overlap.
     private readonly string _mapperFile = Path.Combine(Path.GetTempPath(), $"mapper-tests-{Guid.NewGuid():N}.db");
     private string MapperConnection => $"Data Source={_mapperFile};Default Timeout=60";
+
+    /// <summary>
+    /// Set MAPPER_TEST_SQLSERVER to a SQL Server connection string (a database the tests may drop and create, one per
+    /// test class: "{0}" in it is replaced by a unique name) to run Mapper's own database on SQL Server instead of SQLite —
+    /// for the SQL that differs between them (report queries with JSON_VALUE, paging).
+    /// </summary>
+    private readonly string? _sqlServer = Environment.GetEnvironmentVariable("MAPPER_TEST_SQLSERVER") is { Length: > 0 } cs
+        ? string.Format(System.Globalization.CultureInfo.InvariantCulture, cs, "MapperTests_" + Guid.NewGuid().ToString("N")[..12])
+        : null;
+
+    private void UseMapperDatabase(DbContextOptionsBuilder options)
+    {
+        if (_sqlServer is not null)
+            options.UseSqlServer(_sqlServer);
+        else
+            options.UseSqlite(MapperConnection);
+    }
     private readonly SqliteConnection _users = Open();
     private readonly SqliteConnection _chart = Open();
     private readonly SqliteConnection _acl = Open();
+    private readonly SqliteConnection _reports = Open();
 
     public MapperApp()
     {
-        using (var mapper = new BorcDataMapperDbContext(new DbContextOptionsBuilder<BorcDataMapperDbContext>().UseSqlite(MapperConnection).Options))
+        var mapperOptions = new DbContextOptionsBuilder<BorcDataMapperDbContext>();
+        UseMapperDatabase(mapperOptions);
+        using (var mapper = new BorcDataMapperDbContext(mapperOptions.Options))
         {
+            if (_sqlServer is not null)
+                mapper.Database.EnsureDeleted();
             mapper.Database.EnsureCreated();
-            mapper.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+            if (_sqlServer is null)
+                mapper.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
         }
         new UsersDbContext(Options<UsersDbContext>(_users)).Database.EnsureCreated();
         new OrgChartDbContext(Options<OrgChartDbContext>(_chart)).Database.EnsureCreated();
         new AclDbContext(Options<AclDbContext>(_acl)).Database.EnsureCreated();
+        new MReporter.EFCore.MReporterDbContext(Options<MReporter.EFCore.MReporterDbContext>(_reports)).Database.EnsureCreated();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -53,11 +77,12 @@ public sealed partial class MapperApp : WebApplicationFactory<Program>
         {
             services.RemoveAll<DbContextOptions<BorcDataMapperDbContext>>();
             services.RemoveAll<IDbContextOptionsConfiguration<BorcDataMapperDbContext>>();
-            services.AddDbContext<BorcDataMapperDbContext>(o => o.UseSqlite(MapperConnection));
+            services.AddDbContext<BorcDataMapperDbContext>(o => UseMapperDatabase(o));
             services.AddDbContext<BorcDataMapperDbContext>((sp, o) => o.AddInterceptors(sp.GetRequiredService<AuditStampInterceptor>()));
             UseSqlite<UsersDbContext>(services, _users);
             UseSqlite<OrgChartDbContext>(services, _chart);
             UseSqlite<AclDbContext>(services, _acl);
+            UseSqlite<MReporter.EFCore.MReporterDbContext>(services, _reports);
 
             // The entry assembly is the test host here; scan Mapper for its [Resource] declarations as the real app does.
             services.Configure<Acl.Core.AclOptions>(o => o.ResourceAssemblies.Add(typeof(Program).Assembly));
@@ -85,6 +110,13 @@ public sealed partial class MapperApp : WebApplicationFactory<Program>
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
+        if (_sqlServer is not null)
+        {
+            using var mapper = new BorcDataMapperDbContext(new DbContextOptionsBuilder<BorcDataMapperDbContext>().UseSqlServer(_sqlServer).Options);
+            Microsoft.Data.SqlClient.SqlConnection.ClearAllPools();
+            mapper.Database.EnsureDeleted();
+        }
+
         SqliteConnection.ClearAllPools();
         foreach (string file in new[] { _mapperFile, _mapperFile + "-wal", _mapperFile + "-shm" })
         {
@@ -93,6 +125,7 @@ public sealed partial class MapperApp : WebApplicationFactory<Program>
         _users.Dispose();
         _chart.Dispose();
         _acl.Dispose();
+        _reports.Dispose();
     }
 
     private static SqliteConnection Open()

@@ -8,7 +8,7 @@ namespace Borc.DataMapper.Web.Modules;
 
 /// <summary>
 /// پیش از بقیهٔ سرویس‌ها جدول‌های چارت (schema org) و Acl (schema acl) را در همان پایگاه داده به‌روز می‌کند.
-/// Applies the OrgChart (schema org) and Acl (schema acl) migrations to the existing Mapper database at startup
+/// Applies the OrgChart (schema org), Acl (schema acl) and MReporter (schema rpt) migrations to the existing Mapper database at startup
 /// (Modules:MigrateOnStartup, default true). Registered before AddAccessControl so Acl's startup work sees its tables.
 /// </summary>
 public sealed class ModuleDatabaseMigrator(IServiceProvider services, IConfiguration configuration, ILogger<ModuleDatabaseMigrator> logger) : IHostedService
@@ -25,6 +25,7 @@ public sealed class ModuleDatabaseMigrator(IServiceProvider services, IConfigura
                  {
                      scope.ServiceProvider.GetRequiredService<OrgChartDbContext>(),
                      scope.ServiceProvider.GetRequiredService<AclDbContext>(),
+                     scope.ServiceProvider.GetRequiredService<MReporter.EFCore.MReporterDbContext>(),
                  })
         {
             if (!await db.GetService<IRelationalDatabaseCreator>().ExistsAsync(cancellationToken))

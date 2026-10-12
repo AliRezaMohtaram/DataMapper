@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
 ﻿using Borc.DataMapper.Application;
 using Borc.DataMapper.Application.Abstractions.Identity;
 using Borc.DataMapper.Application.Abstractions.Files;
@@ -74,6 +75,15 @@ builder.Services.AddAccessControl(o =>
     .AddUserDirectory<MapperUserDirectory>()
     .AddAdminUi();
 builder.Services.AddHostedService<MapperAccessBootstrapper>(); // after AddAccessControl: needs the synced resources
+
+// Reports (MReporter module, schema rpt): Mapper's sources are the records of each template and the imports.
+builder.Services.AddMReporter()
+    .AddSqlServerStore(connectionString)
+    .AddCurrentUser<Borc.DataMapper.Web.Modules.Reports.MapperReportUser>()
+    .AddDataProvider<Borc.DataMapper.Web.Modules.Reports.MapperReportData>();
+builder.Services.AddScoped<Borc.DataMapper.Web.Modules.Reports.MapperReportSources>();
+builder.Services.Replace(ServiceDescriptor.Scoped<MReporter.Core.Abstractions.IReportSourceCatalog>(
+    sp => sp.GetRequiredService<Borc.DataMapper.Web.Modules.Reports.MapperReportSources>()));
 
 // Import validation and commit run in the background, one batch at a time (progress shown on the import page).
 builder.Services.AddSingleton<Borc.DataMapper.Web.Background.ImportJobQueue>();

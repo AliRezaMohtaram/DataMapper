@@ -132,7 +132,18 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   script), sample import files `Scripts/demo/*.xlsx`, guide `docs/demo-data.md`. Verified on SQL Server 2022 (docker) with
   the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
 
-- Reporting (planned, user decisions so far): a separate reusable module (like OrgChart/Acl), hosts register data sources;
+- Reporting = module MReporter (github.com/AliRezaMohtaram/MReporter, clone /home/user/mreporter; packages MReporter.Core,
+  .EFCore, .Sql 0.1.0 in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
+  `ModuleDatabaseMigrator`). Mapper side: `Mapper/Modules/Reports` — `MapperReportSources` (IReportSourceCatalog: one source
+  per template "mapper.records:{code}" with its fields by key across versions + system columns `sys.version/unit/source/
+  author/createdAt/editor/updatedAt`; default audience = template's allowed units; "mapper.imports"), `MapperReportData`
+  (IReportDataProvider: raw SQL via MReporter.Sql, JSON_VALUE/TRY_CONVERT on SQL Server, json_extract on SQLite; applies
+  IsDeleted and the scope itself because raw SQL skips EF filters — Viewer = `IDataScopeProvider` like the lists, Units =
+  granted units + sub-units from the chart, All; list titles: data source items preloaded before the reader opens — one
+  connection, no MARS; units from the chart, users via `UserNames`), `MapperReportUser`. Tests: `ReportDataTests`.
+  `MAPPER_TEST_SQLSERVER` (connection string with "{0}" for a per-class database) runs Mapper's DB in the tests on SQL
+  Server instead of SQLite — use it for SQL-dialect changes (it caught the MARS issue).
+- Reporting decisions (user): a separate reusable module (like OrgChart/Acl), hosts register data sources;
   admin-made reports with an audience (units with/without sub-units, positions, persons; default = the template's allowed
   units); a report MAY grant data scope beyond the runner's own visibility (audited); advanced filter replaces the simple
   search, then Excel export; later a Stimulsoft-like banded layout designer. PDF = the user's browser ("Print → Save as
