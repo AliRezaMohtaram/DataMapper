@@ -17,7 +17,10 @@ public static class HtmlEngine
         h.Append($$"""
             <!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><style>
             @font-face { font-family: Vazir; src: url(data:font/ttf;base64,{{font}}) format('truetype'); }
-            @page { size: A4; }
+            @page { size: A4; margin: 22mm 12mm 16mm 12mm;
+              @top-right { content: "{{E(data.Title)}}"; font-family: Vazir; font-size: 8pt; color: #64748b; }
+              @top-left { content: "شرکت نمونه"; font-family: Vazir; font-size: 8pt; color: #64748b; }
+              @bottom-center { content: "صفحهٔ " counter(page, persian) " از " counter(pages, persian); font-family: Vazir; font-size: 8pt; color: #64748b; } }
             * { box-sizing: border-box; }
             body { font-family: Vazir, sans-serif; font-size: 9pt; color: #1f2937; margin: 0; }
             .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1d4ed8; padding-bottom: 6px; margin-bottom: 8px; }
@@ -52,6 +55,20 @@ public static class HtmlEngine
         h.Append($"<tr class=\"total\"><td colspan=\"5\">جمع کل ({Fa.Number(data.Rows.Count)} ردیف)</td><td class=\"num\">{Fa.Money(data.Rows.Sum(r => r.Amount))}</td></tr>");
         h.Append("</tbody></table><div class=\"sign\"><div>تهیه‌کننده<br><br>امضا</div><div>رئیس حسابداری<br><br>امضا</div><div>معاون مالی<br><br>امضا</div></div></body></html>");
         return h.ToString();
+    }
+
+    /// <summary>
+    /// What a user gets from the browser's own "Print → Save as PDF" (Chrome/Edge 131+): page header, footer and
+    /// Persian page numbers come from the CSS @page margin boxes above, with the page's web font — nothing is installed
+    /// on the server or the client.
+    /// </summary>
+    public static async Task RenderBrowserPrintAsync(ReportData data, string fontsDir, string pdfPath, string? chromiumPath)
+    {
+        using var playwright = await Playwright.CreateAsync();
+        await using var browser = await playwright.Chromium.LaunchAsync(new() { ExecutablePath = chromiumPath, Headless = true });
+        var page = await browser.NewPageAsync();
+        await page.SetContentAsync(BuildHtml(data, fontsDir));
+        await page.PdfAsync(new PagePdfOptions { Path = pdfPath, PrintBackground = true, PreferCSSPageSize = true });
     }
 
     public static async Task RenderAsync(ReportData data, string fontsDir, string pdfPath, string? chromiumPath)
