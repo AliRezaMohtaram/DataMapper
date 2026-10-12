@@ -132,6 +132,15 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   script), sample import files `Scripts/demo/*.xlsx`, guide `docs/demo-data.md`. Verified on SQL Server 2022 (docker) with
   the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
 
+- Reporting (planned, user decisions so far): a separate reusable module (like OrgChart/Acl), hosts register data sources;
+  admin-made reports with an audience (units with/without sub-units, positions, persons; default = the template's allowed
+  units); a report MAY grant data scope beyond the runner's own visibility (audited); advanced filter replaces the simple
+  search, then Excel export; later a Stimulsoft-like banded layout designer. PDF = the user's browser ("Print → Save as
+  PDF", Chrome/Edge 131+; CSS @page margin boxes give header/footer and Persian page numbers with the page's web font).
+  Server constraints: nothing may be installed on the server, no commercial dependencies, no internet — so no server
+  Chromium and no QuestPDF; server-side PDF (scheduled/archived) not needed for now (if ever: own engine on SkiaSharp +
+  HarfBuzzSharp, MIT). Prototype and comparison: `prototypes/ReportPdf`, `docs/prototypes/pdf-engines.md`.
+
 - Tests: `Mapper.Tests` (WebApplicationFactory, every DbContext on its own SQLite connection, startup migrations off;
   `DataScopeTests` for the unit filter).
   Manual checklist: `docs/modules-test-checklist.md`.
