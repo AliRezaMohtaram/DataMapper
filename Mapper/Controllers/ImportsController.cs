@@ -6,6 +6,7 @@ using Borc.DataMapper.Application.Imports.CommitImportBatch;
 using Borc.DataMapper.Application.Imports.Common;
 using Borc.DataMapper.Application.Imports.DeleteImportBatch;
 using Borc.DataMapper.Application.Imports.GetImportBatch;
+using Borc.DataMapper.Application.Imports.GetImportProgress;
 using Borc.DataMapper.Application.Imports.GetImportFile;
 using Borc.DataMapper.Application.Imports.GetImportLookups;
 using Borc.DataMapper.Application.Imports.ListImportBatches;
@@ -168,6 +169,20 @@ public sealed class ImportsController : Controller
         return View(result.Data);
     }
 
+    /// <summary>State of the running background step, polled by import-progress.js.</summary>
+    [HttpGet]
+    public async Task<IActionResult> Progress(long id, CancellationToken cancellationToken)
+    {
+        var result = await _sender.Send(new GetImportProgressQuery(id), cancellationToken);
+
+        if (!result.Success || result.Data is null)
+            return NotFound();
+
+        Response.Headers.CacheControl = "no-store";
+        var p = result.Data;
+        return Json(new { status = p.Status.ToString(), busy = p.IsBusy, processed = p.Processed, total = p.Total, error = p.LastError });
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission(MapperResources.Imports, WellKnownActions.Edit)]
@@ -182,7 +197,7 @@ public sealed class ImportsController : Controller
             cancellationToken);
 
         TempData[result.Success ? "Success" : "Error"] =
-            result.Message ?? (result.Success ? "اعتبارسنجی انجام شد." : "اعمال نگاشت انجام نشد.");
+            result.Message ?? (result.Success ? "اعتبارسنجی شروع شد." : "اعمال نگاشت انجام نشد.");
 
         return RedirectToAction(nameof(Detail), new { id });
     }
@@ -212,7 +227,7 @@ public sealed class ImportsController : Controller
         var result = await _sender.Send(new CommitImportBatchCommand(id), cancellationToken);
 
         TempData[result.Success ? "Success" : "Error"] =
-            result.Message ?? (result.Success ? "ثبت نهایی انجام شد." : "ثبت نهایی انجام نشد.");
+            result.Message ?? (result.Success ? "ثبت نهایی شروع شد." : "ثبت نهایی انجام نشد.");
 
         return RedirectToAction(nameof(Detail), new { id });
     }

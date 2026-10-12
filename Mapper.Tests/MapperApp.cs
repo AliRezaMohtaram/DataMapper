@@ -23,14 +23,21 @@ public sealed partial class MapperApp : WebApplicationFactory<Program>
 {
     public const string AdminPassword = "Admin12345";
 
-    private readonly SqliteConnection _mapper = Open();
+    // Mapper's own database is a temporary file: the background import worker uses it at the same time as requests
+    // and tests, which one shared in-memory connection cannot do. WAL lets readers and the writer overlap.
+    private readonly string _mapperFile = Path.Combine(Path.GetTempPath(), $"mapper-tests-{Guid.NewGuid():N}.db");
+    private string MapperConnection => $"Data Source={_mapperFile};Default Timeout=60";
     private readonly SqliteConnection _users = Open();
     private readonly SqliteConnection _chart = Open();
     private readonly SqliteConnection _acl = Open();
 
     public MapperApp()
     {
-        new BorcDataMapperDbContext(Options<BorcDataMapperDbContext>(_mapper)).Database.EnsureCreated();
+        using (var mapper = new BorcDataMapperDbContext(new DbContextOptionsBuilder<BorcDataMapperDbContext>().UseSqlite(MapperConnection).Options))
+        {
+            mapper.Database.EnsureCreated();
+            mapper.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+        }
         new UsersDbContext(Options<UsersDbContext>(_users)).Database.EnsureCreated();
         new OrgChartDbContext(Options<OrgChartDbContext>(_chart)).Database.EnsureCreated();
         new AclDbContext(Options<AclDbContext>(_acl)).Database.EnsureCreated();
@@ -44,7 +51,9 @@ public sealed partial class MapperApp : WebApplicationFactory<Program>
         builder.UseSetting("Modules:MigrateOnStartup", "false");
         builder.ConfigureTestServices(services =>
         {
-            UseSqlite<BorcDataMapperDbContext>(services, _mapper);
+            services.RemoveAll<DbContextOptions<BorcDataMapperDbContext>>();
+            services.RemoveAll<IDbContextOptionsConfiguration<BorcDataMapperDbContext>>();
+            services.AddDbContext<BorcDataMapperDbContext>(o => o.UseSqlite(MapperConnection));
             services.AddDbContext<BorcDataMapperDbContext>((sp, o) => o.AddInterceptors(sp.GetRequiredService<AuditStampInterceptor>()));
             UseSqlite<UsersDbContext>(services, _users);
             UseSqlite<OrgChartDbContext>(services, _chart);
@@ -76,7 +85,11 @@ public sealed partial class MapperApp : WebApplicationFactory<Program>
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
-        _mapper.Dispose();
+        SqliteConnection.ClearAllPools();
+        foreach (string file in new[] { _mapperFile, _mapperFile + "-wal", _mapperFile + "-shm" })
+        {
+            try { File.Delete(file); } catch (IOException) { }
+        }
         _users.Dispose();
         _chart.Dispose();
         _acl.Dispose();

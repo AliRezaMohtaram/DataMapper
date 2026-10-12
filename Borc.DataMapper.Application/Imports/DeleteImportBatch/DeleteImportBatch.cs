@@ -29,7 +29,11 @@ public sealed class DeleteImportBatchHandler
         if (batch is null)
             return Result.Failure("ایمپورت موردنظر پیدا نشد.");
 
-        if (batch.Status == ImportBatchStatus.Imported)
+        if (batch.IsBusy)
+            return Result.Failure("این ایمپورت در حال پردازش است؛ پس از پایان آن دوباره تلاش کنید.");
+
+        if (batch.Status == ImportBatchStatus.Imported
+            || await _db.ImportRows.AnyAsync(r => r.ImportBatchId == batch.Id && r.Status == ImportRowStatus.Imported, cancellationToken))
             return Result.Failure("داده‌های ثبت‌شده به این ایمپورت وابسته‌اند و حذف نمی‌شود.");
 
         var now = DateTime.UtcNow;

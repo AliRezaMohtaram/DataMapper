@@ -47,10 +47,12 @@ public sealed class DataRecord : EntityBase, IOrgUnitOwned
         string dataJson,
         long importBatchId,
         long importRowId,
-        string? orgUnitKey = null)
+        string? orgUnitKey = null,
+        long? createdBy = null)
     {
         return new DataRecord
         {
+            CreatedBy = createdBy,
             OrgUnitKey = orgUnitKey,
             TemplateId = templateId,
             TemplateVersionId = templateVersionId,

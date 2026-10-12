@@ -29,6 +29,10 @@ public sealed class ReopenImportMappingHandler
         if (batch is null)
             return Result.Failure("ایمپورت موردنظر پیدا نشد.");
 
+        // an interrupted commit has already turned some rows into records: validating again would commit them twice
+        if (await _db.ImportRows.AnyAsync(r => r.ImportBatchId == batch.Id && r.Status == ImportRowStatus.Imported, cancellationToken))
+            return Result.Failure("بخشی از سطرها ثبت نهایی شده‌اند؛ تطبیق دوباره ممکن نیست. ثبت نهایی را ادامه دهید.");
+
         if (batch.Status != ImportBatchStatus.Validated)
             return Result.Failure("فقط ایمپورت اعتبارسنجی‌شده را می‌توان دوباره تطبیق داد.");
 

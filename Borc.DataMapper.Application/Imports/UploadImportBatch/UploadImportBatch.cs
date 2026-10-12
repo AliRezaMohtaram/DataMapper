@@ -139,6 +139,10 @@ public sealed class UploadImportBatchHandler
                     }
 
                     await _db.SaveChangesAsync(cancellationToken);
+
+                    // saved rows are not needed any more: keep the change tracker small for large files
+                    foreach (var saved in _db.ChangeTracker.Entries<ImportRow>().ToList())
+                        saved.State = EntityState.Detached;
                 }
 
                 return Result<long>.Ok(batch.Id, $"فایل بارگذاری شد ({sheet.Rows.Count} سطر)؛ ستون‌ها را تطبیق دهید.");

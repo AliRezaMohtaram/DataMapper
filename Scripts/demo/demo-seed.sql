@@ -237,6 +237,7 @@ INSERT INTO @grants VALUES
  (N'دمو - کاربر ثبت داده', N'Mapper.DataRecords', N'Delete'),
  (N'دمو - کاربر ثبت داده', N'Mapper.Imports', N'View'),
  (N'دمو - کاربر ثبت داده', N'Mapper.Imports', N'Create'),
+ (N'دمو - کاربر ثبت داده', N'Mapper.Imports', N'Edit'),       -- column mapping of an upload
  (N'دمو - کاربر ثبت داده', N'Mapper.Imports', N'Approve'),
  (N'دمو - مدیر واحد', N'Mapper.DataRecords', N'Export'),
  (N'دمو - مدیر واحد', N'Mapper.Imports', N'Delete'),

@@ -12,12 +12,16 @@
     var rows = Model.Rows;
     var mapping = Model.Status == ImportBatchStatus.Uploaded;
     var imported = Model.Status == ImportBatchStatus.Imported;
+    var busy = Model.Status is ImportBatchStatus.Validating or ImportBatchStatus.Committing;
+    var committing = Model.Status == ImportBatchStatus.Committing;
+    var jobTotal = committing ? Model.ValidRows : Model.TotalRows;
     var kind = DashboardUi.FileKind(Model.FileName);
 
     // مرحلهٔ فعلی در مسیر: ۰ قالب و فایل (همیشه انجام‌شده) · ۱ تطبیق · ۲ بررسی سطرها · ۳ ثبت نهایی
     var stage = Model.Status switch
     {
         ImportBatchStatus.Uploaded => 1,
+        ImportBatchStatus.Committing => 3,
         ImportBatchStatus.Imported => 4,
         _ => 2
     };
@@ -52,6 +56,32 @@
     <div class="callout tone-danger" style="margin-bottom:1rem">
         <svg class="ico"><use href="#i-alert" /></svg><div>پردازش این ایمپورت ناموفق بود. فایل را بررسی و دوباره بارگذاری کنید.</div>
     </div>
+}
+
+@if (!busy && Model.LastError is { } lastError)
+{
+    <div class="callout tone-danger" style="margin-bottom:1rem" role="alert">
+        <svg class="ico"><use href="#i-alert" /></svg><div>@lastError</div>
+    </div>
+}
+
+@if (busy)
+{
+    @* background step (validation or commit): polled until it ends, then the page reloads *@
+    <article class="card rise" style="margin-bottom:1rem" data-import-progress="@Url.Action("Progress", new { id = Model.Id })">
+        <div class="meters">
+            <div>
+                <div class="meter-head">
+                    <b>@(committing ? "در حال ثبت نهایی…" : "در حال اعتبارسنجی سطرها…")</b>
+                    <span data-progress-text>@Model.ProcessedRows.ToPersianNumber() از @jobTotal.ToPersianNumber() سطر</span>
+                </div>
+                <div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="@jobTotal" aria-valuenow="@Model.ProcessedRows">
+                    <i data-progress-bar style="width:@Pct(jobTotal == 0 ? 0 : 100.0 * Model.ProcessedRows / jobTotal)%"></i>
+                </div>
+                <p class="hint" style="margin-top:.6rem">پردازش در پس‌زمینه انجام می‌شود؛ می‌توانید این صفحه را ببندید و بعداً برگردید.</p>
+            </div>
+        </div>
+    </article>
 }
 
 <div class="split">
@@ -336,7 +366,7 @@
                     {
                         <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-primary" asp-controller="DataRecords" asp-action="Version" asp-route-importBatchId="@Model.Id"><svg class="ico"><use href="#i-rows" /></svg>رکوردهای ثبت‌شده</a>
                     }
-                    else
+                    else if (!busy)
                     {
                         <div class="dd-sep"></div>
                         <button type="button" class="btn btn-danger-soft" data-delete-id="@Model.Id" data-delete-name="@Model.FileName"><svg class="ico"><use href="#i-trash" /></svg>حذف ایمپورت</button>
@@ -353,4 +383,5 @@
 @section Scripts {
     <script src="~/js/confirm-delete.js" asp-append-version="true"></script>
     <script src="~/js/confirm-action.js" asp-append-version="true"></script>
+    <script src="~/js/import-progress.js" asp-append-version="true"></script>
 }

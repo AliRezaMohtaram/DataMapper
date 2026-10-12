@@ -26,6 +26,9 @@ public sealed class ImportBatchConfiguration : IEntityTypeConfiguration<ImportBa
             .HasConversion<short>()
             .IsRequired();
 
+        builder.Property(x => x.LastError).HasMaxLength(1000);
+        builder.Property(x => x.ProcessedRows).HasDefaultValue(0);
+
         builder.Property(x => x.StartedAt).HasPrecision(3);
         builder.Property(x => x.CompletedAt).HasPrecision(3);
 

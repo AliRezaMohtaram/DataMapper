@@ -7,5 +7,8 @@ public enum ImportBatchStatus : short
     Validating = 2,
     Validated = 3,
     Imported = 4,
-    Failed = 5
+    Failed = 5,
+
+    /// <summary>Commit running in the background (valid rows are being turned into records).</summary>
+    Committing = 6
 }

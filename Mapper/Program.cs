@@ -75,6 +75,12 @@ builder.Services.AddAccessControl(o =>
     .AddAdminUi();
 builder.Services.AddHostedService<MapperAccessBootstrapper>(); // after AddAccessControl: needs the synced resources
 
+// Import validation and commit run in the background, one batch at a time (progress shown on the import page).
+builder.Services.AddSingleton<Borc.DataMapper.Web.Background.ImportJobQueue>();
+builder.Services.AddSingleton<Borc.DataMapper.Application.Abstractions.Imports.IImportJobQueue>(
+    sp => sp.GetRequiredService<Borc.DataMapper.Web.Background.ImportJobQueue>());
+builder.Services.AddHostedService<Borc.DataMapper.Web.Background.ImportJobWorker>(); // after the migrators
+
 builder.Services
     .AddApplication().AddScoped<IExcelReader, ClosedXmlExcelReader>()
     .AddInfrastructure(builder.Configuration)

@@ -35,6 +35,7 @@
 		<EmbeddedResource Include="..\Scripts\009_OrgUnits.sql" LogicalName="Scripts.009_OrgUnits.sql" />
 		<EmbeddedResource Include="..\Scripts\010_ImportFiles.sql" LogicalName="Scripts.010_ImportFiles.sql" />
 		<EmbeddedResource Include="..\Scripts\011_TemplateUnits.sql" LogicalName="Scripts.011_TemplateUnits.sql" />
+		<EmbeddedResource Include="..\Scripts\012_ImportJobs.sql" LogicalName="Scripts.012_ImportJobs.sql" />
 	</ItemGroup>
 
 </Project>

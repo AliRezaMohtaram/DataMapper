@@ -1,4 +1,5 @@
-﻿using Borc.DataMapper.Application.Abstractions.Persistence;
+﻿using Borc.DataMapper.Application.Abstractions.Imports;
+using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Application.Imports.Common;
 using Borc.DataMapper.Domain.Imports;
@@ -9,17 +10,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Borc.DataMapper.Application.Imports.CommitImportBatch;
 
-/// <summary>ثبت نهایی: سطرهای معتبر به DataRecord تبدیل می‌شوند؛ سطرهای نامعتبر نادیده گرفته می‌شوند.</summary>
+/// <summary>Queues the commit (RunImportJob, in the background): valid rows become records, invalid ones are skipped.</summary>
 public sealed record CommitImportBatchCommand(long Id) : IRequest<Result>;
 
 public sealed class CommitImportBatchHandler
     : IRequestHandler<CommitImportBatchCommand, Result>
 {
     private readonly IAppDbContext _db;
+    private readonly IImportJobQueue _queue;
 
-    public CommitImportBatchHandler(IAppDbContext db)
+    public CommitImportBatchHandler(IAppDbContext db, IImportJobQueue queue)
     {
         _db = db;
+        _queue = queue;
     }
 
     public async Task<Result> Handle(
@@ -45,55 +48,10 @@ public sealed class CommitImportBatchHandler
         if (version is null || version.Status != TemplateVersionStatus.Published)
             return Result.Failure("نسخهٔ این ایمپورت دیگر منتشرشده نیست؛ ثبت نهایی ممکن نیست.");
 
-        var imported = 0;
+        batch.StartCommit();
+        await _db.SaveChangesAsync(cancellationToken);
+        _queue.Enqueue(batch.Id);
 
-        try
-        {
-            await _db.InTransactionAsync(async () =>
-            {
-                imported = 0;
-
-                var b = await _db.ImportBatches.FirstAsync(x => x.Id == batch.Id, cancellationToken);
-
-                while (true)
-                {
-                    var chunk = await _db.ImportRows
-                        .Where(r => r.ImportBatchId == b.Id && r.Status == ImportRowStatus.Valid)
-                        .OrderBy(r => r.Id)
-                        .Take(ImportLimits.ChunkSize)
-                        .ToListAsync(cancellationToken);
-
-                    if (chunk.Count == 0)
-                        break;
-
-                    foreach (var row in chunk)
-                    {
-                        _db.DataRecords.Add(DataRecord.CreateFromImport(
-                            version.TemplateId,
-                            version.Id,
-                            row.MappedDataJson!,
-                            b.Id,
-                            row.Id,
-                            b.OrgUnitKey)); // records belong to the import's unit
-
-                        row.MarkImported();
-                        imported++;
-                    }
-
-                    await _db.SaveChangesAsync(cancellationToken);
-                }
-
-                b.MarkImported();
-                await _db.SaveChangesAsync(cancellationToken);
-
-                return true;
-            }, cancellationToken);
-        }
-        catch (DbUpdateException)
-        {
-            return Result.Failure("ثبت نهایی انجام نشد؛ هیچ داده‌ای ثبت نشد. دوباره تلاش کنید.");
-        }
-
-        return Result.Ok($"{imported} رکورد ثبت شد.");
+        return Result.Ok("ثبت نهایی شروع شد؛ پیشرفت آن در همین صفحه نمایش داده می‌شود.");
     }
 }

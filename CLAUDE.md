@@ -97,6 +97,17 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   `/DataRecords` and, compact, in `_RecentRecords` under the entry form (`DataRecords/Recent?versionId=`, refreshed by
   record-form.js after "save and new"). Dates/numbers shown via `ToRecordDisplay` (Jalali, Persian digits).
   The record detail page is a horizontal table too (user: a vertical field list is not what users are used to).
+- Imports (user request: large files, progress): upload stays a request (rows saved in chunks of 1000, saved rows
+  detached). Mapping (`ApplyImportMappingCommand`) only stores `ImportBatch.MappingJson` and sets Validating; commit sets
+  Committing (new status 6); both enqueue the batch on `IImportJobQueue` → `ImportJobWorker` (Mapper/Background,
+  BackgroundService + Channel, one batch at a time, own DI scope) sends `RunImportJobCommand`. Validation checks list fields
+  against their data source (`DataSourceOptionService.GetValueSetAsync`, loaded once per file). Commit: each chunk's
+  records + row marks + `ProcessedRows` saved together, so a stopped commit resumes (worker re-queues Validating/Committing
+  batches at start; Reopen/Delete refused once a row is imported). Imported records: unit and author = the batch's
+  (uploader). Failures → `LastError`, back to the previous state. Page: progress card + `js/import-progress.js` polling
+  `Imports/Progress/{id}`. Script `012_ImportJobs.sql`. Measured on SQL Server 2022, 20,000 rows: upload ~13 s,
+  validation ~4 s, commit ~8 s; killed mid-commit and restarted → resumed, no duplicates. Tests: `ImportJobTests`
+  (the Mapper test DB is now a temp SQLite file in WAL mode, because the worker runs alongside the tests).
 - Import files are kept in `dbo.ImportBatchFile` (one row per batch, varbinary; `Scripts/010_ImportFiles.sql`, also run at
   startup); download: `Imports/Download/{id}` (only for batches the user can see). Content type from the extension.
 - Data source pages (index, detail, map file, preview) are on MX; `vx.css` was removed (no page uses it any more).

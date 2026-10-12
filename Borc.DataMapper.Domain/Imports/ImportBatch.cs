@@ -36,6 +36,18 @@ public sealed class ImportBatch : EntityBase, IOrgUnitOwned
 
     public DateTime? CompletedAt { get; private set; }
 
+    /// <summary>Column mapping the background validation applies: JSON object { "source header": "FIELD_KEY" }.</summary>
+    public string? MappingJson { get; private set; }
+
+    /// <summary>Rows processed by the running background step (validation or commit), for the progress bar.</summary>
+    public int ProcessedRows { get; private set; }
+
+    /// <summary>Why the last background step failed (shown on the import page); cleared when a step starts.</summary>
+    public string? LastError { get; private set; }
+
+    /// <summary>A background step is queued or running.</summary>
+    public bool IsBusy => Status is ImportBatchStatus.Validating or ImportBatchStatus.Committing;
+
     public static ImportBatch Create(
         long templateVersionId,
         string fileName,
@@ -63,14 +75,61 @@ public sealed class ImportBatch : EntityBase, IOrgUnitOwned
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void StartValidation()
+    /// <summary>Queues the validation of every row with this column mapping (runs in the background).</summary>
+    public void StartValidation(string mappingJson)
     {
         Require(Status == ImportBatchStatus.Uploaded, "اعتبارسنجی فقط برای ایمپورت آپلودشده شروع می‌شود.");
 
+        MappingJson = mappingJson;
         Status = ImportBatchStatus.Validating;
+        ProcessedRows = 0;
+        LastError = null;
         StartedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void ReportProgress(int processedRows)
+    {
+        ProcessedRows = processedRows;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>Validation could not finish: back to "uploaded" so the user can try again.</summary>
+    public void FailValidation(string error)
+    {
+        Require(Status == ImportBatchStatus.Validating, "اعتبارسنجی در جریان نیست.");
+
+        Status = ImportBatchStatus.Uploaded;
+        LastError = Trim(error);
+        ProcessedRows = 0;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>Queues the commit of the valid rows (runs in the background).</summary>
+    public void StartCommit()
+    {
+        Require(Status == ImportBatchStatus.Validated, "فقط ایمپورت اعتبارسنجی‌شده قابل ثبت نهایی است.");
+
+        Status = ImportBatchStatus.Committing;
+        ProcessedRows = 0;
+        LastError = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// The commit stopped: back to "validated". Rows already turned into records stay (each chunk is saved with its
+    /// records); committing again continues with the rows left.
+    /// </summary>
+    public void FailCommit(string error)
+    {
+        Require(Status == ImportBatchStatus.Committing, "ثبت نهایی در جریان نیست.");
+
+        Status = ImportBatchStatus.Validated;
+        LastError = Trim(error);
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    private static string Trim(string error) => error.Length <= 1000 ? error : error[..1000];
 
     public void CompleteValidation(int totalRows, int validRows, int invalidRows)
     {
@@ -85,7 +144,7 @@ public sealed class ImportBatch : EntityBase, IOrgUnitOwned
 
     public void MarkImported()
     {
-        Require(Status == ImportBatchStatus.Validated, "فقط ایمپورت اعتبارسنجی‌شده قابل ثبت نهایی است.");
+        Require(Status == ImportBatchStatus.Committing, "ثبت نهایی در جریان نیست.");
 
         Status = ImportBatchStatus.Imported;
         CompletedAt = DateTime.UtcNow;
@@ -119,6 +178,8 @@ public sealed class ImportBatch : EntityBase, IOrgUnitOwned
         Status = ImportBatchStatus.Uploaded;
         ValidRows = 0;
         InvalidRows = 0;
+        ProcessedRows = 0;
+        LastError = null;
         StartedAt = null;
         UpdatedAt = DateTime.UtcNow;
     }

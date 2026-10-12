@@ -148,6 +148,46 @@ public sealed class DataSourceOptionService
         }
     }
 
+    /// <summary>
+    /// Every value of a source at once, for checking many rows (imports) without one query per value.
+    /// A template source covers its latest records only (as the form's options do).
+    /// </summary>
+    public async Task<(IReadOnlySet<string>? Values, string? Error)> GetValueSetAsync(long dataSourceId, CancellationToken ct)
+    {
+        var ds = await LoadAsync(dataSourceId, ct);
+
+        if (ds.Error is not null)
+            return (null, ds.Error);
+
+        var source = ds.Source!;
+
+        switch (source.SourceType)
+        {
+            case DataSourceType.StaticList:
+            case DataSourceType.File:
+            {
+                var values = await _db.DataSourceItems.AsNoTracking()
+                    .Where(i => i.DataSourceId == source.Id)
+                    .Select(i => i.Value)
+                    .ToListAsync(ct);
+
+                return (values.ToHashSet(StringComparer.Ordinal), null);
+            }
+
+            case DataSourceType.Template:
+                return ((await LoadTemplateOptionsAsync(source, null, ct)).Select(o => o.Value).ToHashSet(StringComparer.Ordinal), null);
+
+            case DataSourceType.Api:
+            {
+                var all = await LoadApiOptionsAsync(source, ct);
+                return all.Error is not null ? (null, all.Error) : (all.Items.Select(o => o.Value).ToHashSet(StringComparer.Ordinal), null);
+            }
+
+            default:
+                return (null, "نوع منبع داده پشتیبانی نمی‌شود.");
+        }
+    }
+
     // ---------------------------------------------------------------
 
     private async Task<(DataSource? Source, string? Error)> LoadAsync(long id, CancellationToken ct)

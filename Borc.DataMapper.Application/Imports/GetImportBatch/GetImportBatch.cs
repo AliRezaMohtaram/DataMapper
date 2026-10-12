@@ -41,7 +41,14 @@ public sealed record ImportBatchDetailDto(
     /// <summary>فقط در وضعیت Uploaded پر می‌شود (پیشنهاد نگاشت ستون‌ها).</summary>
     IReadOnlyList<ImportColumnDto> Columns,
     /// <summary>برای وضعیت‌های بعد از آپلود؛ در Uploaded برابر null است.</summary>
-    PagedResult<ImportRowItemDto>? Rows);
+    PagedResult<ImportRowItemDto>? Rows)
+{
+    /// <summary>Rows done by the running background step (validation: of TotalRows; commit: of ValidRows).</summary>
+    public int ProcessedRows { get; init; }
+
+    /// <summary>Why the last background step stopped, if it did.</summary>
+    public string? LastError { get; init; }
+}
 
 public sealed record ImportTargetFieldDto(string Key, string Label, FieldDataType DataType, bool IsRequired);
 
@@ -141,7 +148,11 @@ public sealed class GetImportBatchHandler
             batch.CompletedAt,
             fields,
             columns,
-            rows));
+            rows)
+        {
+            ProcessedRows = batch.ProcessedRows,
+            LastError = batch.LastError,
+        });
     }
 
     private async Task<IReadOnlyList<ImportColumnDto>> BuildColumnsAsync(

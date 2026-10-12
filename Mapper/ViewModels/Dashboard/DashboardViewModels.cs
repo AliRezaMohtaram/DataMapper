@@ -30,6 +30,8 @@ public sealed record DashboardViewModel(DashboardDto Data)
                     $"«{b.FileName}» آماده ثبت نهایی است", $"{b.ValidRows.ToPersianNumber()} معتبر · {b.InvalidRows.ToPersianNumber()} نامعتبر", b.CreatedAt),
                 ImportBatchStatus.Validating => new ActivityItem("tone-warning", "i-clock",
                     $"اعتبارسنجی «{b.FileName}» در جریان است", b.TemplateName, b.CreatedAt),
+                ImportBatchStatus.Committing => new ActivityItem("tone-warning", "i-clock",
+                    $"ثبت نهایی «{b.FileName}» در جریان است", b.TemplateName, b.CreatedAt),
                 ImportBatchStatus.Failed => new ActivityItem("tone-danger", "i-alert",
                     $"ایمپورت «{b.FileName}» ناموفق بود", b.TemplateName, b.CreatedAt),
                 _ => new ActivityItem("tone-info", "i-upload",
@@ -60,6 +62,7 @@ public static class DashboardUi
     {
         ImportBatchStatus.Uploaded => "st-uploaded",
         ImportBatchStatus.Validating => "st-validating pulse",
+        ImportBatchStatus.Committing => "st-validating pulse",
         ImportBatchStatus.Validated => "st-validated",
         ImportBatchStatus.Imported => "st-imported",
         ImportBatchStatus.Failed => "st-failed",
@@ -71,6 +74,7 @@ public static class DashboardUi
     {
         ImportBatchStatus.Uploaded => "نیازمند تطبیق",
         ImportBatchStatus.Validating => "در حال اعتبارسنجی",
+        ImportBatchStatus.Committing => "در حال ثبت",
         ImportBatchStatus.Validated => "آماده ثبت",
         ImportBatchStatus.Imported => "ثبت شد",
         ImportBatchStatus.Failed => "ناموفق",
@@ -81,7 +85,7 @@ public static class DashboardUi
     public static string FilterKeys(this ImportBatchListItemDto b)
     {
         var keys = new List<string>();
-        if (b.Status is ImportBatchStatus.Uploaded or ImportBatchStatus.Validating or ImportBatchStatus.Validated) keys.Add("running");
+        if (b.Status is ImportBatchStatus.Uploaded or ImportBatchStatus.Validating or ImportBatchStatus.Validated or ImportBatchStatus.Committing) keys.Add("running");
         if (b.Status == ImportBatchStatus.Imported) keys.Add("imported");
         if (b.Status == ImportBatchStatus.Failed || b.InvalidRows > 0) keys.Add("issues");
         return string.Join(' ', keys);

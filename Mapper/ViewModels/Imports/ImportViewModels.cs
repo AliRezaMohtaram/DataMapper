@@ -25,6 +25,7 @@ public static class ImportLabels
         ImportBatchStatus.Validated => "اعتبارسنجی‌شده",
         ImportBatchStatus.Imported => "ثبت‌شده",
         ImportBatchStatus.Failed => "ناموفق",
+        ImportBatchStatus.Committing => "در حال ثبت نهایی",
         _ => status.ToString()
     };
 

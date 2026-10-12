@@ -129,7 +129,7 @@ public sealed class GetDashboardHandler : IRequestHandler<GetDashboardQuery, Res
             TemplatesDraft: TemplatesIn(TemplateStatus.Draft),
             RecordsTotal: recordsTotal,
             RecordsThisWeek: recordsThisWeek,
-            ImportsInProgress: ImportsIn(ImportBatchStatus.Uploaded, ImportBatchStatus.Validating, ImportBatchStatus.Validated),
+            ImportsInProgress: ImportsIn(ImportBatchStatus.Uploaded, ImportBatchStatus.Validating, ImportBatchStatus.Validated, ImportBatchStatus.Committing),
             ImportsReadyToCommit: ImportsIn(ImportBatchStatus.Validated),
             ImportsFailed: ImportsIn(ImportBatchStatus.Failed),
             ValidRowRate: validRate);

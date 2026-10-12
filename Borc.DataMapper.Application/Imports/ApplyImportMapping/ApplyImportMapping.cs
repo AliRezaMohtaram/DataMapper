@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Borc.DataMapper.Application.Abstractions.Imports;
 using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Application.Imports.Common;
@@ -11,8 +12,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Borc.DataMapper.Application.Imports.ApplyImportMapping;
 
 /// <summary>
-/// اعمال نگاشت ستون‌ها روی همهٔ سطرها و اعتبارسنجی آن‌ها.
-/// SaveProfileName پر باشد، نگاشت به‌عنوان MappingProfile جدید ذخیره می‌شود.
+/// Checks the column mapping, stores it on the batch and queues the validation of every row (RunImportJob, in the
+/// background). SaveProfileName set → the mapping is also saved as a new MappingProfile.
 /// </summary>
 public sealed record ApplyImportMappingCommand(
     long BatchId,
@@ -24,10 +25,12 @@ public sealed class ApplyImportMappingHandler
     : IRequestHandler<ApplyImportMappingCommand, Result>
 {
     private readonly IAppDbContext _db;
+    private readonly IImportJobQueue _queue;
 
-    public ApplyImportMappingHandler(IAppDbContext db)
+    public ApplyImportMappingHandler(IAppDbContext db, IImportJobQueue queue)
     {
         _db = db;
+        _queue = queue;
     }
 
     public async Task<Result> Handle(
@@ -108,92 +111,31 @@ public sealed class ApplyImportMappingHandler
 
         var batchId = batch.Id;
 
-        var headerOfField = headerToField.ToDictionary(kv => kv.Value.Key, kv => kv.Key, StringComparer.OrdinalIgnoreCase);
+        // header → field key; the background validation applies it to every row
+        var mappingJson = JsonSerializer.Serialize(headerToField.ToDictionary(kv => kv.Key, kv => kv.Value.Key));
 
         try
         {
-            return await _db.InTransactionAsync(async () =>
+            await _db.InTransactionAsync(async () =>
             {
                 var b = await _db.ImportBatches.FirstAsync(x => x.Id == batchId, cancellationToken);
 
                 if (profileName is not null)
                     await SaveProfileAsync(b, version.Id, profileName, headerToField, cancellationToken);
 
-                b.StartValidation();
+                b.StartValidation(mappingJson);
                 await _db.SaveChangesAsync(cancellationToken);
-
-                var valid = 0;
-                var invalid = 0;
-                long lastId = 0;
-
-                while (true)
-                {
-                    var currentLastId = lastId;
-
-                    var chunk = await _db.ImportRows
-                        .Where(r => r.ImportBatchId == b.Id && r.Id > currentLastId)
-                        .OrderBy(r => r.Id)
-                        .Take(ImportLimits.ChunkSize)
-                        .ToListAsync(cancellationToken);
-
-                    if (chunk.Count == 0)
-                        break;
-
-                    foreach (var row in chunk)
-                    {
-                        var raw = ImportJson.ParseRaw(row.RawDataJson)
-                            .ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
-
-                        var values = new List<KeyValuePair<string, object?>>();
-                        var errors = new List<string>();
-
-                        foreach (var field in fields)
-                        {
-                            string? rawValue = null;
-
-                            if (headerOfField.TryGetValue(field.Key, out var header))
-                                raw.TryGetValue(header, out rawValue);
-
-                            var result = ImportValueValidator.Validate(field, rawValue);
-
-                            values.Add(new KeyValuePair<string, object?>(field.Key, result.Value));
-
-                            if (result.Error is not null)
-                                errors.Add(result.Error);
-                        }
-
-                        row.SetMapped(ImportJson.BuildMapped(values));
-
-                        if (errors.Count == 0)
-                        {
-                            row.MarkValid();
-                            valid++;
-                        }
-                        else
-                        {
-                            row.MarkInvalid(errors.Count, ImportJson.BuildErrors(errors));
-                            invalid++;
-                        }
-                    }
-
-                    await _db.SaveChangesAsync(cancellationToken);
-                    lastId = chunk[^1].Id;
-                }
-
-                b.CompleteValidation(valid + invalid, valid, invalid);
-                await _db.SaveChangesAsync(cancellationToken);
-
-                return Result.Ok($"اعتبارسنجی انجام شد: {valid} سطر معتبر و {invalid} سطر نامعتبر.");
+                return true;
             }, cancellationToken);
         }
         catch (DbUpdateException)
         {
-            return Result.Failure("ذخیرهٔ نتیجهٔ اعتبارسنجی انجام نشد؛ دوباره تلاش کنید.");
+            return Result.Failure("شروع اعتبارسنجی انجام نشد؛ دوباره تلاش کنید.");
         }
-        catch (JsonException)
-        {
-            return Result.Failure("دادهٔ یکی از سطرها خراب است و اعتبارسنجی انجام نشد.");
-        }
+
+        _queue.Enqueue(batchId);
+
+        return Result.Ok("اعتبارسنجی شروع شد؛ پیشرفت آن در همین صفحه نمایش داده می‌شود.");
     }
 
     private async Task SaveProfileAsync(
