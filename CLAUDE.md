@@ -19,7 +19,7 @@ Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Passwor
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.2), /Acl (0.5.2) and /MReporter (0.1.2) as NuGet packages **committed in this
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.2), /Acl (0.5.2) and /MReporter (0.1.3) as NuGet packages **committed in this
 repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
 `OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
 To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
@@ -134,7 +134,7 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
 
 - Reporting = module MReporter (github.com/AliRezaMohtaram/MReporter, clone /home/user/mreporter; packages MReporter.Core,
-  .EFCore, .Sql, .AspNetCore, .Razor (0.1.2) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
+  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.3) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
   `ModuleDatabaseMigrator`). Mapper side: `Mapper/Modules/Reports` — `MapperReportSources` (IReportSourceCatalog: one source
   per template "mapper.records:{code}" with its fields by key across versions + system columns `sys.version/unit/source/
   author/createdAt/editor/updatedAt`; default audience = template's allowed units; "mapper.imports"), `MapperReportData`
@@ -155,6 +155,11 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   / `ImportsExportAsync` build the same query as the page (records: the version's fields in form order + system columns; the
   version condition is not listed in the sheet since the title names it) and return `ReportExcelResult`. Every visible row
   of the filter, max 100,000, written while downloading, nothing stored.
+  Reports pages (MReporter 0.1.3, `/Reports`, menu section "گزارش"): `AddOrgChart()` (MReporter.OrgChart bridge: audiences
+  and the forms' units/positions/users from the chart) and `AddUi(ui => ...)` with policies on the Acl page `Mapper.Reports`
+  (View = run + personal reports, Export = Excel, Edit = shared reports with audience and data scope), print font
+  `~/font/Vazir.woff2`. Tests: `ReportPagesTests` (partial of `ReportDataTests`). Demo seed: report rights for the demo roles
+  and two shared reports (`rpt.Reports`, title «دمو - …»; removed by demo-remove.sql with the demo users' own reports).
   `MAPPER_TEST_SQLSERVER` (connection string with "{0}" for a per-class database) runs Mapper's DB in the tests on SQL
   Server instead of SQLite — use it for SQL-dialect changes (it caught the MARS issue).
 - Reporting decisions (user): a separate reusable module (like OrgChart/Acl), hosts register data sources;

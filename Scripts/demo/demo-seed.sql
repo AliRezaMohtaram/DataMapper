@@ -250,7 +250,14 @@ INSERT INTO @grants VALUES
  (N'دمو - مدیر چارت و کاربران', N'Mapper.OrgChart', N'View'),
  (N'دمو - مدیر چارت و کاربران', N'Mapper.OrgChart', N'Edit'),
  (N'دمو - مدیر چارت و کاربران', N'Mapper.Users', N'View'),
- (N'دمو - مدیر چارت و کاربران', N'Mapper.Users', N'Edit');
+ (N'دمو - مدیر چارت و کاربران', N'Mapper.Users', N'Edit'),
+ (N'دمو - کاربر ثبت داده', N'Mapper.Reports', N'View'),     -- reports menu, own reports
+ (N'دمو - مدیر واحد', N'Mapper.Reports', N'Export'),
+ (N'دمو - حسابرس', N'Mapper.Reports', N'View'),
+ (N'دمو - حسابرس', N'Mapper.Reports', N'Export'),
+ (N'دمو - طراح قالب', N'Mapper.Reports', N'View'),
+ (N'دمو - طراح قالب', N'Mapper.Reports', N'Edit'),         -- shared reports (audience, data scope)
+ (N'دمو - طراح قالب', N'Mapper.Reports', N'Export');
 -- template designer: every action on the definition pages
 INSERT INTO @grants
 SELECT N'دمو - طراح قالب', r.ResourceKey, a.ActionKey
@@ -487,6 +494,27 @@ JOIN dbo.Template t ON t.Code = r.TemplateCode AND t.IsDeleted = 0
 JOIN dbo.TemplateVersion v ON v.TemplateId = t.Id AND v.VersionNo = 1 AND v.IsDeleted = 0
 JOIN @ids i ON i.UserName = r.UserName;
 
+/* ---------- shared reports (MReporter, schema rpt) ---------- */
+IF OBJECT_ID(N'rpt.Reports') IS NOT NULL
+BEGIN
+    DECLARE @rfrom nchar(10) = CONVERT(nchar(10), DATEADD(DAY, -30, @today), 23), @rto nchar(10) = CONVERT(nchar(10), @today, 23);
+    DECLARE @reports TABLE (Title nvarchar(256), Description nvarchar(1000), SourceKey nvarchar(256), QueryJson nvarchar(max),
+                            ScopeKind int, AudienceUnit nvarchar(450));
+    INSERT INTO @reports VALUES
+     (N'دمو - هزینه‌های ۳۰ روز اخیر', N'هزینه‌ها به تفکیک مرکز هزینه؛ بازهٔ تاریخ هنگام اجرا قابل تغییر است.', N'mapper.records:DEMO-TPL-EXPENSE',
+      N'{"columns":["F001","F002","F003","F004","F005","sys.unit","sys.author"],"filter":{"logic":"And","conditions":[{"column":"F001","operator":"Between","values":["' + @rfrom + N'","' + @rto + N'"],"parameter":"p1"}],"groups":[]},"sort":[{"column":"F001","descending":true}]}',
+      1, N'DEMO-FIN'),
+     (N'دمو - همهٔ درخواست‌های پشتیبانی', N'درخواست‌های همهٔ واحدها برای کارکنان فناوری اطلاعات (محدودهٔ دادهٔ «همه»).', N'mapper.records:DEMO-TPL-ITREQ',
+      N'{"columns":["F001","F002","F003","F004","sys.unit","sys.author"],"filter":{"logic":"And","conditions":[{"column":"F003","operator":"In","values":["HIGH","URGENT"],"parameter":"p1"}],"groups":[]},"sort":[{"column":"F001","descending":true}]}',
+      3, N'DEMO-IT');
+
+    INSERT INTO rpt.Reports (Title, Description, SourceKey, QueryJson, Kind, OwnerUserId, IsActive, UseSourceAudience, ScopeKind, CreatedAt, CreatedBy)
+    SELECT Title, Description, SourceKey, QueryJson, 1, NULL, 1, 0, ScopeKind, @now, @actor FROM @reports;
+
+    INSERT INTO rpt.ReportAudiences (ReportId, Kind, [Key], IncludeSubUnits)
+    SELECT x.Id, 1, r.AudienceUnit, 1 FROM @reports r JOIN rpt.Reports x ON x.Title = r.Title AND x.Kind = 1;
+END;
+
 COMMIT TRANSACTION;
 
 /* summary */
@@ -497,5 +525,6 @@ UNION ALL SELECT N'انتصاب‌ها', COUNT(*) FROM org.Assignments a JOIN or
 UNION ALL SELECT N'نقش‌های Acl', COUNT(*) FROM acl.Roles WHERE Name LIKE N'دمو - %'
 UNION ALL SELECT N'منابع داده', COUNT(*) FROM dbo.DataSource WHERE Code LIKE 'DEMO-%' AND IsDeleted = 0
 UNION ALL SELECT N'قالب‌ها', COUNT(*) FROM dbo.Template WHERE Code LIKE 'DEMO-%' AND IsDeleted = 0
-UNION ALL SELECT N'رکوردها', COUNT(*) FROM dbo.DataRecord r JOIN dbo.Template t ON t.Id = r.TemplateId WHERE t.Code LIKE 'DEMO-%';
+UNION ALL SELECT N'رکوردها', COUNT(*) FROM dbo.DataRecord r JOIN dbo.Template t ON t.Id = r.TemplateId WHERE t.Code LIKE 'DEMO-%'
+UNION ALL SELECT N'گزارش‌های آماده', COUNT(*) FROM rpt.Reports WHERE Title LIKE N'دمو - %';
 GO

@@ -44,6 +44,11 @@ DELETE x FROM dbo.DataSource x JOIN @ds d ON d.Id = x.Id;
 DECLARE @users TABLE (Uid nvarchar(450) PRIMARY KEY);
 INSERT INTO @users SELECT CONVERT(nvarchar(450), Id) FROM usr.Users WHERE NormalizedUserName LIKE N'DEMO.%';
 
+/* ---------- reports (MReporter): the demo's shared reports, reports on demo templates, demo users' own reports ---------- */
+IF OBJECT_ID(N'rpt.Reports') IS NOT NULL
+    DELETE FROM rpt.Reports   -- audience and scope units cascade
+    WHERE Title LIKE N'دمو - %' OR SourceKey LIKE N'mapper.records:DEMO-%' OR OwnerUserId IN (SELECT Uid FROM @users);
+
 /* ---------- Acl ---------- */
 DECLARE @roles TABLE (Id int PRIMARY KEY);
 INSERT INTO @roles SELECT Id FROM acl.Roles WHERE Name LIKE N'دمو - %';

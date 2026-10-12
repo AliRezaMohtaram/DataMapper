@@ -28,6 +28,8 @@
     var chartActive = area == "OrgChart" && !page.StartsWith("/My", StringComparison.OrdinalIgnoreCase);
     var myActive = area == "OrgChart" && page.StartsWith("/My", StringComparison.OrdinalIgnoreCase);
     var aclActive = area == "Acl";
+    var reportsActive = area == "Reports";
+    var canReports = access.IsAllowed(Borc.DataMapper.Web.Modules.MapperResources.Reports, "View");
 
     // مسیر صفحه: بخش منو › حلقه‌های میانیِ خود صفحه › عنوان؛ در صفحهٔ اصلی هر بخش و صفحه‌های ماژول‌ها نمایش داده نمی‌شود.
     var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
@@ -94,6 +96,14 @@
                             <svg class="ico"><use href="#@item.Icon" /></svg><span class="nav-label">@item.Label</span>
                         </a>
                     }
+                }
+
+                @if (canReports)
+                {
+                    <div class="nav-section">گزارش</div>
+                    <a class="nav-item@(reportsActive ? " active" : "")" title="گزارش‌ها" aria-current="@(reportsActive ? "page" : null)" asp-area="Reports" asp-page="/Index">
+                        <svg class="ico"><use href="#i-chart" /></svg><span class="nav-label">گزارش‌ها</span>
+                    </a>
                 }
 
                 <div class="nav-section">سازمان</div>

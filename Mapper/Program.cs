@@ -1,5 +1,6 @@
 using MReporter.Razor;
 using MReporter.AspNetCore;
+using MReporter.OrgChart;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 ﻿using Borc.DataMapper.Application;
 using Borc.DataMapper.Application.Abstractions.Identity;
@@ -84,7 +85,14 @@ builder.Services.AddMReporter()
     .AddCurrentUser<Borc.DataMapper.Web.Modules.Reports.MapperReportUser>()
     .AddDataProvider<Borc.DataMapper.Web.Modules.Reports.MapperReportData>()
     .AddOptionProvider<Borc.DataMapper.Web.Modules.Reports.MapperReportOptions>()
-    .AddUi();
+    .AddOrgChart() // MReporter.OrgChart: audiences by unit/position, and the chart's units, positions and users in the report forms
+    .AddUi(ui =>
+    {
+        ui.RunPolicy = p => p.AddRequirements(new PermissionRequirement(MapperResources.Reports, WellKnownActions.View));
+        ui.ExportPolicy = p => p.AddRequirements(new PermissionRequirement(MapperResources.Reports, WellKnownActions.Export));
+        ui.ManagePolicy = p => p.AddRequirements(new PermissionRequirement(MapperResources.Reports, WellKnownActions.Edit));
+        ui.PrintFontUrl = "~/font/Vazir.woff2";
+    });
 builder.Services.AddScoped<Borc.DataMapper.Web.Modules.Reports.ListFilters>();
 builder.Services.AddScoped<Borc.DataMapper.Web.Modules.Reports.MapperReportSources>();
 builder.Services.Replace(ServiceDescriptor.Scoped<MReporter.Core.Abstractions.IReportSourceCatalog>(
