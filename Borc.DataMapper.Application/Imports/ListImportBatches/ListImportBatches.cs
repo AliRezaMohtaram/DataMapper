@@ -10,7 +10,8 @@ public sealed record ListImportBatchesQuery(
     ImportBatchStatus? Status = null,
     string? Search = null,
     int Page = 1,
-    int PageSize = 20
+    int PageSize = 20,
+    IReadOnlyList<long>? BatchIds = null
 ) : IRequest<Result<PagedResult<ImportBatchListItemDto>>>
 {
     public const int MaxPageSize = 100;
@@ -55,13 +56,18 @@ public sealed class ListImportBatchesHandler
             join t in _db.Templates on v.TemplateId equals t.Id
             select new { Batch = b, TemplateName = t.Name, v.VersionNo };
 
-        if (request.Status.HasValue)
+        // exactly these batches in this order (a page chosen by the advanced filter); the caller sets the total
+        var ids = request.BatchIds;
+        if (ids is not null)
+            query = query.Where(x => ids.Contains(x.Batch.Id));
+
+        if (ids is null && request.Status.HasValue)
         {
             var status = request.Status.Value;
             query = query.Where(x => x.Batch.Status == status);
         }
 
-        if (search is not null)
+        if (ids is null && search is not null)
         {
             var pattern = $"%{search}%";
             query = query.Where(x =>
@@ -69,13 +75,13 @@ public sealed class ListImportBatchesHandler
                 EF.Functions.Like(x.TemplateName, pattern));
         }
 
-        var total = await query.CountAsync(cancellationToken);
+        var total = ids is null ? await query.CountAsync(cancellationToken) : ids.Count;
 
         var items = await query
             .OrderByDescending(x => x.Batch.CreatedAt)
             .ThenByDescending(x => x.Batch.Id)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Skip(ids is null ? (page - 1) * pageSize : 0)
+            .Take(ids is null ? pageSize : ids.Count)
             .Select(x => new ImportBatchListItemDto(
                 x.Batch.Id,
                 x.Batch.FileName,
@@ -87,6 +93,12 @@ public sealed class ListImportBatchesHandler
                 x.Batch.Status,
                 x.Batch.CreatedAt) { CreatedBy = x.Batch.CreatedBy })
             .ToListAsync(cancellationToken);
+
+        if (ids is not null)
+        {
+            var order = ids.Select((id, i) => (id, i)).ToDictionary(p => p.id, p => p.i);
+            items = items.OrderBy(x => order.GetValueOrDefault(x.Id, int.MaxValue)).ToList();
+        }
 
         return Result<PagedResult<ImportBatchListItemDto>>.Ok(
             new PagedResult<ImportBatchListItemDto>(items, page, pageSize, total));

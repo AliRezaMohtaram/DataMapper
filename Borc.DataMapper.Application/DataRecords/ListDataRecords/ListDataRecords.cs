@@ -12,6 +12,8 @@ namespace Borc.DataMapper.Application.DataRecords.ListDataRecords;
 /// <summary>
 /// رکوردهای یک نسخهٔ قالب به‌صورت جدول (ستون‌ها = فیلدهای قالب). بدون نسخه: نسخهٔ ایمپورت فیلترشده،
 /// وگرنه نسخهٔ آخرین رکورد ثبت‌شده.
+/// RecordIds: exactly these records in this order (one page already chosen by the advanced filter); the other filters
+/// and paging are then not applied and the caller sets the total.
 /// </summary>
 public sealed record ListDataRecordsQuery(
     string? Search = null,
@@ -19,7 +21,8 @@ public sealed record ListDataRecordsQuery(
     RecordSource? Source = null,
     long? ImportBatchId = null,
     int Page = 1,
-    int PageSize = 20
+    int PageSize = 20,
+    IReadOnlyList<long>? RecordIds = null
 ) : IRequest<Result<DataRecordListDto>>
 {
     public const int MaxPageSize = 100;
@@ -98,25 +101,29 @@ public sealed class ListDataRecordsHandler
             where r.TemplateVersionId == versionId.Value
             select new { r, v, t };
 
-        if (request.Source.HasValue)
+        var ids = request.RecordIds;
+        if (ids is not null)
+            query = query.Where(x => ids.Contains(x.r.Id));
+
+        if (ids is null && request.Source.HasValue)
             query = query.Where(x => x.r.SourceType == request.Source.Value);
 
-        if (request.ImportBatchId.HasValue)
+        if (ids is null && request.ImportBatchId.HasValue)
             query = query.Where(x => x.r.ImportBatchId == request.ImportBatchId.Value);
 
-        if (search is not null)
+        if (ids is null && search is not null)
         {
             var pattern = $"%{search}%";
             query = query.Where(x => EF.Functions.Like(x.r.DataJson, pattern));
         }
 
-        var total = await query.CountAsync(cancellationToken);
+        var total = ids is null ? await query.CountAsync(cancellationToken) : ids.Count;
 
         var rows = await query
             .OrderByDescending(x => x.r.CreatedAt)
             .ThenByDescending(x => x.r.Id)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+            .Skip(ids is null ? (page - 1) * pageSize : 0)
+            .Take(ids is null ? pageSize : ids.Count)
             .Select(x => new
             {
                 x.r.Id,
@@ -132,6 +139,12 @@ public sealed class ListDataRecordsHandler
                 x.r.UpdatedBy
             })
             .ToListAsync(cancellationToken);
+
+        if (ids is not null)
+        {
+            var order = ids.Select((id, i) => (id, i)).ToDictionary(p => p.id, p => p.i);
+            rows = rows.OrderBy(x => order.GetValueOrDefault(x.Id, int.MaxValue)).ToList();
+        }
 
         var values = rows.Select(x => Parse(x.DataJson)).ToList();
 

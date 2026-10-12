@@ -68,13 +68,42 @@ public sealed class DataRecordsController : Controller
         long? templateVersionId,
         RecordSource? source,
         long? importBatchId,
+        string? q,
+        [FromServices] Modules.Reports.ListFilters filters,
         int page = 1,
         int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
         var query = new ListDataRecordsQuery(search, templateVersionId, source, importBatchId, page, pageSize);
+
+        // which version: the asked one, else the default (filtered import's or latest record's)
+        var versionId = templateVersionId;
+        if (versionId is null)
+            versionId = (await _sender.Send(query with { Page = 1, PageSize = 1 }, cancellationToken)).Data?.TemplateVersionId;
+
+        // the advanced filter (and the old search text) go through MReporter with the user's visibility
+        Modules.Reports.FilteredPage? filtered = null;
+        string? sourceKey = null;
+        if (versionId is { } vid)
+        {
+            (filtered, sourceKey) = await filters.RecordsAsync(vid, q, search, source, importBatchId, Math.Max(1, page), Math.Clamp(pageSize, 1, ListDataRecordsQuery.MaxPageSize), cancellationToken);
+            if (filtered.Error is not null)
+                ModelState.AddModelError(string.Empty, filtered.Error);
+            else if (filtered.Ids is not null)
+                query = query with { TemplateVersionId = vid, RecordIds = filtered.Ids };
+            query = query with { Search = null };
+        }
+
         var result = await _sender.Send(query, cancellationToken);
         var versions = await LoadVersionOptionsAsync(cancellationToken);
+        if (result.Success && result.Data is not null && filtered?.Ids is not null)
+            result = Application.Common.Results.Result<DataRecordListDto>.Ok(result.Data with
+            {
+                Page = result.Data.Page with { Page = Math.Max(1, page), PageSize = Math.Clamp(pageSize, 1, ListDataRecordsQuery.MaxPageSize), TotalCount = filtered.Total },
+            });
+
+        ViewData["FilterSource"] = sourceKey;
+        ViewData["FilterQuery"] = filtered?.QueryJson;
 
         if (!result.Success || result.Data is null)
         {

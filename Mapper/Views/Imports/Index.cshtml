@@ -8,7 +8,8 @@
 
     var result = Model.Result;
     var filter = Model.Filter;
-    var filtering = !string.IsNullOrWhiteSpace(filter.Search) || filter.Status.HasValue;
+    var filterQuery = ViewData["FilterQuery"] as string;
+    var filtering = filterQuery is not null || filter.Status.HasValue;
 
     var errors = ViewData.ModelState.Values
         .SelectMany(v => v.Errors)
@@ -47,10 +48,6 @@
     <div class="toolbar">
         <form acl-res="Mapper.Imports" acl-act="View" method="get" asp-action="Index" role="search">
             <input type="hidden" name="pageSize" value="@result.PageSize" />
-            <div class="input-wrap">
-                <svg class="ico"><use href="#i-search" /></svg>
-                <input class="input" type="search" name="search" value="@filter.Search" placeholder="جستجو در نام فایل یا قالب…" aria-label="جستجو در ایمپورت‌ها" autocomplete="off" />
-            </div>
             <select class="select" name="status" aria-label="وضعیت" onchange="this.form.requestSubmit()">
                 <option value="">همهٔ وضعیت‌ها</option>
                 @foreach (var st in Enum.GetValues<ImportBatchStatus>())
@@ -58,11 +55,12 @@
                     <option value="@st" selected="@(filter.Status == st)">@st.ShortLabel()</option>
                 }
             </select>
-            <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#i-search" /></svg>جستجو</button>
             @if (filtering)
             {
                 <a acl-res="Mapper.Imports" acl-act="View" class="btn btn-quiet" asp-action="Index" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
             }
+            @* advanced filter (MReporter): quick search in file names + conditions on template, state, rows, unit, uploader, time *@
+            @await Component.InvokeAsync("MrFilter", new { source = Borc.DataMapper.Web.Modules.Reports.MapperReportSources.ImportsKey, query = filterQuery, hideColumns = new[] { "imp.status" } })
         </form>
     </div>
 
@@ -151,7 +149,7 @@
             <nav class="pager" aria-label="صفحه‌بندی">
                 @if (result.HasPrevious)
                 {
-                    <a acl-res="Mapper.Imports" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-status="@filter.Status" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
+                    <a acl-res="Mapper.Imports" acl-act="View" asp-action="Index" asp-route-q="@filterQuery" asp-route-status="@filter.Status" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
                 }
                 else
                 {
@@ -160,7 +158,7 @@
                 <span class="pager-now" aria-current="page">صفحه @result.Page.ToPersianNumber() از @Math.Max(1, result.TotalPages).ToPersianNumber()</span>
                 @if (result.HasNext)
                 {
-                    <a acl-res="Mapper.Imports" acl-act="View" asp-action="Index" asp-route-search="@filter.Search" asp-route-status="@filter.Status" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
+                    <a acl-res="Mapper.Imports" acl-act="View" asp-action="Index" asp-route-q="@filterQuery" asp-route-status="@filter.Status" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
                 }
                 else
                 {
@@ -168,7 +166,7 @@
                 }
             </nav>
             <form acl-res="Mapper.Imports" acl-act="View" method="get" asp-action="Index" class="page-size">
-                <input type="hidden" name="search" value="@filter.Search" />
+                <input type="hidden" name="q" value="@filterQuery" />
                 <input type="hidden" name="status" value="@filter.Status" />
                 <label for="pageSize">ردیف در صفحه</label>
                 <select class="select" id="pageSize" name="pageSize" onchange="this.form.submit()">

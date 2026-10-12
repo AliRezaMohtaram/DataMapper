@@ -24,5 +24,5 @@ org_version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$org/Directory.Buil
 rep_version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$rep/Directory.Build.props")
 for p in Acl.Core Acl.EFCore Acl.AspNetCore Acl.Razor; do cp "$acl/artifacts/packages/$p.$acl_version.nupkg" "$feed/"; done
 for p in OrgChart.Core OrgChart.EFCore OrgChart.AspNetCore OrgChart.Razor OrgChart.Acl; do cp "$org/artifacts/packages/$p.$org_version.nupkg" "$feed/"; done
-for p in MReporter.Core MReporter.EFCore MReporter.Sql; do cp "$rep/artifacts/packages/$p.$rep_version.nupkg" "$feed/"; done
+for p in MReporter.Core MReporter.EFCore MReporter.Sql MReporter.AspNetCore MReporter.Razor; do cp "$rep/artifacts/packages/$p.$rep_version.nupkg" "$feed/"; done
 ls -l "$feed"

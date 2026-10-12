@@ -16,7 +16,9 @@
     var to = Math.Min(result.Page * result.PageSize, result.TotalCount);
     var pageSizes = new[] { 10, 20, 50, 100 };
     // نسخهٔ قالب همیشه انتخاب شده است (پیش‌فرض: آخرین رکورد)؛ «فیلتر» یعنی جستجو، منبع یا ایمپورت
-    var hasFilter = !string.IsNullOrWhiteSpace(filter.Search) || filter.Source.HasValue || filter.ImportBatchId.HasValue;
+    var filterSource = ViewData["FilterSource"] as string;
+    var filterQuery = ViewData["FilterQuery"] as string;
+    var hasFilter = filterQuery is not null || filter.Source.HasValue || filter.ImportBatchId.HasValue;
     var currentVersion = Model.Versions.FirstOrDefault(v => v.Id == filter.TemplateVersionId);
     var currentLabel = currentVersion?.Label
         ?? (result.Items.Count > 0 ? $"{result.Items[0].TemplateName} · نسخهٔ {result.Items[0].VersionNo.ToPersianNumber()}" : null);
@@ -57,7 +59,7 @@
         {
             <span class="fchip active">
                 فقط ایمپورت <a acl-res="Mapper.Imports" acl-act="View" class="code" asp-controller="Imports" asp-action="Detail" asp-route-id="@filter.ImportBatchId">IMP-@filter.ImportBatchId.Value.ToString("0000")</a>
-                <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Version" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-search="@filter.Search" aria-label="حذف فیلتر ایمپورت"><svg class="ico" style="width:.85rem;height:.85rem"><use href="#i-x" /></svg></a>
+                <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Version" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-q="@filterQuery" aria-label="حذف فیلتر ایمپورت"><svg class="ico" style="width:.85rem;height:.85rem"><use href="#i-x" /></svg></a>
             </span>
         }
     </header>
@@ -66,11 +68,7 @@
         <form acl-res="Mapper.DataRecords" acl-act="View" method="get" asp-action="Version" role="search">
             <input type="hidden" name="pageSize" value="@result.PageSize" />
             <input type="hidden" name="importBatchId" value="@filter.ImportBatchId" />
-            <div class="input-wrap">
-                <svg class="ico"><use href="#i-search" /></svg>
-                <input class="input" type="search" name="search" value="@filter.Search" placeholder="جستجو در مقدارهای رکورد…" aria-label="جستجو در رکوردها" autocomplete="off" />
-            </div>
-            <select class="select" name="templateVersionId" aria-label="قالب و نسخه" onchange="this.form.requestSubmit()">
+            <select class="select" name="templateVersionId" aria-label="قالب و نسخه" onchange="this.form.querySelector('[data-mr-query]')?.setAttribute('disabled', ''); this.form.requestSubmit()">
                 @if (filter.TemplateVersionId.HasValue && currentVersion is null)
                 {
                     <option value="@filter.TemplateVersionId" selected>@(currentLabel ?? "نسخهٔ انتخاب‌شده")</option>
@@ -85,10 +83,14 @@
                 <option value="@RecordSource.Manual" selected="@(filter.Source == RecordSource.Manual)">ورود دستی</option>
                 <option value="@RecordSource.Import" selected="@(filter.Source == RecordSource.Import)">ایمپورت</option>
             </select>
-            <button type="submit" class="btn btn-ghost"><svg class="ico"><use href="#i-search" /></svg>جستجو</button>
             @if (hasFilter)
             {
                 <a acl-res="Mapper.DataRecords" acl-act="View" class="btn btn-quiet" asp-action="Version" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-pageSize="@result.PageSize"><svg class="ico"><use href="#i-x" /></svg>پاک کردن فیلتر</a>
+            }
+            @if (filterSource is not null)
+            {
+                @* advanced filter (MReporter): quick search over the text fields + conditions on any field *@
+                @await Component.InvokeAsync("MrFilter", new { source = filterSource, query = filterQuery, hideColumns = new[] { "sys.version", "sys.import", "sys.source" } })
             }
         </form>
     </div>
@@ -118,7 +120,7 @@
             <nav class="pager" aria-label="صفحه‌بندی">
                 @if (result.HasPrevious)
                 {
-                    <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Version" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
+                    <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Version" asp-route-q="@filterQuery" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page - 1)" rel="prev" aria-label="صفحه قبل"><svg class="ico"><use href="#i-chev-right" /></svg></a>
                 }
                 else
                 {
@@ -127,7 +129,7 @@
                 <span class="pager-now" aria-current="page">صفحه @result.Page.ToPersianNumber() از @Math.Max(1, result.TotalPages).ToPersianNumber()</span>
                 @if (result.HasNext)
                 {
-                    <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Version" asp-route-search="@filter.Search" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
+                    <a acl-res="Mapper.DataRecords" acl-act="View" asp-action="Version" asp-route-q="@filterQuery" asp-route-templateVersionId="@filter.TemplateVersionId" asp-route-source="@filter.Source" asp-route-importBatchId="@filter.ImportBatchId" asp-route-pageSize="@result.PageSize" asp-route-page="@(result.Page + 1)" rel="next" aria-label="صفحه بعد"><svg class="ico"><use href="#i-chev-left" /></svg></a>
                 }
                 else
                 {
@@ -135,7 +137,7 @@
                 }
             </nav>
             <form acl-res="Mapper.DataRecords" acl-act="View" method="get" asp-action="Version" class="page-size">
-                <input type="hidden" name="search" value="@filter.Search" />
+                <input type="hidden" name="q" value="@filterQuery" />
                 <input type="hidden" name="templateVersionId" value="@filter.TemplateVersionId" />
                 <input type="hidden" name="source" value="@filter.Source" />
                 <input type="hidden" name="importBatchId" value="@filter.ImportBatchId" />

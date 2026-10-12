@@ -28,8 +28,9 @@
 		<PackageReference Include="Acl.AspNetCore" Version="0.5.2" />
 		<PackageReference Include="Acl.EFCore" Version="0.5.2" />
 		<PackageReference Include="Acl.Razor" Version="0.5.2" />
-		<PackageReference Include="MReporter.EFCore" Version="0.1.0" />
-		<PackageReference Include="MReporter.Sql" Version="0.1.0" />
+		<PackageReference Include="MReporter.EFCore" Version="0.1.1" />
+		<PackageReference Include="MReporter.Sql" Version="0.1.1" />
+		<PackageReference Include="MReporter.Razor" Version="0.1.1" />
 	</ItemGroup>
 
 	<ItemGroup>

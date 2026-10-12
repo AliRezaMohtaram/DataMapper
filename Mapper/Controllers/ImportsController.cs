@@ -1,6 +1,7 @@
 using Acl.AspNetCore.Authorization;
 using Acl.Core.Model;
 using Borc.DataMapper.Web.Modules;
+using Borc.DataMapper.Web.Modules.Reports;
 using Borc.DataMapper.Application.Imports.ApplyImportMapping;
 using Borc.DataMapper.Application.Imports.CommitImportBatch;
 using Borc.DataMapper.Application.Imports.Common;
@@ -37,13 +38,30 @@ public sealed class ImportsController : Controller
     public async Task<IActionResult> Index(
         ImportBatchStatus? status,
         string? search,
+        string? q,
+        [FromServices] ListFilters filters,
         int page = 1,
         int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        var query = new ListImportBatchesQuery(status, search, page, pageSize);
+        var query = new ListImportBatchesQuery(status, null, page, pageSize);
+
+        // the advanced filter (and the old search text) go through MReporter with the user's visibility
+        var filtered = await filters.ImportsAsync(q, search, status?.ToString(), Math.Max(1, page), Math.Clamp(pageSize, 1, ListImportBatchesQuery.MaxPageSize), cancellationToken);
+        if (filtered.Error is not null)
+            ModelState.AddModelError(string.Empty, filtered.Error);
+        else if (filtered.Ids is not null)
+            query = query with { BatchIds = filtered.Ids };
+        ViewData["FilterQuery"] = filtered.QueryJson;
 
         var result = await _sender.Send(query, cancellationToken);
+        if (result.Success && result.Data is not null && filtered.Ids is not null)
+            result = Application.Common.Results.Result<Application.Common.Results.PagedResult<ImportBatchListItemDto>>.Ok(result.Data with
+            {
+                Page = Math.Max(1, page),
+                PageSize = Math.Clamp(pageSize, 1, ListImportBatchesQuery.MaxPageSize),
+                TotalCount = filtered.Total,
+            });
 
         if (!result.Success || result.Data is null)
         {

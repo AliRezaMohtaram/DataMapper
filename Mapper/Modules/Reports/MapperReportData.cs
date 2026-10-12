@@ -131,22 +131,15 @@ public sealed class MapperReportData(
         expressions[Sys.CreatedAt] = "r.CreatedAt";
         expressions[Sys.Editor] = Text("r.UpdatedBy");
         expressions[Sys.UpdatedAt] = "r.UpdatedAt";
+        expressions[Sys.Import] = "r.ImportBatchId";
 
         string template = sql.Add(templateId);
         string recordsWhere = $"r.IsDeleted = 0 AND r.TemplateId = {template} AND {Scope(sql, execution.Scope, "Mapper.DataRecords", "r", await DescendantsAsync(execution.Scope, ct))} AND {sql.Where(execution.Query.Filter)}";
 
-        // list fields: the data source of the newest version that has the field (for the option titles)
-        var fieldSources = (await (
-                from f in db.TemplateFields.AsNoTracking()
-                join v in db.TemplateVersions on f.TemplateVersionId equals v.Id
-                where v.TemplateId == templateId && f.DataSourceId != null
-                select new { f.FieldKey, v.VersionNo, DataSourceId = f.DataSourceId!.Value })
-            .ToListAsync(ct))
-            .GroupBy(f => f.FieldKey, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.OrderByDescending(f => f.VersionNo).First().DataSourceId, StringComparer.OrdinalIgnoreCase);
+        var fieldSources = await sources.FieldSourcesAsync(templateId, ct);
 
         return new Plan(sql,
-            "r.Id, r.DataJson, v.VersionNo, r.OrgUnitKey, r.SourceType, r.CreatedBy, r.CreatedAt, r.UpdatedBy, r.UpdatedAt",
+            "r.Id, r.DataJson, v.VersionNo, r.OrgUnitKey, r.SourceType, r.CreatedBy, r.CreatedAt, r.UpdatedBy, r.UpdatedAt, r.ImportBatchId",
             "FROM DataRecord r JOIN TemplateVersion v ON v.Id = r.TemplateVersionId",
             recordsWhere, "r.Id DESC", Records: true, fieldSources);
     }
@@ -265,7 +258,9 @@ public sealed class MapperReportData(
         var labels = columns.Where(c => plan.FieldSources.ContainsKey(c.Key) && optionTitles.ContainsKey(plan.FieldSources[c.Key]))
             .ToDictionary(c => c.Key, c => optionTitles[plan.FieldSources[c.Key]], StringComparer.OrdinalIgnoreCase);
 
-        return batch.Select(raw => new ReportRow(columns.Select<ReportColumn, object?>(c => plan.Records ? RecordValue(c, raw) : ImportValue(c, raw)).ToList())).ToList();
+        return batch.Select(raw => new ReportRow(
+            columns.Select<ReportColumn, object?>(c => plan.Records ? RecordValue(c, raw) : ImportValue(c, raw)).ToList(),
+            Convert.ToString(raw.Values[0], CultureInfo.InvariantCulture))).ToList();
 
         object? RecordValue(ReportColumn c, RawRow raw) => c.Key switch
         {
@@ -277,6 +272,7 @@ public sealed class MapperReportData(
             Sys.CreatedAt => ToDateTime(raw.Values[6]),
             Sys.Editor => User(raw.Values[7]),
             Sys.UpdatedAt => ToDateTime(raw.Values[8]),
+            Sys.Import => ToDecimal(raw.Values[9]),
             _ => FieldValue(c, raw.Data),
         };
 

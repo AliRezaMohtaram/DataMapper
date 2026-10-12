@@ -172,6 +172,73 @@ public sealed partial class ReportDataTests(MapperApp app) : IClassFixture<Mappe
         Assert.Equal(0, imports.Total);
     }
 
+    [Fact]
+    public async Task The_records_page_filters_with_the_advanced_filter()
+    {
+        HttpClient fin = await app.SignInAsync("rfin", "Secret123");
+        string Url(object query) => $"/DataRecords/Version?templateVersionId={_version}&q=" + Uri.EscapeDataString(JsonSerializer.Serialize(query));
+
+        // amount > 10,000,000 and kind is "repairs": only the pump (the other repair is rhr's, not visible to rfin)
+        string page = await TextAsync(await fin.GetAsync(Url(new
+        {
+            filter = new
+            {
+                conditions = new object[]
+                {
+                    new { column = "F002", @operator = "GreaterThan", values = new[] { "10000000" } },
+                    new { column = "F004", @operator = "In", values = new[] { "EX2" } },
+                },
+            },
+        })));
+        Assert.Contains("تعمیر پمپ", page);
+        Assert.DoesNotContain("تنخواه دفتر", page);
+        Assert.DoesNotContain("تعمیر کولر", page);
+        Assert.Contains("data-mr-filter", page);           // the filter component is on the page
+        Assert.Contains("تعمیرات", page);                 // and titles the chosen option for its chip
+
+        // the old search text still works (quick search over the text fields)
+        page = await TextAsync(await fin.GetAsync($"/DataRecords/Version?templateVersionId={_version}&search=" + Uri.EscapeDataString("تنخواه")));
+        Assert.Contains("تنخواه دفتر", page);
+        Assert.DoesNotContain("تعمیر پمپ", page);
+
+        // a wrong filter is reported and ignored
+        page = await TextAsync(await fin.GetAsync(Url(new { filter = new { conditions = new object[] { new { column = "F002", @operator = "Contains", values = new[] { "x" } } } } })));
+        Assert.Contains("فیلتر اعمال نشد", page);
+        Assert.Contains("تعمیر پمپ", page);
+    }
+
+    [Fact]
+    public async Task List_options_come_from_the_modules_endpoint_for_signed_in_users()
+    {
+        HttpClient fin = await app.SignInAsync("rfin", "Secret123");
+        string url = $"/_mreporter/options?source={Uri.EscapeDataString(_source)}&column=F004&q=" + Uri.EscapeDataString("تعمیر");
+        using JsonDocument options = JsonDocument.Parse(await (await fin.GetAsync(url)).Content.ReadAsStringAsync());
+        var item = Assert.Single(options.RootElement.EnumerateArray());
+        Assert.Equal("EX2", item.GetProperty("value").GetString());
+        Assert.Equal("تعمیرات", item.GetProperty("label").GetString());
+
+        using JsonDocument units = JsonDocument.Parse(await (await fin.GetAsync($"/_mreporter/options?source={Uri.EscapeDataString(_source)}&column=sys.unit&q=" + Uri.EscapeDataString("مالی"))).Content.ReadAsStringAsync());
+        Assert.Contains(units.RootElement.EnumerateArray(), u => u.GetProperty("value").GetString() == "RFIN");
+
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, (await fin.GetAsync($"/_mreporter/options?source={Uri.EscapeDataString(_source)}&column=F002")).StatusCode); // not a list
+        var anonymous = app.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        Assert.NotEqual(System.Net.HttpStatusCode.OK, (await anonymous.GetAsync(url)).StatusCode);
+    }
+
+    [Fact]
+    public async Task The_imports_page_filters_with_the_advanced_filter()
+    {
+        HttpClient boss = await app.SignInAsync("rboss", "Secret123");
+        string q = JsonSerializer.Serialize(new { filter = new { conditions = new object[] { new { column = "imp.total", @operator = "GreaterThan", values = new[] { "100" } } } } });
+        HttpResponseMessage response = await boss.GetAsync("/Imports?q=" + Uri.EscapeDataString(q));
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        string page = await TextAsync(response);
+        Assert.Contains("data-mr-filter", page);
+        Assert.DoesNotContain("فیلتر اعمال نشد", page);
+    }
+
+    private static async Task<string> TextAsync(HttpResponseMessage response) => System.Net.WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+
     /// <summary>Runs work in a scope that looks like a request of the user (visibility loaded as the middleware does).</summary>
     private async Task<T> AsUserAsync<T>(long userId, Func<IServiceProvider, Task<T>> work)
     {

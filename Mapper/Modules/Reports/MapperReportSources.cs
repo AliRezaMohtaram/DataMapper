@@ -27,6 +27,7 @@ public sealed class MapperReportSources(BorcDataMapperDbContext db) : IReportSou
         public const string CreatedAt = "sys.createdAt";
         public const string Editor = "sys.editor";
         public const string UpdatedAt = "sys.updatedAt";
+        public const string Import = "sys.import";
     }
 
     /// <summary>Columns of the imports source.</summary>
@@ -58,6 +59,29 @@ public sealed class MapperReportSources(BorcDataMapperDbContext db) : IReportSou
         string code = sourceKey[RecordsPrefix.Length..];
         return await db.Templates.AsNoTracking().Where(t => t.Code == code).Select(t => (long?)t.Id).FirstOrDefaultAsync(cancellationToken);
     }
+
+    /// <summary>The records source of a template version and the version's number, or null.</summary>
+    public async Task<(string SourceKey, int VersionNo)?> VersionAsync(long versionId, CancellationToken cancellationToken = default)
+    {
+        var found = await (
+                from v in db.TemplateVersions.AsNoTracking()
+                join t in db.Templates on v.TemplateId equals t.Id
+                where v.Id == versionId
+                select new { t.Code, v.VersionNo })
+            .FirstOrDefaultAsync(cancellationToken);
+        return found is null ? null : (RecordsPrefix + found.Code, found.VersionNo);
+    }
+
+    /// <summary>List fields of a template: field key → data source of the newest version that has the field.</summary>
+    public async Task<IReadOnlyDictionary<string, long>> FieldSourcesAsync(long templateId, CancellationToken cancellationToken = default) =>
+        (await (
+                from f in db.TemplateFields.AsNoTracking()
+                join v in db.TemplateVersions on f.TemplateVersionId equals v.Id
+                where v.TemplateId == templateId && f.DataSourceId != null
+                select new { f.FieldKey, v.VersionNo, DataSourceId = f.DataSourceId!.Value })
+            .ToListAsync(cancellationToken))
+            .GroupBy(f => f.FieldKey, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(f => f.VersionNo).First().DataSourceId, StringComparer.OrdinalIgnoreCase);
 
     private async Task<Dictionary<string, ReportSourceInfo>> LoadAsync(CancellationToken ct)
     {
@@ -117,6 +141,7 @@ public sealed class MapperReportSources(BorcDataMapperDbContext db) : IReportSou
         new(Sys.CreatedAt, "زمان ثبت", ReportColumnType.DateTime, IsSystem: true),
         new(Sys.Editor, "آخرین ویرایش‌کننده", ReportColumnType.List, IsSystem: true),
         new(Sys.UpdatedAt, "زمان ویرایش", ReportColumnType.DateTime, IsSystem: true),
+        new(Sys.Import, "شمارهٔ ایمپورت", ReportColumnType.Number, IsSystem: true),
     ];
 
     private static ReportColumnType TypeOf(FieldDataType type, bool hasSource) => hasSource

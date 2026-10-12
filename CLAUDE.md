@@ -18,7 +18,7 @@ Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Passwor
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.2) and /Acl (0.5.2) as NuGet packages **committed in this
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.2), /Acl (0.5.2) and /MReporter (0.1.1) as NuGet packages **committed in this
 repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
 `OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
 To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
@@ -141,6 +141,14 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   IsDeleted and the scope itself because raw SQL skips EF filters — Viewer = `IDataScopeProvider` like the lists, Units =
   granted units + sub-units from the chart, All; list titles: data source items preloaded before the reader opens — one
   connection, no MARS; units from the chart, users via `UserNames`), `MapperReportUser`. Tests: `ReportDataTests`.
+  Advanced filter (MReporter 0.1.1 `MrFilter` view component, `.AddOptionProvider<MapperReportOptions>().AddUi()`,
+  `app.MapMReporter()`) replaces the simple search on `/DataRecords/Version` and `/Imports`: `ListFilters` runs the page's
+  `q` (+ version / source / import / status as fixed conditions) through `IReportRunner` and the list then loads exactly those
+  ids (`ListDataRecordsQuery.RecordIds`, `ListImportBatchesQuery.BatchIds`, order kept, total from the run). The old
+  `search` parameter (overview row links, Ctrl+K palette) becomes the quick search. A wrong filter shows "فیلتر اعمال نشد"
+  and the list unfiltered. Changing the template/version select drops `q` (other columns). Records source also has
+  `sys.import`. `MapperReportOptions`: field data-source items, chart units, users (by name), record sources, templates,
+  import states.
   `MAPPER_TEST_SQLSERVER` (connection string with "{0}" for a per-class database) runs Mapper's DB in the tests on SQL
   Server instead of SQLite — use it for SQL-dialect changes (it caught the MARS issue).
 - Reporting decisions (user): a separate reusable module (like OrgChart/Acl), hosts register data sources;

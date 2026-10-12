@@ -1,3 +1,5 @@
+using MReporter.Razor;
+using MReporter.AspNetCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 ﻿using Borc.DataMapper.Application;
 using Borc.DataMapper.Application.Abstractions.Identity;
@@ -80,7 +82,10 @@ builder.Services.AddHostedService<MapperAccessBootstrapper>(); // after AddAcces
 builder.Services.AddMReporter()
     .AddSqlServerStore(connectionString)
     .AddCurrentUser<Borc.DataMapper.Web.Modules.Reports.MapperReportUser>()
-    .AddDataProvider<Borc.DataMapper.Web.Modules.Reports.MapperReportData>();
+    .AddDataProvider<Borc.DataMapper.Web.Modules.Reports.MapperReportData>()
+    .AddOptionProvider<Borc.DataMapper.Web.Modules.Reports.MapperReportOptions>()
+    .AddUi();
+builder.Services.AddScoped<Borc.DataMapper.Web.Modules.Reports.ListFilters>();
 builder.Services.AddScoped<Borc.DataMapper.Web.Modules.Reports.MapperReportSources>();
 builder.Services.Replace(ServiceDescriptor.Scoped<MReporter.Core.Abstractions.IReportSourceCatalog>(
     sp => sp.GetRequiredService<Borc.DataMapper.Web.Modules.Reports.MapperReportSources>()));
@@ -131,6 +136,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Dashboard}/{action=Index}/{id?}");
 app.MapRazorPages();
+app.MapMReporter(); // options of list columns for the advanced filter
 
 app.Run();
 // Lets integration tests start the app (WebApplicationFactory<Program>).
