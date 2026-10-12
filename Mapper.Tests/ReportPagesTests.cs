@@ -39,6 +39,23 @@ public sealed partial class ReportDataTests
                 },
             },
         });
+
+        // the designer's live preview runs the unsaved design (the asked condition with its default), biggest first
+        HttpResponseMessage preview = await fin.PostAsync("/Reports/Edit?handler=Preview", new FormUrlEncodedContent(
+        [
+            new("Source", _source), new("Columns", "F001"), new("Columns", "F002"),
+            new("Sort1", "F002"), new("Sort1Desc", "true"), new("Filter", filter),
+            new("__RequestVerificationToken", Token().Match(form).Groups[1].Value),
+        ]));
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+        using (JsonDocument shown = JsonDocument.Parse(await preview.Content.ReadAsStringAsync()))
+        {
+            Assert.Equal("۲", shown.RootElement.GetProperty("total").GetString());
+            Assert.Equal(["F001", "F002"], shown.RootElement.GetProperty("columns").EnumerateArray().Select(c => c.GetProperty("key").GetString()));
+            Assert.Contains("تعمیر پمپ", shown.RootElement.GetProperty("rows")[0][0].GetString());
+            Assert.Equal("۴۵٬۰۰۰٬۰۰۰", shown.RootElement.GetProperty("rows")[0][1].GetString());
+        }
+
         HttpResponseMessage saved = await fin.PostAsync("/Reports/Edit", new FormUrlEncodedContent(
         [
             new("Source", _source), new("Title", "هزینه‌های بزرگ من"), new("Kind", "Personal"),

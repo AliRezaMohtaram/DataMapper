@@ -7,7 +7,7 @@
 @inject Acl.Core.Abstractions.IAccessService AccessService
 @inject Borc.DataMapper.Web.Modules.UserNames UserNames
 @{
-    // کلیک روی ردیف = ویرایش در مودال (فقط با مجوز ویرایش؛ سرور دوباره بررسی می‌کند)
+    // کلیک روی ردیف = ویرایش در مودال با مجوز ویرایش (سرور دوباره بررسی می‌کند)، وگرنه صفحهٔ مشاهده
     var canEdit = (await AccessService.GetCurrentUserAccessAsync()).IsAllowed("Mapper.DataRecords", "Edit");
     var names = await UserNames.GetAsync(Model.Items.SelectMany(r => new[] { r.CreatedBy, r.UpdatedBy }));
     bool IsLtr(FieldDataType type) => type is FieldDataType.Number or FieldDataType.Date or FieldDataType.DateTime;
@@ -17,6 +17,7 @@
     <table class="tbl">
         <thead>
             <tr>
+                <th class="col-sticky"><span class="sr-only">عملیات</span></th>
                 <th>#</th>
                 @foreach (var c in Model.Columns)
                 {
@@ -28,13 +29,24 @@
                 }
                 <th>ثبت‌کننده</th>
                 <th>ثبت</th>
-                <th></th>
             </tr>
         </thead>
         <tbody>
             @foreach (var r in Model.Items)
             {
-                <tr data-row-modal="@(canEdit ? Url.Action("Edit", "DataRecords", new { id = r.Id }) : null)" style="@(canEdit ? "cursor:pointer" : null)">
+                <tr data-row-modal="@(canEdit ? Url.Action("Edit", "DataRecords", new { id = r.Id }) : null)"
+                    data-row-href="@(canEdit ? null : Url.Action("Detail", "DataRecords", new { id = r.Id }))">
+                    <td class="col-sticky">
+                        <div class="row-actions">
+                            <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-controller="DataRecords" asp-action="Detail" asp-route-id="@r.Id" title="مشاهده" aria-label="مشاهدهٔ رکورد @r.Id"><svg class="ico"><use href="#i-eye" /></svg></a>
+                            <a acl-res="Mapper.DataRecords" acl-act="Edit" class="icon-btn sm" asp-controller="DataRecords" asp-action="Edit" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
+                            <a acl-res="Mapper.DataRecords" acl-act="Create" class="icon-btn sm" asp-controller="DataRecords" asp-action="Create" asp-route-copyFrom="@r.Id" data-modal title="رونوشت: رکورد جدید با همین مقدارها" aria-label="رونوشت رکورد @r.Id"><svg class="ico"><use href="#i-copy" /></svg></a>
+                            @if (!Model.Compact)
+                            {
+                                <button class="icon-btn sm danger" type="button" data-delete-id="@r.Id" data-delete-name="رکورد @r.Id" title="حذف" aria-label="حذف رکورد @r.Id"><svg class="ico"><use href="#i-trash" /></svg></button>
+                            }
+                        </div>
+                    </td>
                     <td><a acl-res="Mapper.DataRecords" acl-act="View" class="code" asp-controller="DataRecords" asp-action="Detail" asp-route-id="@r.Id">@r.Id</a></td>
                     @foreach (var c in Model.Columns)
                     {
@@ -79,17 +91,6 @@
                         }
                     </td>
                     <td class="cell-sub" style="white-space:nowrap">@((r.UpdatedAt ?? r.CreatedAt).ToRelative())</td>
-                    <td>
-                        <div class="row-actions">
-                            <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-controller="DataRecords" asp-action="Detail" asp-route-id="@r.Id" title="مشاهده" aria-label="مشاهدهٔ رکورد @r.Id"><svg class="ico"><use href="#i-eye" /></svg></a>
-                            <a acl-res="Mapper.DataRecords" acl-act="Edit" class="icon-btn sm" asp-controller="DataRecords" asp-action="Edit" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
-                            <a acl-res="Mapper.DataRecords" acl-act="Create" class="icon-btn sm" asp-controller="DataRecords" asp-action="Create" asp-route-copyFrom="@r.Id" data-modal title="رونوشت: رکورد جدید با همین مقدارها" aria-label="رونوشت رکورد @r.Id"><svg class="ico"><use href="#i-copy" /></svg></a>
-                            @if (!Model.Compact)
-                            {
-                                <button class="icon-btn sm danger" type="button" data-delete-id="@r.Id" data-delete-name="رکورد @r.Id" title="حذف" aria-label="حذف رکورد @r.Id"><svg class="ico"><use href="#i-trash" /></svg></button>
-                            }
-                        </div>
-                    </td>
                 </tr>
             }
         </tbody>

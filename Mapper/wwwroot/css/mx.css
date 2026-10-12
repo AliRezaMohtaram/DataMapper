@@ -547,6 +547,15 @@ tr:hover .row-actions, .row-actions:focus-within { opacity:1; }
 .tbl tbody tr:hover { background:rgb(var(--line-rgb) / .035); }
 .tbl tbody tr:last-child td { border-bottom:0; }
 .tbl.compact td { padding:.55rem 1rem; }
+.tbl tbody tr[data-row-modal], .tbl tbody tr[data-row-href] { cursor:pointer; }
+/* A column that stays in view while a wide table scrolls sideways (row actions first). */
+.tbl .col-sticky {
+  position:sticky; inset-inline-start:0; z-index:1; width:1%; white-space:nowrap;
+  background:var(--surface); box-shadow:inset -1px 0 0 var(--line);
+}
+[dir="rtl"] .tbl .col-sticky { box-shadow:inset 1px 0 0 var(--line); }
+.tbl th.col-sticky { background-image:linear-gradient(rgb(var(--line-rgb) / .025), rgb(var(--line-rgb) / .025)); }
+.tbl tbody tr:hover .col-sticky { background-image:linear-gradient(rgb(var(--line-rgb) / .035), rgb(var(--line-rgb) / .035)); }
 .tbl tr.row-new { animation:mx-row-in .9s var(--ease); }
 .tbl tr.row-out { animation:mx-row-out .35s ease forwards; }
 .cell-main { color:var(--text-strong); font-weight:600; }

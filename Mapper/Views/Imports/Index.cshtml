@@ -94,7 +94,7 @@
                         var kind = DashboardUi.FileKind(b.FileName);
                         var checkedRows = b.ValidRows + b.InvalidRows;
                         var okPct = checkedRows == 0 ? 0 : 100.0 * b.ValidRows / checkedRows;
-                        <tr>
+                        <tr data-row-href="@Url.Action("Detail", new { id = b.Id })">
                             <td>
                                 <div class="file-cell">
                                     <span class="file-ico@(kind == "CSV" ? " csv" : "")">@kind</span>

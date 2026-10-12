@@ -19,7 +19,7 @@ Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Passwor
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.2), /Acl (0.5.2) and /MReporter (0.1.3) as NuGet packages **committed in this
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.2), /Acl (0.5.2) and /MReporter (0.1.4) as NuGet packages **committed in this
 repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
 `OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
 To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
@@ -91,6 +91,9 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   made it (search/source filters narrow the counted records). A row click (`tr[data-row-href]`) opens the detail
   `/DataRecords/Version?templateVersionId=` — the per-version table where records are added, edited, copied and deleted.
   `importBatchId` links redirect to Version.
+  Wide tables (user: actions were a long horizontal scroll away and only the id opened a row): `_RecordGrid` has the row
+  actions in the first column, sticky while the table scrolls sideways (`.tbl .col-sticky` in mx.css); the whole row opens
+  the edit modal with Edit permission, else the detail page (`data-row-href`). Import rows open their detail page.
 - Last editor: record detail shows "آخرین ویرایش‌کننده" (`DataRecordDetailDto.UpdatedBy`), the version table shows
   "ویرایش: …" under the author when someone else edited (e.g. a unit head editing a subordinate's record).
 - `ListDataRecordsQuery` (Version page) returns one template version as a table (`Columns` = fields, `Values` per record, option titles for
@@ -134,7 +137,7 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
 
 - Reporting = module MReporter (github.com/AliRezaMohtaram/MReporter, clone /home/user/mreporter; packages MReporter.Core,
-  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.3) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
+  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.4) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
   `ModuleDatabaseMigrator`). Mapper side: `Mapper/Modules/Reports` — `MapperReportSources` (IReportSourceCatalog: one source
   per template "mapper.records:{code}" with its fields by key across versions + system columns `sys.version/unit/source/
   author/createdAt/editor/updatedAt`; default audience = template's allowed units; "mapper.imports"), `MapperReportData`
@@ -162,6 +165,10 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   and two shared reports (`rpt.Reports`, title «دمو - …»; removed by demo-remove.sql with the demo users' own reports).
   `MAPPER_TEST_SQLSERVER` (connection string with "{0}" for a per-class database) runs Mapper's DB in the tests on SQL
   Server instead of SQLite — use it for SQL-dialect changes (it caught the MARS issue).
+  Reports UI overhaul (MReporter 0.1.4, user: "messy, hard to use"; asked for the layout designer's style): report form =
+  drag-and-drop designer with a live preview (`Edit?handler=Preview`), run page with labelled report parameters and fixed
+  conditions as chips, no duplicate titles, source list in "new report", MX delete confirmation; see MReporter's CLAUDE.md.
+  `ReportPagesTests` also checks the preview.
 - Reporting decisions (user): a separate reusable module (like OrgChart/Acl), hosts register data sources;
   admin-made reports with an audience (units with/without sub-units, positions, persons; default = the template's allowed
   units); a report MAY grant data scope beyond the runner's own visibility (audited); advanced filter replaces the simple
