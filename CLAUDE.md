@@ -5,6 +5,10 @@
 - UI: MX design system (`Mapper/wwwroot/css/mx.css`, `js/mx.js`); modal-first forms (`data-modal`, `X-MX-Modal`,
   `ModalResults`). Do not build on `theme.css` / `mx-legacy.css`.
 - The user runs browser tests; Claude runs automated tests and writes manual checklists under `docs/`.
+- Dates in the UI: Jalali calendar on every date text box (user request) — MX hook `input[data-jdate]` in mx.js/mx.css
+  (wrapper `.jdate` + calendar button, one shared popup `.jdate-pop`, focus stays in the input: arrows/PageUp/PageDown/Enter/
+  Escape; `="latin"` writes Latin digits; `MX.jdate(input)` for script-built inputs). Used by OrgChart 0.2.3, Acl 0.5.3 and
+  MReporter 0.1.5; the record form keeps its own `jalali-picker.js`.
 - Desktop only (user decision): mobile/narrow layouts are not required; do not check or fix them.
 - Build: `dotnet build Mapper.sln`. Tests: `dotnet test Borc.Users.Tests` (cloud container: `DOTNET_ROLL_FORWARD=Major`).
 
@@ -19,7 +23,7 @@ Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Passwor
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.2), /Acl (0.5.2) and /MReporter (0.1.4) as NuGet packages **committed in this
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.3), /Acl (0.5.3) and /MReporter (0.1.5) as NuGet packages **committed in this
 repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
 `OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
 To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
@@ -137,7 +141,7 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
 
 - Reporting = module MReporter (github.com/AliRezaMohtaram/MReporter, clone /home/user/mreporter; packages MReporter.Core,
-  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.4) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
+  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.5) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
   `ModuleDatabaseMigrator`). Mapper side: `Mapper/Modules/Reports` — `MapperReportSources` (IReportSourceCatalog: one source
   per template "mapper.records:{code}" with its fields by key across versions + system columns `sys.version/unit/source/
   author/createdAt/editor/updatedAt`; default audience = template's allowed units; "mapper.imports"), `MapperReportData`
