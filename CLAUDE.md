@@ -23,7 +23,7 @@ Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Passwor
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.3), /Acl (0.5.3) and /MReporter (0.1.6) as NuGet packages **committed in this
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.3), /Acl (0.5.3) and /MReporter (0.1.7) as NuGet packages **committed in this
 repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
 `OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
 To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
@@ -141,7 +141,7 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
 
 - Reporting = module MReporter (github.com/AliRezaMohtaram/MReporter, clone /home/user/mreporter; packages MReporter.Core,
-  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.6) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
+  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.7) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
   `ModuleDatabaseMigrator`). Mapper side: `Mapper/Modules/Reports` — `MapperReportSources` (IReportSourceCatalog: one source
   per template "mapper.records:{code}" with its fields by key across versions + system columns `sys.version/unit/source/
   author/createdAt/editor/updatedAt`; default audience = template's allowed units; "mapper.imports"), `MapperReportData`
@@ -174,6 +174,11 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   conditions as chips, no duplicate titles, source list in "new report", MX delete confirmation; see MReporter's CLAUDE.md.
   `ReportPagesTests` also checks the preview. Run URLs (MReporter 0.1.6): parameters as their own query values
   (`?id=4&p1=1405-06-01&p1=1405-07-20&p2=CC100`), extra conditions as compact JSON in `q`.
+  Grouping and totals (MReporter 0.1.7, v2 stage 1): up to two levels, sum/average/min/max + count, detail or summary view,
+  on the run page, print, Excel and the designer's preview; computed by the module over the sorted rows, so
+  `MapperReportData` needed no change. The designer's preview of a shared report uses the form's data scope.
+  Charts (same release, v2 stage 2): bar/line/pie of the first group level's totals, server-drawn SVG on the run page,
+  print view and designer preview.
 - Reporting decisions (user): a separate reusable module (like OrgChart/Acl), hosts register data sources;
   admin-made reports with an audience (units with/without sub-units, positions, persons; default = the template's allowed
   units); a report MAY grant data scope beyond the runner's own visibility (audited); advanced filter replaces the simple

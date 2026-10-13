@@ -38,7 +38,7 @@ All four are clones **side by side in the same parent folder** (the scripts and 
 |---|---|---|---|
 | `DataMapper` | AliRezaMohtaram/DataMapper | `master` | the host app "Mapper" (+ Users module). `modules-feed/` holds the module packages |
 | `MReporter` | AliRezaMohtaram/MReporter | `main` | reporting module — **most of this task is here** |
-| `organization` | AliRezaMohtaram/organization | `claude/elegant-bohr-qnybnq` | OrgChart module 0.2.2 (**not merged to main — use this branch**) |
+| `organization` | AliRezaMohtaram/organization | `main` | OrgChart module (the old branch `claude/elegant-bohr-qnybnq` was merged into main) |
 | `Acl` | AliRezaMohtaram/Acl | `master` | access-control module 0.5.2 |
 
 `tools/update-modules.sh` (in DataMapper) looks for `../Acl`, `../organization` and `../MReporter` (or `../mreporter`).

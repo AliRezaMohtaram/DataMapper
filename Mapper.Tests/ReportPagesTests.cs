@@ -52,8 +52,8 @@ public sealed partial class ReportDataTests
         {
             Assert.Equal("۲", shown.RootElement.GetProperty("total").GetString());
             Assert.Equal(["F001", "F002"], shown.RootElement.GetProperty("columns").EnumerateArray().Select(c => c.GetProperty("key").GetString()));
-            Assert.Contains("تعمیر پمپ", shown.RootElement.GetProperty("rows")[0][0].GetString());
-            Assert.Equal("۴۵٬۰۰۰٬۰۰۰", shown.RootElement.GetProperty("rows")[0][1].GetString());
+            Assert.Contains("تعمیر پمپ", shown.RootElement.GetProperty("lines")[0].GetProperty("cells")[0].GetString());
+            Assert.Equal("۴۵٬۰۰۰٬۰۰۰", shown.RootElement.GetProperty("lines")[0].GetProperty("cells")[1].GetString());
         }
 
         HttpResponseMessage saved = await fin.PostAsync("/Reports/Edit", new FormUrlEncodedContent(
@@ -108,6 +108,65 @@ public sealed partial class ReportDataTests
         HttpClient hr = await app.SignInAsync("rhr", "Secret123");
         Assert.DoesNotContain("هزینه‌های بزرگ من", await TextAsync(await hr.GetAsync("/Reports")));
         Assert.Equal(HttpStatusCode.NotFound, (await hr.GetAsync(runUrl)).StatusCode);
+    }
+
+    [Fact]
+    public async Task A_grouped_report_shows_group_totals_on_the_page_in_the_summary_and_in_Excel()
+    {
+        // rboss heads both units: all three records (EX1 5,000,000; EX2 45,000,000 and 12,000,000)
+        HttpClient boss = await app.SignInAsync("rboss", "Secret123");
+        string form = await (await boss.GetAsync("/Reports/Edit?source=" + Uri.EscapeDataString(_source))).Content.ReadAsStringAsync();
+        string grouping = JsonSerializer.Serialize(new
+        {
+            groupBy = new[] { new { column = "F004" } },
+            totals = new[] { new { column = "F002", kind = "Sum" }, new { column = "F002", kind = "Max" } },
+        });
+        HttpResponseMessage saved = await boss.PostAsync("/Reports/Edit", new FormUrlEncodedContent(
+        [
+            new("Source", _source), new("Title", "هزینه به تفکیک نوع"), new("Kind", "Personal"),
+            new("Columns", "F004"), new("Columns", "F001"), new("Columns", "F002"), new("Grouping", grouping),
+            new("__RequestVerificationToken", Token().Match(form).Groups[1].Value),
+        ]));
+        Assert.Equal(HttpStatusCode.Redirect, saved.StatusCode);
+        string runUrl = saved.Headers.Location!.OriginalString;
+
+        string run = await TextAsync(await boss.GetAsync(runUrl));
+        Assert.Contains("mr-grp", run);
+        Assert.True(run.IndexOf("تنخواه دفتر", StringComparison.Ordinal) < run.IndexOf("تعمیر پمپ", StringComparison.Ordinal)); // EX1 first
+        Assert.Contains("جمع: ۵۷٬۰۰۰٬۰۰۰ · بیشینه: ۴۵٬۰۰۰٬۰۰۰", run); // EX2's total line
+        Assert.Contains("جمع کل (۳ ردیف)", run);
+        Assert.Contains("جمع: ۶۲٬۰۰۰٬۰۰۰", run);
+
+        // summary only: the totals without the rows
+        string reportId = runUrl[(runUrl.IndexOf('=') + 1)..];
+        form = await (await boss.GetAsync("/Reports/Edit?id=" + reportId)).Content.ReadAsStringAsync();
+        Assert.Contains("groupBy", System.Net.WebUtility.HtmlDecode(form)); // the designer gets the saved grouping
+        string summary = JsonSerializer.Serialize(new { groupBy = new[] { new { column = "F004" } }, totals = new[] { new { column = "F002", kind = "Sum" } }, summaryOnly = true,
+            chart = new { kind = "Pie", series = new[] { "F002:Sum" } } });
+        Assert.Equal(HttpStatusCode.Redirect, (await boss.PostAsync("/Reports/Edit", new FormUrlEncodedContent(
+        [
+            new("Id", reportId), new("Title", "هزینه به تفکیک نوع"),
+            new("Columns", "F004"), new("Columns", "F001"), new("Columns", "F002"), new("Grouping", summary),
+            new("__RequestVerificationToken", Token().Match(form).Groups[1].Value),
+        ]))).StatusCode);
+        run = await TextAsync(await boss.GetAsync(runUrl));
+        Assert.DoesNotContain("تعمیر پمپ", run);
+        Assert.Contains("تعمیرات (۲ ردیف)", run);
+        Assert.Contains("جمع: ۵٬۰۰۰٬۰۰۰", run);
+        Assert.Contains("<svg class=\"mr-chart\"", run); // the chart: a slice per type with its share
+        Assert.Contains("تعمیرات — ۵۷٬۰۰۰٬۰۰۰ (۹۱٫۹٪)", run);
+        Assert.Contains("<svg class=\"mr-chart\"", await TextAsync(await boss.GetAsync(runUrl.Replace("/Run?", "/Print?"))));
+
+        // Excel: the group totals as bold lines, a single total as a number
+        HttpResponseMessage excel = await boss.GetAsync(runUrl.Replace("/Run?", "/Run?handler=Excel&"));
+        Assert.Equal(HttpStatusCode.OK, excel.StatusCode);
+        using var book = new ClosedXML.Excel.XLWorkbook(new MemoryStream(await excel.Content.ReadAsByteArrayAsync()));
+        var sheet = book.Worksheet(1);
+        Assert.Equal("تنخواه (۱ ردیف)", sheet.Cell(6, 1).GetString());
+        Assert.Equal(5_000_000d, sheet.Cell(6, 3).GetDouble());
+        Assert.True(sheet.Cell(6, 3).Style.Font.Bold);
+        Assert.Equal(57_000_000d, sheet.Cell(7, 3).GetDouble());
+        Assert.Equal("جمع کل (۳ ردیف)", sheet.Cell(8, 1).GetString());
     }
 
     [Fact]
