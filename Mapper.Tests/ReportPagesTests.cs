@@ -80,6 +80,14 @@ public sealed partial class ReportDataTests
         Assert.Contains("۱ ردیف", run);
         Assert.DoesNotContain("تنخواه دفتر", run);
 
+        // the way the run page sends it now: the parameter as its own short query value, repeated in the print/Excel links;
+        // an emptied parameter does not narrow
+        run = await TextAsync(await fin.GetAsync(runUrl + "&p2=10000000"));
+        Assert.Contains("۱ ردیف", run);
+        Assert.Contains("p2=10000000", run);
+        Assert.DoesNotContain("q=", run[run.IndexOf("handler=Excel", StringComparison.Ordinal)..][..60]);
+        Assert.Contains("۲ ردیف", await TextAsync(await fin.GetAsync(runUrl + "&p2=")));
+
         // print view and Excel follow the same run
         string print = await TextAsync(await fin.GetAsync(runUrl.Replace("/Run?", "/Print?") + "&run=true&q=" + Uri.EscapeDataString(q)));
         Assert.Contains("@page", print);
