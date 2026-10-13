@@ -170,6 +170,50 @@ public sealed partial class ReportDataTests
     }
 
     [Fact]
+    public async Task A_report_page_shows_its_blocks_and_the_columns_text_settings()
+    {
+        HttpClient boss = await app.SignInAsync("rboss", "Secret123");
+        string form = await (await boss.GetAsync("/Reports/Edit?source=" + Uri.EscapeDataString(_source))).Content.ReadAsStringAsync();
+        string grouping = JsonSerializer.Serialize(new { groupBy = new[] { new { column = "F004" } }, totals = new[] { new { column = "F002", kind = "Sum" } } });
+        string layout = JsonSerializer.Serialize(new
+        {
+            blocks = new object[]
+            {
+                new { id = "h", kind = "Text", span = 12, text = "گزارش ماهانهٔ هزینه", style = "Heading" },
+                new { id = "k", kind = "Kpi", span = 3, value = "F002:Sum" },
+                new { id = "c", kind = "Chart", span = 9, chart = "Bar", series = new[] { "F002:Sum" } },
+                new { id = "t", kind = "Table", span = 12 },
+            },
+            columns = new Dictionary<string, object> { ["F002"] = new { title = "مبلغ هزینه", align = "Center", bold = true, decimals = 0 } },
+        });
+        HttpResponseMessage saved = await boss.PostAsync("/Reports/Edit", new FormUrlEncodedContent(
+        [
+            new("Source", _source), new("Title", "صفحهٔ هزینه‌ها"), new("Kind", "Personal"),
+            new("Columns", "F004"), new("Columns", "F001"), new("Columns", "F002"), new("Grouping", grouping), new("Layout", layout),
+            new("__RequestVerificationToken", Token().Match(form).Groups[1].Value),
+        ]));
+        Assert.Equal(HttpStatusCode.Redirect, saved.StatusCode);
+        string runUrl = saved.Headers.Location!.OriginalString;
+
+        string run = await TextAsync(await boss.GetAsync(runUrl));
+        Assert.Contains("<h2 class=\"mr-text-h mr-al-s\">گزارش ماهانهٔ هزینه</h2>", run);
+        Assert.Contains("<b class=\"mr-kpi-value\">۶۲٬۰۰۰٬۰۰۰</b>", run); // the key figure: the sum over all rows
+        Assert.Contains("جمع مبلغ", run); // its caption without a title
+        Assert.Contains("mr-block mr-span-9 mr-block-chart", run);
+        Assert.Contains("<svg class=\"mr-chart\"", run);
+        Assert.Contains(">مبلغ هزینه</th>", run); // the column's own title
+        Assert.Contains("class=\"mr-al-c mr-nums mr-bold\"", run);
+        Assert.True(run.IndexOf("گزارش ماهانهٔ هزینه", StringComparison.Ordinal) < run.IndexOf("mr-kpi-value", StringComparison.Ordinal)); // in the layout's order
+
+        // the designer gets the layout back; Excel uses the column's title
+        string designer = await (await boss.GetAsync("/Reports/Edit?id=" + runUrl[(runUrl.IndexOf('=') + 1)..])).Content.ReadAsStringAsync();
+        Assert.Contains("\"layout\":{\"blocks\":[{\"id\":\"h\"", designer); // the designer gets the layout back
+        Assert.Contains("\"F002\":{\"title\":", designer);
+        using var book = new ClosedXML.Excel.XLWorkbook(new MemoryStream(await (await boss.GetAsync(runUrl.Replace("/Run?", "/Run?handler=Excel&"))).Content.ReadAsByteArrayAsync()));
+        Assert.Equal("مبلغ هزینه", book.Worksheet(1).Cell(5, 3).GetString());
+    }
+
+    [Fact]
     public async Task A_shared_report_reaches_its_audience_with_the_granted_scope()
     {
         // a user who may run reports but not make shared ones, in HR
