@@ -23,7 +23,7 @@ Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Passwor
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.3), /Acl (0.5.3) and /MReporter (0.1.7) as NuGet packages **committed in this
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.3), /Acl (0.5.3) and /MReporter (0.1.8) as NuGet packages **committed in this
 repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
 `OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
 To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
@@ -141,7 +141,7 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
 
 - Reporting = module MReporter (github.com/AliRezaMohtaram/MReporter, clone /home/user/mreporter; packages MReporter.Core,
-  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.7) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
+  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.8) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
   `ModuleDatabaseMigrator`). Mapper side: `Mapper/Modules/Reports` — `MapperReportSources` (IReportSourceCatalog: one source
   per template "mapper.records:{code}" with its fields by key across versions + system columns `sys.version/unit/source/
   author/createdAt/editor/updatedAt`; default audience = template's allowed units; "mapper.imports"), `MapperReportData`

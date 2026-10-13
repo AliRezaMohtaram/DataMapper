@@ -133,7 +133,7 @@ public sealed partial class ReportDataTests
         string run = await TextAsync(await boss.GetAsync(runUrl));
         Assert.Contains("mr-grp", run);
         Assert.True(run.IndexOf("تنخواه دفتر", StringComparison.Ordinal) < run.IndexOf("تعمیر پمپ", StringComparison.Ordinal)); // EX1 first
-        Assert.Contains("جمع: ۵۷٬۰۰۰٬۰۰۰ · بیشینه: ۴۵٬۰۰۰٬۰۰۰", run); // EX2's total line
+        Assert.Contains("جمع: ۵۷٬۰۰۰٬۰۰۰\nبیشینه: ۴۵٬۰۰۰٬۰۰۰", run); // EX2's total line, one total under the other
         Assert.Contains("جمع کل (۳ ردیف)", run);
         Assert.Contains("جمع: ۶۲٬۰۰۰٬۰۰۰", run);
 
