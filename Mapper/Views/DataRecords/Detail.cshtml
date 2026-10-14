@@ -87,7 +87,7 @@
                             {
                                 <span class="faint">—</span>
                             }
-                            else if (ltr && !v.IsExtra)
+                            else if ((ltr || v.Value.IsDateText(v.DataType)) && !v.IsExtra)
                             {
                                 <span class="ltr nums">@v.Value.ToRecordDisplay(v.DataType)</span>
                             }

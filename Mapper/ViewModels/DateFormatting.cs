@@ -1,8 +1,9 @@
 ﻿using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Borc.DataMapper.Web.ViewModels;
 
-public static class DateFormatting
+public static partial class DateFormatting
 {
     private static readonly PersianCalendar Pc = new();
 
@@ -53,7 +54,66 @@ public static class DateFormatting
             return ToPersianDigits(type == Borc.DataMapper.Domain.Common.FieldDataType.DateTime ? $"{date} {d:HH:mm}" : date);
         }
 
+        // text that is a Gregorian date (e.g. imported as text): shown in Jalali too (user request); stored as it is
+        if (type == Borc.DataMapper.Domain.Common.FieldDataType.Text && TryGregorianText(value, out var text, out bool time))
+        {
+            var date = $"{Pc.GetYear(text):0000}/{Pc.GetMonth(text):00}/{Pc.GetDayOfMonth(text):00}";
+            return ToPersianDigits(time ? $"{date} {text:HH:mm}" : date);
+        }
+
         return type == Borc.DataMapper.Domain.Common.FieldDataType.Number ? ToPersianDigits(value) : value;
+    }
+
+    /// <summary>Text shown as a Jalali date (see <see cref="TryGregorianText"/>).</summary>
+    public static bool IsDateText(this string value, Borc.DataMapper.Domain.Common.FieldDataType type) =>
+        type == Borc.DataMapper.Domain.Common.FieldDataType.Text && TryGregorianText(value, out _, out _);
+
+    // text that looks like a Gregorian date: 2015-10-06, 2015/10/06 (time optional), 5/27/2015 (month first unless the
+    // first number is above 12), years 1900–2100 only (Jalali text such as 1405/07/22 is left alone)
+    [GeneratedRegex(@"^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$", RegexOptions.CultureInvariant)]
+    private static partial Regex YearFirst();
+
+    [GeneratedRegex(@"^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})(?: (\d{1,2}):(\d{2})(?::\d{2})?(?: ?([AaPp])[Mm])?)?$", RegexOptions.CultureInvariant)]
+    private static partial Regex YearLast();
+
+    /// <summary>A text value that is a Gregorian date (and time) as written in imported files.</summary>
+    public static bool TryGregorianText(string? text, out DateTime value, out bool hasTime)
+    {
+        value = default;
+        hasTime = false;
+        text = text?.Trim();
+        if (string.IsNullOrEmpty(text) || text.Length > 40)
+            return false;
+        int year, month, day, hour = 0, minute = 0;
+        var m = YearFirst().Match(text);
+        if (m.Success)
+        {
+            (year, month, day) = (int.Parse(m.Groups[1].Value), int.Parse(m.Groups[2].Value), int.Parse(m.Groups[3].Value));
+        }
+        else if ((m = YearLast().Match(text)).Success)
+        {
+            int a = int.Parse(m.Groups[1].Value), b = int.Parse(m.Groups[2].Value);
+            (month, day) = a > 12 ? (b, a) : (a, b);
+            year = int.Parse(m.Groups[3].Value);
+        }
+        else
+        {
+            return false;
+        }
+
+        if (m.Groups[4].Success)
+        {
+            hour = int.Parse(m.Groups[4].Value);
+            minute = int.Parse(m.Groups[5].Value);
+            if (m.Groups.Count > 6 && m.Groups[6].Success)
+                hour = hour % 12 + (char.ToUpperInvariant(m.Groups[6].Value[0]) == 'P' ? 12 : 0);
+            hasTime = true;
+        }
+
+        if (year is < 1900 or > 2100 || month is < 1 or > 12 || day < 1 || day > DateTime.DaysInMonth(year, month) || hour > 23 || minute > 59)
+            return false;
+        value = new DateTime(year, month, day, hour, minute, 0);
+        return true;
     }
 
     public static string ToPersianDigits(this string value)

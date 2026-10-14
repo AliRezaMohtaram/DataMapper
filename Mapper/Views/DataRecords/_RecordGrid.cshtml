@@ -45,7 +45,7 @@
                             {
                                 <span class="faint">—</span>
                             }
-                            else if (IsLtr(c.DataType))
+                            else if (IsLtr(c.DataType) || value.IsDateText(c.DataType))
                             {
                                 <span class="ltr nums">@value.ToRecordDisplay(c.DataType)</span>
                             }
