@@ -214,6 +214,102 @@ public sealed partial class ReportDataTests
     }
 
     [Fact]
+    public async Task A_chart_with_its_own_data_draws_on_an_ungrouped_report()
+    {
+        HttpClient boss = await app.SignInAsync("rboss", "Secret123");
+        string form = await (await boss.GetAsync("/Reports/Edit?source=" + Uri.EscapeDataString(_source))).Content.ReadAsStringAsync();
+        string layout = JsonSerializer.Serialize(new
+        {
+            blocks = new object[]
+            {
+                // categories from a column the table does not show, the sum of another
+                new { id = "c", kind = "Chart", span = 12, chart = "Bar", category = new { column = "F004" }, order = "ValueDesc", series = new[] { "F002:Sum" } },
+                new { id = "t", kind = "Table", span = 12 },
+            },
+        });
+        HttpResponseMessage saved = await boss.PostAsync("/Reports/Edit", new FormUrlEncodedContent(
+        [
+            new("Source", _source), new("Title", "نمودار مستقل"), new("Kind", "Personal"),
+            new("Columns", "F001"), new("Layout", layout),
+            new("__RequestVerificationToken", Token().Match(form).Groups[1].Value),
+        ]));
+        Assert.Equal(HttpStatusCode.Redirect, saved.StatusCode);
+        string runUrl = saved.Headers.Location!.OriginalString;
+
+        string run = await TextAsync(await boss.GetAsync(runUrl));
+        Assert.Contains("<svg class=\"mr-chart\"", run);
+        Assert.Contains("— جمع مبلغ: ", run); // a bar's tooltip names its series
+        Assert.DoesNotContain("یک ستون را گروه‌بندی کنید", run);
+        Assert.Contains("<svg class=\"mr-chart\"", await TextAsync(await boss.GetAsync(runUrl.Replace("/Run?", "/Print?"))));
+    }
+
+    [Fact]
+    public async Task A_print_layout_in_bands_is_designed_saved_and_printed()
+    {
+        HttpClient boss = await app.SignInAsync("rboss", "Secret123");
+        string form = await (await boss.GetAsync("/Reports/Edit?source=" + Uri.EscapeDataString(_source))).Content.ReadAsStringAsync();
+        string grouping = JsonSerializer.Serialize(new { groupBy = new[] { new { column = "F004" } }, totals = new[] { new { column = "F002", kind = "Sum" } } });
+        HttpResponseMessage saved = await boss.PostAsync("/Reports/Edit", new FormUrlEncodedContent(
+        [
+            new("Source", _source), new("Title", "چاپ باندی"), new("Kind", "Personal"),
+            new("Columns", "F004"), new("Columns", "F002"), new("Grouping", grouping),
+            new("__RequestVerificationToken", Token().Match(form).Groups[1].Value),
+        ]));
+        string runUrl = saved.Headers.Location!.OriginalString;
+        string id = runUrl[(runUrl.IndexOf('=') + 1)..];
+
+        // the designer starts from the default layout (bands for the group, totals)
+        string designer = await TextAsync(await boss.GetAsync("/Reports/PrintDesign?id=" + id));
+        Assert.Contains("data-mr-print-designer", designer);
+        Assert.Contains("\"saved\":false", designer);
+        Assert.Contains("\"kind\":\"GroupFooter\"", designer);
+
+        string layout = JsonSerializer.Serialize(new
+        {
+            paper = "A4",
+            landscape = false,
+            bands = new object[]
+            {
+                new { kind = "ReportTitle", height = 12, elements = new object[] { new { kind = "System", system = "Title", x = 0, y = 0, width = 100, height = 8, fontSize = 14, bold = true } } },
+                new { kind = "GroupHeader", level = 1, height = 7, elements = new object[] { new { kind = "Field", column = "F004", x = 0, y = 0, width = 60, height = 6 } } },
+                new { kind = "Data", height = 6, elements = new object[] { new { kind = "Field", column = "F002", x = 0, y = 0, width = 40, height = 6 } } },
+                new { kind = "Summary", height = 8, elements = new object[] { new { kind = "Total", value = "F002:Sum", showLabel = true, x = 0, y = 0, width = 60, height = 6 } } },
+            },
+        });
+        HttpResponseMessage design = await boss.PostAsync("/Reports/PrintDesign?id=" + id, new FormUrlEncodedContent(
+        [
+            new("Id", id), new("Print", layout), new("__RequestVerificationToken", Token().Match(designer).Groups[1].Value),
+        ]));
+        Assert.Contains("\"ok\":true", await design.Content.ReadAsStringAsync());
+
+        string printed = await TextAsync(await boss.GetAsync(runUrl.Replace("/Run?", "/Print?")));
+        Assert.Contains("class=\"pb-paper\"", printed);
+        Assert.Contains("size: A4 portrait", printed);
+        Assert.Contains("data-band=\"GroupHeader1\"", printed);
+        Assert.Contains("<span>جمع: ۶۲٬۰۰۰٬۰۰۰</span>", printed); // the summary's total over every row
+        Assert.Contains("<span>چاپ باندی</span>", printed);
+
+        // saving the report in its designer keeps the print layout
+        string edit = await (await boss.GetAsync("/Reports/Edit?id=" + id)).Content.ReadAsStringAsync();
+        await boss.PostAsync("/Reports/Edit", new FormUrlEncodedContent(
+        [
+            new("Id", id), new("Source", _source), new("Title", "چاپ باندی"), new("Kind", "Personal"),
+            new("Columns", "F004"), new("Columns", "F002"), new("Grouping", grouping),
+            new("__RequestVerificationToken", Token().Match(edit).Groups[1].Value),
+        ]));
+        Assert.Contains("\"saved\":true", await TextAsync(await boss.GetAsync("/Reports/PrintDesign?id=" + id)));
+
+        // removed: the print view shows the page's blocks again
+        string again = await TextAsync(await boss.GetAsync("/Reports/PrintDesign?id=" + id));
+        HttpResponseMessage removed = await boss.PostAsync("/Reports/PrintDesign?handler=Remove&id=" + id, new FormUrlEncodedContent(
+        [
+            new("__RequestVerificationToken", Token().Match(again).Groups[1].Value),
+        ]));
+        Assert.Equal(HttpStatusCode.Redirect, removed.StatusCode);
+        Assert.DoesNotContain("pb-paper", await TextAsync(await boss.GetAsync(runUrl.Replace("/Run?", "/Print?"))));
+    }
+
+    [Fact]
     public async Task A_shared_report_reaches_its_audience_with_the_granted_scope()
     {
         // a user who may run reports but not make shared ones, in HR

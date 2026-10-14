@@ -23,7 +23,7 @@ Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Passwor
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.3), /Acl (0.5.3) and /MReporter (0.1.11) as NuGet packages **committed in this
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.3), /Acl (0.5.3) and /MReporter (0.1.12) as NuGet packages **committed in this
 repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
 `OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
 To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
@@ -142,7 +142,7 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
 
 - Reporting = module MReporter (github.com/AliRezaMohtaram/MReporter, clone /home/user/mreporter; packages MReporter.Core,
-  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.11) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
+  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.12) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
   `ModuleDatabaseMigrator`). Mapper side: `Mapper/Modules/Reports` — `MapperReportSources` (IReportSourceCatalog: one source
   per template "mapper.records:{code}" with its fields by key across versions + system columns `sys.version/unit/source/
   author/createdAt/editor/updatedAt`; default audience = template's allowed units; "mapper.imports"), `MapperReportData`
@@ -182,7 +182,12 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   print view and designer preview.
   The report as a page (same 0.1.9): blocks (table, several charts, key figures, text) on a 12-column grid, dragged and
   sized in the designer; per-column text settings (alignment, title, width, look, number/date display) on the run page,
-  print view and Excel headers. Widths by dragging (0.1.11): column header edge (pixels), block edge (grid spans).
+  print view and Excel headers. Widths by dragging (0.1.11): column header edge (pixels), block edge (grid spans); 0.1.12: columns as wide as their
+  content or their set width (content clipped), moved by pointer drag.
+  Same 0.1.12: charts with their own data (category column + values of any number column, order; no table grouping
+  needed) and the band designer for printing (`/Reports/PrintDesign?id=`, links "طراحی چاپ" on the run page and the report
+  form): bands (title, page header/footer, group header/footer, data, summary) with text/column/total/report-value/line
+  elements placed in mm; the print view uses it when a report has one. See MReporter's CLAUDE.md items 18–19.
 - Reporting decisions (user): a separate reusable module (like OrgChart/Acl), hosts register data sources;
   admin-made reports with an audience (units with/without sub-units, positions, persons; default = the template's allowed
   units); a report MAY grant data scope beyond the runner's own visibility (audited); advanced filter replaces the simple
