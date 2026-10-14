@@ -23,7 +23,7 @@ Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Passwor
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.3), /Acl (0.5.3) and /MReporter (0.1.10) as NuGet packages **committed in this
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.3), /Acl (0.5.3) and /MReporter (0.1.11) as NuGet packages **committed in this
 repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
 `OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
 To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
@@ -95,8 +95,9 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   made it (search/source filters narrow the counted records). A row click (`tr[data-row-href]`) opens the detail
   `/DataRecords/Version?templateVersionId=` — the per-version table where records are added, edited, copied and deleted.
   `importBatchId` links redirect to Version.
-  Wide tables (user: actions were a long horizontal scroll away and only the id opened a row): `_RecordGrid` has the row
-  actions in the first column, sticky while the table scrolls sideways (`.tbl .col-sticky` in mx.css); the whole row opens
+  Wide tables (user: actions were a long horizontal scroll away and only the id opened a row): row actions are the LAST
+  column (left in RTL — user rule for every list), sticky at the end edge while the table scrolls sideways
+  (`.tbl .col-sticky` in mx.css; `_RecordGrid`, `/DataRecords`, `/Imports`); the whole row opens
   the edit modal with Edit permission, else the detail page (`data-row-href`). Import rows open their detail page.
 - Last editor: record detail shows "آخرین ویرایش‌کننده" (`DataRecordDetailDto.UpdatedBy`), the version table shows
   "ویرایش: …" under the author when someone else edited (e.g. a unit head editing a subordinate's record).
@@ -141,7 +142,7 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
 
 - Reporting = module MReporter (github.com/AliRezaMohtaram/MReporter, clone /home/user/mreporter; packages MReporter.Core,
-  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.10) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
+  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.11) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
   `ModuleDatabaseMigrator`). Mapper side: `Mapper/Modules/Reports` — `MapperReportSources` (IReportSourceCatalog: one source
   per template "mapper.records:{code}" with its fields by key across versions + system columns `sys.version/unit/source/
   author/createdAt/editor/updatedAt`; default audience = template's allowed units; "mapper.imports"), `MapperReportData`
@@ -181,7 +182,7 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   print view and designer preview.
   The report as a page (same 0.1.9): blocks (table, several charts, key figures, text) on a 12-column grid, dragged and
   sized in the designer; per-column text settings (alignment, title, width, look, number/date display) on the run page,
-  print view and Excel headers.
+  print view and Excel headers. Widths by dragging (0.1.11): column header edge (pixels), block edge (grid spans).
 - Reporting decisions (user): a separate reusable module (like OrgChart/Acl), hosts register data sources;
   admin-made reports with an audience (units with/without sub-units, positions, persons; default = the template's allowed
   units); a report MAY grant data scope beyond the runner's own visibility (audited); advanced filter replaces the simple

@@ -548,12 +548,12 @@ tr:hover .row-actions, .row-actions:focus-within { opacity:1; }
 .tbl tbody tr:last-child td { border-bottom:0; }
 .tbl.compact td { padding:.55rem 1rem; }
 .tbl tbody tr[data-row-modal], .tbl tbody tr[data-row-href] { cursor:pointer; }
-/* A column that stays in view while a wide table scrolls sideways (row actions first). */
+/* Row actions: the last column (left in RTL), kept in view while a wide table scrolls sideways. */
 .tbl .col-sticky {
-  position:sticky; inset-inline-start:0; z-index:1; width:1%; white-space:nowrap;
-  background:var(--surface); box-shadow:inset -1px 0 0 var(--line);
+  position:sticky; inset-inline-end:0; z-index:1; width:1%; white-space:nowrap;
+  background:var(--surface); box-shadow:inset 1px 0 0 var(--line);
 }
-[dir="rtl"] .tbl .col-sticky { box-shadow:inset 1px 0 0 var(--line); }
+[dir="rtl"] .tbl .col-sticky { box-shadow:inset -1px 0 0 var(--line); }
 .tbl th.col-sticky { background-image:linear-gradient(rgb(var(--line-rgb) / .025), rgb(var(--line-rgb) / .025)); }
 .tbl tbody tr:hover .col-sticky { background-image:linear-gradient(rgb(var(--line-rgb) / .035), rgb(var(--line-rgb) / .035)); }
 .tbl tr.row-new { animation:mx-row-in .9s var(--ease); }

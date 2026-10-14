@@ -17,7 +17,6 @@
     <table class="tbl">
         <thead>
             <tr>
-                <th class="col-sticky"><span class="sr-only">عملیات</span></th>
                 <th>#</th>
                 @foreach (var c in Model.Columns)
                 {
@@ -29,6 +28,7 @@
                 }
                 <th>ثبت‌کننده</th>
                 <th>ثبت</th>
+                <th class="col-sticky"><span class="sr-only">عملیات</span></th>
             </tr>
         </thead>
         <tbody>
@@ -36,17 +36,6 @@
             {
                 <tr data-row-modal="@(canEdit ? Url.Action("Edit", "DataRecords", new { id = r.Id }) : null)"
                     data-row-href="@(canEdit ? null : Url.Action("Detail", "DataRecords", new { id = r.Id }))">
-                    <td class="col-sticky">
-                        <div class="row-actions">
-                            <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-controller="DataRecords" asp-action="Detail" asp-route-id="@r.Id" title="مشاهده" aria-label="مشاهدهٔ رکورد @r.Id"><svg class="ico"><use href="#i-eye" /></svg></a>
-                            <a acl-res="Mapper.DataRecords" acl-act="Edit" class="icon-btn sm" asp-controller="DataRecords" asp-action="Edit" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
-                            <a acl-res="Mapper.DataRecords" acl-act="Create" class="icon-btn sm" asp-controller="DataRecords" asp-action="Create" asp-route-copyFrom="@r.Id" data-modal title="رونوشت: رکورد جدید با همین مقدارها" aria-label="رونوشت رکورد @r.Id"><svg class="ico"><use href="#i-copy" /></svg></a>
-                            @if (!Model.Compact)
-                            {
-                                <button class="icon-btn sm danger" type="button" data-delete-id="@r.Id" data-delete-name="رکورد @r.Id" title="حذف" aria-label="حذف رکورد @r.Id"><svg class="ico"><use href="#i-trash" /></svg></button>
-                            }
-                        </div>
-                    </td>
                     <td><a acl-res="Mapper.DataRecords" acl-act="View" class="code" asp-controller="DataRecords" asp-action="Detail" asp-route-id="@r.Id">@r.Id</a></td>
                     @foreach (var c in Model.Columns)
                     {
@@ -91,6 +80,17 @@
                         }
                     </td>
                     <td class="cell-sub" style="white-space:nowrap">@((r.UpdatedAt ?? r.CreatedAt).ToRelative())</td>
+                    <td class="col-sticky">
+                        <div class="row-actions">
+                            <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-controller="DataRecords" asp-action="Detail" asp-route-id="@r.Id" title="مشاهده" aria-label="مشاهدهٔ رکورد @r.Id"><svg class="ico"><use href="#i-eye" /></svg></a>
+                            <a acl-res="Mapper.DataRecords" acl-act="Edit" class="icon-btn sm" asp-controller="DataRecords" asp-action="Edit" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
+                            <a acl-res="Mapper.DataRecords" acl-act="Create" class="icon-btn sm" asp-controller="DataRecords" asp-action="Create" asp-route-copyFrom="@r.Id" data-modal title="رونوشت: رکورد جدید با همین مقدارها" aria-label="رونوشت رکورد @r.Id"><svg class="ico"><use href="#i-copy" /></svg></a>
+                            @if (!Model.Compact)
+                            {
+                                <button class="icon-btn sm danger" type="button" data-delete-id="@r.Id" data-delete-name="رکورد @r.Id" title="حذف" aria-label="حذف رکورد @r.Id"><svg class="ico"><use href="#i-trash" /></svg></button>
+                            }
+                        </div>
+                    </td>
                 </tr>
             }
         </tbody>

@@ -92,7 +92,7 @@
     {
         <div class="tbl-wrap">
             <table class="tbl">
-                <thead><tr><th>قالب</th><th>نسخه</th><th>رکوردها</th><th>واحدهای سازمانی</th><th>آخرین تغییر</th><th></th></tr></thead>
+                <thead><tr><th>قالب</th><th>نسخه</th><th>رکوردها</th><th>واحدهای سازمانی</th><th>آخرین تغییر</th><th class="col-sticky"></th></tr></thead>
                 <tbody>
                     @foreach (var r in result.Items)
                     {
@@ -120,7 +120,7 @@
                                 <div>@Person(r.LastChangedBy)</div>
                                 <div class="cell-sub">@r.LastChangedAt.ToRelative()</div>
                             </td>
-                            <td>
+                            <td class="col-sticky">
                                 <div class="row-actions">
                                     <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-action="Version" asp-route-templateVersionId="@r.TemplateVersionId" title="رکوردها" aria-label="رکوردهای @r.TemplateName"><svg class="ico"><use href="#i-eye" /></svg></a>
                                 </div>
