@@ -57,7 +57,7 @@
         {
             <div class="tbl-wrap">
                 <table class="tbl">
-                    <thead><tr><th>#</th><th>فیلد</th><th>نوع داده</th><th>الزامی</th><th>نام مستعار</th><th></th></tr></thead>
+                    <thead><tr><th>#</th><th>فیلد</th><th>نوع داده</th><th>الزامی</th><th>نام مستعار</th><th class="col-sticky"></th></tr></thead>
                     <tbody>
                         @foreach (var f in Model.Fields)
                         {
@@ -95,7 +95,7 @@
                                         <span class="cell-sub">—</span>
                                     }
                                 </td>
-                                <td>
+                                <td class="col-sticky">
                                     @if (isDraft)
                                     {
                                         <div class="row-actions">

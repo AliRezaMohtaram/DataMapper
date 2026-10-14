@@ -77,7 +77,7 @@
         <div class="tbl-wrap">
             <table class="tbl">
                 <thead>
-                    <tr><th>منبع داده</th><th>نوع</th><th>وضعیت</th><th>ایجاد</th><th></th></tr>
+                    <tr><th>منبع داده</th><th>نوع</th><th>وضعیت</th><th>ایجاد</th><th class="col-sticky"></th></tr>
                 </thead>
                 <tbody>
                     @foreach (var d in result.Items)
@@ -90,7 +90,7 @@
                             <td><span class="tag @DashboardUi.Tone(d.SourceType)"><svg class="ico" style="width:.8rem;height:.8rem"><use href="#@DashboardUi.Icon(d.SourceType)" /></svg>@d.SourceType.ToLabel()</span></td>
                             <td><span class="badge @(d.IsActive ? "st-active" : "st-inactive")">@(d.IsActive ? "فعال" : "غیرفعال")</span></td>
                             <td class="cell-sub nums">@d.CreatedAt.ToJalali().ToPersianDigits()</td>
-                            <td>
+                            <td class="col-sticky">
                                 <div class="row-actions">
                                     <a acl-res="Mapper.DataSources" acl-act="View" class="icon-btn sm primary" asp-action="Detail" asp-route-id="@d.Id" title="جزئیات و گزینه‌ها" aria-label="جزئیات @d.Name"><svg class="ico"><use href="#i-eye" /></svg></a>
                                     <a acl-res="Mapper.DataSources" acl-act="Edit" class="icon-btn sm" asp-action="Edit" asp-route-id="@d.Id" asp-route-returnUrl="@here" data-modal title="ویرایش" aria-label="ویرایش @d.Name"><svg class="ico"><use href="#i-edit" /></svg></a>

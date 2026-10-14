@@ -82,7 +82,7 @@
         <div class="tbl-wrap">
             <table class="tbl">
                 <thead>
-                    <tr><th>قالب</th><th>توضیحات</th><th>وضعیت</th><th>ایجاد</th><th>آخرین تغییر</th><th></th></tr>
+                    <tr><th>قالب</th><th>توضیحات</th><th>وضعیت</th><th>ایجاد</th><th>آخرین تغییر</th><th class="col-sticky"></th></tr>
                 </thead>
                 <tbody>
                     @foreach (var t in result.Items)
@@ -96,7 +96,7 @@
                             <td><span class="badge @t.Status.BadgeClass()">@t.Status.ToLabel()</span></td>
                             <td class="cell-sub nums">@t.CreatedAt.ToJalali().ToPersianDigits()</td>
                             <td class="cell-sub">@((t.UpdatedAt ?? t.CreatedAt).ToRelative())</td>
-                            <td>
+                            <td class="col-sticky">
                                 <div class="row-actions">
                                     <a acl-res="Mapper.Templates" acl-act="View" class="icon-btn sm primary" asp-action="Detail" asp-route-id="@t.Id" title="جزئیات و نسخه‌ها" aria-label="جزئیات @t.Name"><svg class="ico"><use href="#i-eye" /></svg></a>
                                     <a acl-res="Mapper.Templates" acl-act="Edit" class="icon-btn sm" asp-action="Edit" asp-route-id="@t.Id" asp-route-returnUrl="@here" data-modal title="ویرایش" aria-label="ویرایش @t.Name"><svg class="ico"><use href="#i-edit" /></svg></a>

@@ -113,7 +113,7 @@
         <div class="tbl-wrap">
             <table class="tbl" id="importsTable">
                 <thead>
-                    <tr><th>فایل</th><th>قالب</th><th>ردیف‌ها</th><th>وضعیت</th><th></th></tr>
+                    <tr><th>فایل</th><th>قالب</th><th>ردیف‌ها</th><th>وضعیت</th><th class="col-sticky"></th></tr>
                 </thead>
                 <tbody>
                     @foreach (var b in d.RecentImports)
@@ -169,7 +169,7 @@
                                 <span class="badge @b.Status.BadgeClass()" title="@b.Status.ToLabel()">@b.Status.ShortLabel()</span>
                                 <div class="cell-sub">@b.CreatedAt.ToRelative()</div>
                             </td>
-                            <td>
+                            <td class="col-sticky">
                                 <div class="row-actions">
                                     <a acl-res="Mapper.Imports" acl-act="View" class="icon-btn sm primary" asp-controller="Imports" asp-action="Detail" asp-route-id="@b.Id" title="جزئیات" aria-label="جزئیات IMP-@b.Id">
                                         <svg class="ico"><use href="#i-eye" /></svg>
@@ -258,7 +258,7 @@
         {
             <div class="tbl-wrap">
                 <table class="tbl compact">
-                    <thead><tr><th>قالب</th><th>نسخه</th><th>فیلدها</th><th>رکوردها</th><th>وضعیت</th><th></th></tr></thead>
+                    <thead><tr><th>قالب</th><th>نسخه</th><th>فیلدها</th><th>رکوردها</th><th>وضعیت</th><th class="col-sticky"></th></tr></thead>
                     <tbody>
                         @foreach (var t in d.Templates)
                         {
@@ -277,7 +277,7 @@
                                     }
                                 </td>
                                 <td><span class="badge @t.Status.BadgeClass()">@t.Status.ToLabel()</span></td>
-                                <td>
+                                <td class="col-sticky">
                                     <div class="row-actions">
                                         <a acl-res="Mapper.Templates" acl-act="View" class="icon-btn sm primary" asp-controller="Templates" asp-action="Detail" asp-route-id="@t.Id" title="جزئیات"><svg class="ico"><use href="#i-eye" /></svg></a>
                                         @if (t.VersionId is long vid)

@@ -45,7 +45,7 @@
         <div class="tbl-wrap">
             <table class="tbl">
                 <thead>
-                    <tr><th>نام</th><th>نام کاربری</th><th>ایمیل</th><th>وضعیت</th><th>آخرین ورود</th><th></th></tr>
+                    <tr><th>نام</th><th>نام کاربری</th><th>ایمیل</th><th>وضعیت</th><th>آخرین ورود</th><th class="col-sticky"></th></tr>
                 </thead>
                 <tbody>
                     @foreach (UserSummary u in r.Items)
@@ -65,7 +65,7 @@
                                 </div>
                             </td>
                             <td class="cell-sub">@UsersFormat.Date(u.LastSignInAt, withTime: true)</td>
-                            <td>
+                            <td class="col-sticky">
                                 @if (Model.CanManage)
                                 {
                                 <div class="usr-actions">

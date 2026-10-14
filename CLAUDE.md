@@ -23,7 +23,7 @@ Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Passwor
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.3), /Acl (0.5.3) and /MReporter (0.1.13) as NuGet packages **committed in this
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.4), /Acl (0.5.4) and /MReporter (0.1.14) as NuGet packages **committed in this
 repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
 `OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
 To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
@@ -120,7 +120,11 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
 - Import files are kept in `dbo.ImportBatchFile` (one row per batch, varbinary; `Scripts/010_ImportFiles.sql`, also run at
   startup); download: `Imports/Download/{id}` (only for batches the user can see). Content type from the extension.
 - Data source pages (index, detail, map file, preview) are on MX; `vx.css` was removed (no page uses it any more).
-  `TemplateLayouts/*` still use old class names.
+  Only the form layout designer (`TemplateLayouts/Designer`, `ld-*` classes of theme.css) is still on the old styles; the
+  unused `TemplateLayouts/Detail` view was removed.
+- Every table with row actions (Mapper, Users, OrgChart, Acl, MReporter — user rule): the actions are the LAST column (left
+  in RTL), its header and cells carry `col-sticky` so they stay in view while a wide table scrolls. OrgChart/Acl ship a copy
+  of mx.css/mx.js for their standalone layouts (`wwwroot/mx/`): keep them in sync with Mapper's (copied for 0.2.4/0.5.4).
 - Record form = MX component `record-form` (`wwwroot/js/record-form.js`) on the partial `_RecordForm` (root `.modal`):
   opened in a modal from the grid (row click via `tr[data-row-modal]`, edit/copy icons), the detail page and the list
   toolbar; `Form.cshtml` shows the same partial as a page with the recent records. It loads its dependencies itself when
@@ -142,7 +146,7 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
 
 - Reporting = module MReporter (github.com/AliRezaMohtaram/MReporter, clone /home/user/mreporter; packages MReporter.Core,
-  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.13) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
+  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.14) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
   `ModuleDatabaseMigrator`). Mapper side: `Mapper/Modules/Reports` — `MapperReportSources` (IReportSourceCatalog: one source
   per template "mapper.records:{code}" with its fields by key across versions + system columns `sys.version/unit/source/
   author/createdAt/editor/updatedAt`; default audience = template's allowed units; "mapper.imports"), `MapperReportData`
@@ -188,6 +192,12 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   needed) and the band designer for printing (`/Reports/PrintDesign?id=`, links "طراحی چاپ" on the run page and the report
   form): bands (title, page header/footer, group header/footer, data, summary) with text/column/total/report-value/line
   elements placed in mm; the print view uses it when a report has one. See MReporter's CLAUDE.md items 18–19.
+  0.1.14: pictures (logo, data URI ≤ 300 KB, at most 5), boxes, page number place (top/bottom × right/centre/left) and
+  style, Shift+click multi-select with alignment tools (align right/left/top, same width/height, spread across the page),
+  undo/redo (Ctrl+Z/Ctrl+Y). Audit rows of runs keep the query without the print layout.
+- Graphical org chart (OrgChart 0.2.4, user request): `/OrgChart/Diagram` ("نمودار سازمانی" in the module nav; "نمایش در
+  نمودار" on a unit's page) — unit boxes top-down with type, head and holder, counts, optional positions; collapse/expand,
+  one/two levels/all, search, zoom, drag to pan, print, one branch (`?unit=`), inactive units on request.
 - Text that is a Gregorian date (user: "dates in Persian"; e.g. SampleData's Date field, imported as text: 5/27/2015,
   2015-10-06, optional time; month first unless the first number is above 12; years 1900–2100) is SHOWN in Jalali with
   Persian digits — `DateFormatting.ToRecordDisplay`/`IsDateText` (record grid, record page) and MReporter 0.1.13

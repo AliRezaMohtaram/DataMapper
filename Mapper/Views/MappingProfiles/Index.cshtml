@@ -75,7 +75,7 @@
     {
         <div class="tbl-wrap">
             <table class="tbl">
-                <thead><tr><th>پروفایل</th><th>قالب</th><th>قاعده‌ها</th><th>وضعیت</th><th>ایجاد</th><th></th></tr></thead>
+                <thead><tr><th>پروفایل</th><th>قالب</th><th>قاعده‌ها</th><th>وضعیت</th><th>ایجاد</th><th class="col-sticky"></th></tr></thead>
                 <tbody>
                     @foreach (var p in result.Items)
                     {
@@ -99,7 +99,7 @@
                             </td>
                             <td><span class="badge @(active ? "st-active" : "st-inactive")">@p.Status.ToLabel()</span></td>
                             <td class="cell-sub nums">@p.CreatedAt.ToJalali().ToPersianDigits()</td>
-                            <td>
+                            <td class="col-sticky">
                                 <form acl-res="Mapper.MappingProfiles" acl-act="Edit" id="@statusForm" asp-action="SetStatus" method="post" hidden>
                                     <input type="hidden" name="id" value="@p.Id" />
                                     <input type="hidden" name="isActive" value="@((!active).ToString().ToLowerInvariant())" />

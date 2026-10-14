@@ -55,7 +55,7 @@
             {
                 <div class="tbl-wrap">
                     <table class="tbl">
-                        <thead><tr><th>#</th><th>ستون فایل</th><th></th><th>فیلد قالب</th><th>روش</th><th>اطمینان</th><th></th></tr></thead>
+                        <thead><tr><th>#</th><th>ستون فایل</th><th></th><th>فیلد قالب</th><th>روش</th><th>اطمینان</th><th class="col-sticky"></th></tr></thead>
                         <tbody>
                             @foreach (var r in Model.Rules)
                             {
@@ -78,7 +78,7 @@
                                             <span class="cell-sub">—</span>
                                         }
                                     </td>
-                                    <td>
+                                    <td class="col-sticky">
                                         <div class="row-actions">
                                             <a acl-res="Mapper.MappingProfiles" acl-act="Edit" class="icon-btn sm" asp-action="EditRule" asp-route-profileId="@Model.Id" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش قاعدهٔ @r.SourceColumn"><svg class="ico"><use href="#i-edit" /></svg></a>
                                             <button class="icon-btn sm danger" type="button" title="حذف" aria-label="حذف قاعدهٔ @r.SourceColumn"

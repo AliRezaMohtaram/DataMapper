@@ -268,9 +268,17 @@ public sealed partial class ReportDataTests
         {
             paper = "A4",
             landscape = false,
+            pageNumberPlace = "TopStart",
             bands = new object[]
             {
-                new { kind = "ReportTitle", height = 12, elements = new object[] { new { kind = "System", system = "Title", x = 0, y = 0, width = 100, height = 8, fontSize = 14, bold = true } } },
+                new
+                {
+                    kind = "ReportTitle", height = 12, elements = new object[]
+                    {
+                        new { kind = "System", system = "Title", x = 0, y = 0, width = 100, height = 8, fontSize = 14, bold = true },
+                        new { kind = "Image", image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", x = 150, y = 0, width = 30, height = 10 },
+                    },
+                },
                 new { kind = "GroupHeader", level = 1, height = 7, elements = new object[] { new { kind = "Field", column = "F004", x = 0, y = 0, width = 60, height = 6 } } },
                 new { kind = "Data", height = 6, elements = new object[] { new { kind = "Field", column = "F002", x = 0, y = 0, width = 40, height = 6 } } },
                 new { kind = "Summary", height = 8, elements = new object[] { new { kind = "Total", value = "F002:Sum", showLabel = true, x = 0, y = 0, width = 60, height = 6 } } },
@@ -288,6 +296,8 @@ public sealed partial class ReportDataTests
         Assert.Contains("data-band=\"GroupHeader1\"", printed);
         Assert.Contains("<span>جمع: ۶۲٬۰۰۰٬۰۰۰</span>", printed); // the summary's total over every row
         Assert.Contains("<span>چاپ باندی</span>", printed);
+        Assert.Contains("<img alt=\"\" src=\"data:image/png;base64,iVBOR", printed); // the logo
+        Assert.Contains("@top-right {", printed); // the page number where the designer put it (start = right)
 
         // saving the report in its designer keeps the print layout
         string edit = await (await boss.GetAsync("/Reports/Edit?id=" + id)).Content.ReadAsStringAsync();
