@@ -244,8 +244,8 @@ function validateFieldValue(field, value) {
         }
         if (multi) {
             const nav = el("div", "lf-nav");
-            prevBtn = el("button", "btn ghost", "قبلی"); prevBtn.type = "button";
-            nextBtn = el("button", "btn primary", "بعدی"); nextBtn.type = "button";
+            prevBtn = el("button", "btn btn-ghost", "قبلی"); prevBtn.type = "button";
+            nextBtn = el("button", "btn btn-primary", "بعدی"); nextBtn.type = "button";
             prevBtn.onclick = () => show(cur - 1);
             nextBtn.onclick = () => {
                 const r = validateStepEl(stepEls[cur], tpl);
@@ -429,16 +429,16 @@ function validateFieldValue(field, value) {
     function renderTopbar() {
         const has = !!dTpl, a = $byId("ldActions"), badge = $byId("ldStatus");
         badge.textContent = !has ? "" : dDirty ? "ذخیره‌نشده" : dTpl.layout ? "Layout ذخیره‌شده" : "بدون Layout — فرم داینامیک";
-        badge.className = "mode-badge" + (has && dDirty ? " is-dirty" : has && dTpl.layout ? " is-layout" : "");
+        badge.className = !has ? "" : "badge " + (dDirty ? "st-validating" : dTpl.layout ? "st-imported" : "st-draft");
         const seg = (items, cur) => `<div class="ld-seg">${items.map(([k, l]) => `<button type="button" data-a="${k}" class="${k === cur ? "on" : ""}">${l}</button>`).join("")}</div>`;
         const seg2 = (items, cur) => `<div class="ld-seg">${items.map(([k, l]) => `<button type="button" data-a="${k}" class="${k === cur ? "on" : ""}">${l}</button>`).join("")}</div>`;
         a.innerHTML = !has ? "" : READ_ONLY
             ? seg2([["desktop", "دسکتاپ"], ["mobile", "موبایل"]], dDevice)
             : seg2([["edit", "ویرایش"], ["preview", "پیش‌نمایش"]], dPreview ? "preview" : "edit") +
-              (dPreview ? seg2([["desktop", "دسکتاپ"], ["mobile", "موبایل"]], dDevice) : `<button type="button" class="btn ghost" data-a="auto">چیدمان خودکار</button>`) +
-              `<button type="button" class="btn ghost" data-a="json">کپی JSON</button>` +
-              (dTpl.layout ? `<button type="button" class="btn danger" data-a="remove">حذف Layout</button>` : "") +
-              `<button type="button" class="btn primary" data-a="save">ذخیره Layout</button>`;
+              (dPreview ? seg2([["desktop", "دسکتاپ"], ["mobile", "موبایل"]], dDevice) : `<button type="button" class="btn btn-ghost btn-sm" data-a="auto">چیدمان خودکار</button>`) +
+              `<button type="button" class="btn btn-ghost btn-sm" data-a="json">کپی JSON</button>` +
+              (dTpl.layout ? `<button type="button" class="btn btn-danger-soft btn-sm" data-a="remove">حذف Layout</button>` : "") +
+              `<button type="button" class="btn btn-primary btn-sm" data-a="save">ذخیره Layout</button>`;
         a.querySelectorAll("[data-a]").forEach(b => { b.onclick = () => action(b.dataset.a); });
     }
 
@@ -511,7 +511,7 @@ function validateFieldValue(field, value) {
         p.innerHTML = `<div class="ld-tabs">
                 <button type="button" data-t="fields" class="${palTab === "fields" ? "on" : ""}">فیلدها<span>${placedKeys().size}/${dTpl.fields.length}</span></button>
                 <button type="button" data-t="els" class="${palTab === "els" ? "on" : ""}">المان‌ها</button></div>
-            ${palTab === "fields" ? `<input type="text" class="ld-search" placeholder="جستجوی فیلد..." value="${esc(palQuery)}">` : ""}
+            ${palTab === "fields" ? `<input type="text" class="input ld-search" placeholder="جستجوی فیلد..." value="${esc(palQuery)}">` : ""}
             <div id="ldPalList"></div>`;
         p.querySelectorAll(".ld-tabs button").forEach(t => t.onclick = () => { palTab = t.dataset.t; renderPalette(); });
         const q = p.querySelector(".ld-search");
@@ -534,7 +534,7 @@ function validateFieldValue(field, value) {
                     <span class="ld-check">${on ? "✓" : "+"}</span></div>`;
             }).join("") || `<div class="ld-note">موردی یافت نشد.</div>`;
             const left = dTpl.fields.length - placed.size;
-            if (left > 0 && !q) h += `<button type="button" class="btn ghost ld-addall">افزودن همهٔ ${left} فیلد باقی‌مانده</button>`;
+            if (left > 0 && !q) h += `<button type="button" class="btn btn-ghost btn-sm ld-addall">افزودن همهٔ ${left} فیلد باقی‌مانده</button>`;
         } else {
             h = [["heading", "عنوان بخش", "H"], ["paragraph", "متن توضیحی", "¶"], ["divider", "خط جداکننده", "—"], ["spacer", "فاصله", "↕"], ["pagebreak", "مرحلهٔ جدید (صفحه‌بندی)", "⎘"]]
                 .map(([t, l, i]) => `<div class="ld-item" draggable="true" data-kind="static" data-type="${t}"><span class="ld-ico">${i}</span><div><b>${l}</b></div><span class="ld-check">+</span></div>`).join("");
@@ -723,7 +723,7 @@ function validateFieldValue(field, value) {
         const paper = el("div", "ld-paper" + (dPreview && dDevice === "mobile" ? " is-mobile" : ""));
         if (dPreview) {
             L.renderRuntime({ ...dTpl, layout: dLayout }, paper);
-            paper.appendChild(el("div", "ld-preview-foot", `<button type="button" class="btn primary" disabled>${esc(dLayout.settings.submitText || "ذخیره رکورد")}</button><small>پیش‌نمایش — داده‌ای ذخیره نمی‌شود</small>`));
+            paper.appendChild(el("div", "ld-preview-foot", `<button type="button" class="btn btn-primary" disabled>${esc(dLayout.settings.submitText || "ذخیره رکورد")}</button><small>پیش‌نمایش — داده‌ای ذخیره نمی‌شود</small>`));
             stage.appendChild(paper);
             return;
         }
@@ -736,7 +736,7 @@ function validateFieldValue(field, value) {
         const grid = el("div", "lf-grid");
         dLayout.blocks.forEach(b => grid.appendChild(designBlock(b)));
         if (!dLayout.blocks.length) {
-            const cta = el("div", "ld-cta", `<b>فرم خالی است</b><p>فیلدها را از پنل کناری بکشید و اینجا رها کنید، یا با یک چیدمان خودکار شروع کنید.</p><button type="button" class="btn primary">چیدمان خودکار از فیلدهای قالب</button>`);
+            const cta = el("div", "ld-cta", `<b>فرم خالی است</b><p>فیلدها را از پنل کناری بکشید و اینجا رها کنید، یا با یک چیدمان خودکار شروع کنید.</p><button type="button" class="btn btn-primary btn-sm">چیدمان خودکار از فیلدهای قالب</button>`);
             cta.querySelector("button").onclick = applyAuto;
             grid.appendChild(cta);
         }
@@ -751,7 +751,11 @@ function validateFieldValue(field, value) {
     }
 
     // ---------- پنل ویژگی‌ها (چپ) ----------
-    const F = (label, ctl) => `<div class="ld-f"><label>${label}</label>${ctl}</div>`;
+    /** A setting: MX field with its label; inputs, selects and text areas get the MX control classes. */
+    const F = (label, ctl) => `<div class="field ld-f"><label class="label">${label}</label>${ctl
+        .replace(/<input type="(text|number)"/g, '<input class="input" type="$1"')
+        .replace(/<textarea /g, '<textarea class="textarea" ')
+        .replace(/<select /g, '<select class="select" ')}</div>`;
     const SEG = (name, items, cur) => `<div class="ld-seg" data-seg="${name}">${items.map(([v, l]) => `<button type="button" data-v="${v}" class="${String(v) === String(cur) ? "on" : ""}">${l}</button>`).join("")}</div>`;
     const SPANS = [[3, "¼"], [4, "⅓"], [6, "½"], [8, "⅔"], [9, "¾"], [12, "کامل"]];
 
@@ -796,13 +800,12 @@ function validateFieldValue(field, value) {
             if (w !== "radio") h += F("متن نمونه (Placeholder)", `<input type="text" data-prop="placeholder" value="${esc(b.placeholder)}">`);
             h += F("توضیح زیر فیلد", `<input type="text" data-prop="help" value="${esc(b.help)}">`);
 
-            h += `<div class="ld-f" style="display:flex;align-items:center;gap:10px;">
-        <label style="flex:1;margin:0;">اجباری</label>
-        <label class="switch" title="اجباری">
+            h += `<div class="ld-f">
+        <label class="toggle" title="اجباری">
             <input type="checkbox" data-prop="required" ${f.required || b.required ? "checked" : ""} ${f.required ? "disabled" : ""}>
-            <span class="slider"></span>
+            <span class="toggle-track"></span>
+            <span>اجباری${f.required ? " <small>(طبق قالب)</small>" : ""}</span>
         </label>
-        ${f.required ? '<small style="color:var(--faint);">(طبق قالب)</small>' : ""}
       </div>`;
         }
         if (b.type === "heading") {
@@ -830,7 +833,7 @@ function validateFieldValue(field, value) {
                 }
             }
         }
-        h += `<button type="button" class="btn danger ld-del">حذف از فرم</button>`;
+        h += `<button type="button" class="btn btn-danger-soft btn-sm ld-del">حذف از فرم</button>`;
         p.innerHTML = h;
 
         if (RESTRICTED && b.type === "field") {

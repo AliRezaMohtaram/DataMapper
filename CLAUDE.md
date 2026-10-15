@@ -125,8 +125,12 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
 - Import files are kept in `dbo.ImportBatchFile` (one row per batch, varbinary; `Scripts/010_ImportFiles.sql`, also run at
   startup); download: `Imports/Download/{id}` (only for batches the user can see). Content type from the extension.
 - Data source pages (index, detail, map file, preview) are on MX; `vx.css` was removed (no page uses it any more).
-  Only the form layout designer (`TemplateLayouts/Designer`, `ld-*` classes of theme.css) is still on the old styles; the
-  unused `TemplateLayouts/Detail` view was removed.
+  The form layout designer (`TemplateLayouts/Designer`) is on MX too (user request): its `ld-*` rules moved from theme.css
+  to `wwwroot/css/layout-designer.css` (MX tokens, linked by the view), the page is one MX bar (title, version badge,
+  save state as an MX badge, actions, back), and `layout-designer.js` writes MX controls (btn btn-*, field/label/input/
+  select/textarea, `toggle` switch). theme.css still styles the form a layout draws (`lf-*`), the combobox, the Jalali
+  picker and the old modals/toasts used by the record form. The unused `TemplateLayouts/Detail` view was removed;
+  `wwwroot/js/layout-designer (1).js` is an unreferenced old copy.
 - Every table with row actions (Mapper, Users, OrgChart, Acl, MReporter — user rule): the actions are the LAST column (left
   in RTL), its header and cells carry `col-sticky` so they stay in view while a wide table scrolls. OrgChart/Acl ship a copy
   of mx.css/mx.js for their standalone layouts (`wwwroot/mx/`): keep them in sync with Mapper's (copied for 0.2.4/0.5.4).

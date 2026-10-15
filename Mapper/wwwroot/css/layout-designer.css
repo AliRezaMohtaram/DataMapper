@@ -1,0 +1,176 @@
+/* =================================================================
+   LAYOUT DESIGNER — the template form's layout designer (TemplateLayouts/Designer), on the MX design system:
+   palette | form on a sheet | settings, like the report designer. MX tokens only. The form itself (lf-*) is drawn
+   by layout-designer.js's renderer with the record form's styles.
+   ================================================================= */
+.ld-shell {
+  display: flex; flex-direction: column; gap: .6rem;
+  height: calc(100vh - var(--topbar-h, 4rem) - 9rem); min-height: 34rem;
+}
+.ld-title { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; font-size: .85rem; }
+.ld-title b { color: var(--text-strong); font-size: .95rem; }
+.ld-intro { margin: 0; }
+.ld-topbar {
+  display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; padding: .55rem .7rem;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm);
+}
+.ld-topbar > select { width: auto; min-width: 16rem; }
+.ld-topbar-actions { margin-inline-start: auto; display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+
+.ld-board {
+  flex: 1; min-height: 0; display: grid; gap: .75rem;
+  grid-template-columns: 16rem minmax(0, 1fr) 18rem; grid-template-rows: minmax(0, 1fr);
+}
+.ld-board.is-preview { grid-template-columns: minmax(0, 1fr); }
+.ld-board.is-preview .ld-pane { display: none; }
+.ld-pane {
+  min-height: 0; overflow-y: auto; padding: .75rem;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface);
+}
+.ld-stage {
+  min-width: 0; min-height: 0; overflow-y: auto; padding: 1.5rem 1.25rem 2.5rem;
+  border: 1px solid var(--line); border-radius: var(--radius); background-color: var(--surface-2);
+  background-image: radial-gradient(rgb(var(--line-rgb) / .12) 1px, transparent 1px); background-size: 18px 18px;
+}
+
+/* section titles and notes */
+.ld-sec-title {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  margin: 1rem 0 .6rem; padding-bottom: .45rem; border-bottom: 1px solid var(--line-soft);
+  font-size: .8rem; font-weight: 800; color: var(--text-strong);
+}
+.ld-pane > .ld-sec-title:first-child { margin-top: 0; }
+.ld-sec-title span { font-size: .72rem; font-weight: 600; color: var(--faint); }
+.ld-note, .ld-hint { font-size: .74rem; line-height: 1.8; color: var(--faint); }
+.ld-hint { margin-top: .85rem; }
+
+/* palette: tabs, search, items */
+.ld-tabs, .ld-seg {
+  display: inline-flex; flex-wrap: wrap; gap: .2rem; padding: .2rem;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2);
+}
+.ld-tabs { display: grid; grid-template-columns: 1fr 1fr; width: 100%; margin-bottom: .6rem; }
+.ld-tabs button, .ld-seg button {
+  padding: .35rem .7rem; border: 0; border-radius: var(--radius-sm); background: transparent;
+  color: var(--muted); font: inherit; font-size: .8rem; cursor: pointer; transition: background .15s, color .15s;
+}
+.ld-tabs button:hover, .ld-seg button:hover { color: var(--text-strong); }
+.ld-tabs button span { margin-inline-start: .25rem; font-size: .7rem; opacity: .7; }
+.ld-tabs button.on, .ld-seg button.on { background: var(--surface); color: var(--text-strong); box-shadow: var(--shadow-sm); }
+.ld-search { margin-bottom: .6rem; }
+.ld-item {
+  display: flex; align-items: center; gap: .6rem; margin-bottom: .3rem; padding: .4rem .55rem; cursor: grab;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); transition: border-color .15s, background .15s;
+}
+.ld-item:hover { border-color: var(--primary-border); background: var(--primary-soft); }
+.ld-item > div { flex: 1; min-width: 0; }
+.ld-item b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .82rem; font-weight: 700; color: var(--text-strong); }
+.ld-item small {
+  display: block; margin-top: .1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  direction: ltr; text-align: end; font-family: var(--mono); font-size: .68rem; color: var(--faint);
+}
+.ld-ico {
+  flex: none; display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: var(--radius-sm);
+  background: var(--primary-soft); color: var(--primary); font-size: .7rem; font-weight: 800;
+}
+.ld-item .ld-check { color: var(--primary); font-weight: 800; }
+.ld-item.placed { opacity: .5; cursor: pointer; }
+.ld-item.placed .ld-check { color: var(--success); }
+.ld-addall { width: 100%; margin-top: .5rem; }
+
+/* the form on its sheet */
+.ld-paper {
+  max-width: 56rem; margin: 0 auto; padding: 1.75rem 1.75rem 1.6rem;
+  border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-md);
+  transition: max-width .25s var(--ease);
+}
+.ld-paper.is-mobile { max-width: 24rem; }
+.ld-head { margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid var(--line); cursor: text; }
+.ld-head .lf-desc { margin-bottom: 0; }
+.ld-warn {
+  max-width: 56rem; margin: 0 auto .85rem; padding: .6rem .85rem; border-radius: var(--radius-sm);
+  border: 1px solid var(--warning-border); background: var(--warning-soft); color: var(--text-strong); font-size: .8rem; line-height: 1.7;
+}
+.ld-empty { padding: 6rem 1.25rem; text-align: center; color: var(--muted); }
+.ld-empty-title { margin-bottom: .6rem; font-size: 1.15rem; font-weight: 800; color: var(--text-strong); }
+.ld-empty p { max-width: 29rem; margin: 0 auto; font-size: .85rem; line-height: 1.9; }
+.ld-cta {
+  grid-column: 1 / -1; padding: 2.5rem 1rem; text-align: center; color: var(--muted);
+  border: 2px dashed var(--line-strong); border-radius: var(--radius);
+}
+.ld-cta p { margin: .5rem 0 1rem; font-size: .82rem; }
+.ld-end {
+  margin-top: 1.25rem; padding: .85rem; text-align: center; font-size: .76rem; color: var(--faint);
+  border: 2px dashed var(--line-strong); border-radius: var(--radius-sm); transition: border-color .15s, background .15s, color .15s;
+}
+.ld-end.over { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+.ld-preview-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+  margin-top: 1.6rem; padding-top: 1rem; border-top: 1px solid var(--line);
+}
+.ld-preview-foot small { font-size: .72rem; color: var(--faint); }
+
+/* a block while designing: its own card with a toolbar inside */
+.ld-block {
+  z-index: 1; padding: 1.85rem .85rem .75rem; cursor: pointer;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface);
+  transition: border-color .12s, background .12s, box-shadow .12s;
+}
+.ld-block.lf-heading, .ld-block.lf-paragraph, .ld-block.lf-divider, .ld-block.lf-spacer, .ld-block.lf-pagebreak { padding-top: 1.85rem; }
+.ld-block:hover { border-color: var(--line-strong); }
+.ld-block.selected { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 3px var(--primary-soft); }
+.ld-block .lf-control, .ld-block .lf-radio-item { pointer-events: none; opacity: .9; }
+.ld-block .field-error { display: none; }
+.ld-block.dragging { opacity: .35; }
+.ld-block.has-logic { border-style: dashed; border-color: var(--info-border); }
+.ld-chrome {
+  position: absolute; inset-block-start: .3rem; inset-inline: .5rem; display: flex; align-items: center; gap: .1rem;
+  font-size: .7rem; opacity: .55; transition: opacity .12s;
+}
+.ld-block:hover .ld-chrome, .ld-block.selected .ld-chrome { opacity: 1; }
+.ld-chrome button {
+  padding: .1rem .4rem; border: 0; border-radius: var(--radius-xs, 4px); background: none;
+  color: var(--muted); font: inherit; font-size: .8rem; line-height: 1.2; cursor: pointer;
+}
+.ld-chrome button:hover { background: var(--surface-2); color: var(--text-strong); }
+.ld-chrome button[data-act="del"]:hover { background: var(--danger-soft); color: var(--danger); }
+.ld-grip { padding: 0 .25rem; color: var(--faint); letter-spacing: -2px; font-size: .85rem; cursor: grab; }
+.ld-tag { margin-inline-end: auto; padding-inline-start: .25rem; font-size: .68rem; color: var(--faint); }
+.ld-logic-tag {
+  margin-inline-end: .25rem; padding: 0 .4rem; border: 1px solid var(--info-border); border-radius: 99px;
+  color: var(--info); font-size: .64rem;
+}
+.ld-resize {
+  position: absolute; inset-block: 30%; inset-inline-end: -.5rem; width: 6px; min-height: 1.6rem; border-radius: 99px;
+  background: var(--line-strong); cursor: ew-resize; touch-action: none; opacity: 0; transition: opacity .12s, background .12s;
+}
+.ld-block:hover .ld-resize, .ld-block.selected .ld-resize { opacity: 1; }
+.ld-block.selected .ld-resize { background: var(--primary); }
+.ld-guides {
+  position: absolute; inset: 0; z-index: 0; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px;
+  pointer-events: none;
+}
+.ld-guides i { border-radius: var(--radius-sm); background: var(--primary-soft); }
+.ld-block.drop-before::after, .ld-block.drop-after::after {
+  content: ""; position: absolute; inset-block: -4px; width: 4px; border-radius: 2px; background: var(--primary); pointer-events: none;
+}
+.ld-block.drop-before::after { inset-inline-start: -10px; }
+.ld-block.drop-after::after { inset-inline-end: -10px; }
+.ld-block.wide.drop-before::after, .ld-block.wide.drop-after::after { inset-block: auto; inset-inline: 0; width: auto; height: 4px; }
+.ld-block.wide.drop-before::after { inset-block-start: -10px; }
+.ld-block.wide.drop-after::after { inset-block-end: -10px; }
+
+/* settings pane */
+.ld-f { margin-bottom: .8rem; }
+.ld-f > .label { margin-bottom: .3rem; }
+.ld-f .input, .ld-f .select { height: 2.2rem; font-size: .84rem; }
+.ld-f .textarea { font-size: .84rem; }
+.ld-f-row { display: flex; align-items: center; gap: .6rem; }
+.ld-check-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .8rem; font-size: .84rem; cursor: pointer; }
+.ld-check-row small { color: var(--faint); }
+.ld-stats { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .25rem; }
+.ld-stats span {
+  padding: .15rem .6rem; border: 1px solid var(--line); border-radius: 99px;
+  font-size: .72rem; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.ld-del { width: 100%; margin-top: .5rem; }

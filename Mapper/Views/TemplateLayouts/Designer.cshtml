@@ -1,6 +1,6 @@
-﻿@model Borc.DataMapper.Web.ViewModels.TemplateLayouts.LayoutDesignerViewModel
+@model Borc.DataMapper.Web.ViewModels.TemplateLayouts.LayoutDesignerViewModel
 @{
-    ViewData["Title"] = $"طراح Layout - {Model.TemplateName}";
+    ViewData["Title"] = $"طراح چیدمان فرم — {Model.TemplateName}";
     ViewData["Crumbs"] = new[]
     {
         new Borc.DataMapper.Web.ViewModels.Crumb(Model.TemplateName, Url.Action("Detail", "Templates", new { id = Model.TemplateId })),
@@ -9,39 +9,34 @@
     var isDraft = Model.VersionStatus == TemplateVersionStatus.Draft;
 }
 
+<link rel="stylesheet" href="~/css/layout-designer.css" asp-append-version="true" />
 @Html.AntiForgeryToken()
-
-<div class="panel card">
-    <div class="panel-header">
-        <h2>
-            طراح Layout فرم — @Model.TemplateName (نسخه @Model.VersionNo)
-            <span class="mode-badge">@Model.VersionStatus.ToLabel()</span>
-        </h2>
-
-        <div class="row-actions">
-            <a acl-res="Mapper.Templates" acl-act="View" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId"
-               class="btn ghost">بازگشت به نسخه</a>
-        </div>
-    </div>
-
-    <div class="hint">
-        @if (isDraft)
-        {
-            <text>چیدمان فرم ورود داده را با کشیدن فیلدها از پنل راست بچینید. Layout ذخیره‌شده به‌جای فرم داینامیک برای ورود داده استفاده می‌شود.</text>
-        }
-        else
-        {
-
-            <text>این نسخه پیش‌نویس نیست و Layout آن فقط برای مشاهده است. برای تغییر، یک نسخه جدید بسازید.</text>
-        }
-    </div>
-</div>
 
 <div class="ld-shell">
     <div class="ld-topbar">
-        <span id="ldStatus" class="mode-badge"></span>
+        <div class="ld-title">
+            <b>چیدمان فرم ورود داده</b>
+            <span class="faint">@Model.TemplateName · نسخهٔ @Model.VersionNo.ToPersianNumber()</span>
+            <span class="badge @(isDraft ? "st-draft" : "st-validated")">@Model.VersionStatus.ToLabel()</span>
+        </div>
+        <span id="ldStatus"></span>
         <div class="ld-topbar-actions" id="ldActions"></div>
+        <a acl-res="Mapper.Templates" acl-act="View" class="btn btn-ghost btn-sm" asp-controller="TemplateVersions" asp-action="Detail" asp-route-id="@Model.TemplateVersionId">
+            <svg class="ico"><use href="#i-chev-right" /></svg>بازگشت به نسخه
+        </a>
     </div>
+
+    @if (isDraft)
+    {
+        <p class="hint ld-intro">فیلدها را از فهرست کنار روی فرم بکشید و بچینید؛ چیدمان ذخیره‌شده به‌جای فرم خودکار برای ورود داده استفاده می‌شود.</p>
+    }
+    else
+    {
+        <div class="callout tone-info ld-intro">
+            <svg class="ico"><use href="#i-info" /></svg>
+            <div>این نسخه پیش‌نویس نیست و چیدمانش فقط برای مشاهده است. برای تغییر، یک نسخهٔ تازه بسازید.</div>
+        </div>
+    }
 
     <div id="ldBoard" class="ld-board">
         <aside class="ld-pane ld-palette" id="ldPalette"></aside>
