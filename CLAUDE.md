@@ -23,7 +23,7 @@ Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Passwor
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.4), /Acl (0.5.4) and /MReporter (0.1.14) as NuGet packages **committed in this
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.4), /Acl (0.5.4) and /MReporter (0.1.15) as NuGet packages **committed in this
 repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
 `OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
 To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
@@ -151,7 +151,7 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
 
 - Reporting = module MReporter (github.com/AliRezaMohtaram/MReporter, clone /home/user/mreporter; packages MReporter.Core,
-  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.14) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
+  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.15) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
   `ModuleDatabaseMigrator`). Mapper side: `Mapper/Modules/Reports` — `MapperReportSources` (IReportSourceCatalog: one source
   per template "mapper.records:{code}" with its fields by key across versions + system columns `sys.version/unit/source/
   author/createdAt/editor/updatedAt`; default audience = template's allowed units; "mapper.imports"), `MapperReportData`
@@ -200,6 +200,14 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   0.1.14: pictures (logo, data URI ≤ 300 KB, at most 5), boxes, page number place (top/bottom × right/centre/left) and
   style, Shift+click multi-select with alignment tools (align right/left/top, same width/height, spread across the page),
   undo/redo (Ctrl+Z/Ctrl+Y). Audit rows of runs keep the query without the print layout.
+- More report sources (MReporter 0.1.15, user: "reports on users, templates, data sources…"): `Modules/Reports/
+  MapperDefinitionReports.cs` — `DefinitionSources` (users, templates, template fields, data sources, mapping profiles,
+  org units, positions, assignments; each guarded by its Acl page) and `MapperDefinitionData` (data + option provider:
+  rows loaded whole per request, query run in memory by MReporter's `ReportMemory`). `MapperReportSources` lists them for
+  new reports only with View on their page; a run with the runner's own visibility gets no rows without it; a shared
+  report with a granted scope shows them to its audience. Template counts (records, imports) follow the data scope.
+  Charts can compare values (`compareValues`: no category, each value one slice/bar — e.g. valid vs invalid import rows).
+  Tests: `ReportPagesTests.Definitions_and_people_...`, `A_pie_compares_several_values_of_the_imports`.
 - Graphical org chart (OrgChart 0.2.4, user request): `/OrgChart/Diagram` ("نمودار سازمانی" in the module nav; "نمایش در
   نمودار" on a unit's page) — unit boxes top-down with type, head and holder, counts, optional positions; collapse/expand,
   one/two levels/all, search, zoom, drag to pan, print, one branch (`?unit=`), inactive units on request.

@@ -320,6 +320,81 @@ public sealed partial class ReportDataTests
     }
 
     [Fact]
+    public async Task Definitions_and_people_are_report_sources_for_those_who_may_see_them()
+    {
+        HttpClient boss = await app.SignInAsync("rboss", "Secret123");
+        string list = WebUtility.HtmlDecode(await (await boss.GetAsync("/Reports/New")).Content.ReadAsStringAsync());
+        foreach (string source in new[] { "mapper.users", "mapper.templates", "mapper.fields", "mapper.datasources", "mapper.profiles", "org.units", "org.positions", "org.assignments" })
+            Assert.Contains("source=" + source, list);
+
+        async Task<JsonDocument> PreviewAsync(HttpClient client, string source, params string[] columns)
+        {
+            string form = await (await client.GetAsync("/Reports/Edit?source=" + source)).Content.ReadAsStringAsync();
+            var fields = columns.Select(c => new KeyValuePair<string, string>("Columns", c)).ToList();
+            fields.Add(new("Source", source));
+            fields.Add(new("__RequestVerificationToken", Token().Match(form).Groups[1].Value));
+            return JsonDocument.Parse(await (await client.PostAsync("/Reports/Edit?handler=Preview", new FormUrlEncodedContent(fields))).Content.ReadAsStringAsync());
+        }
+
+        using (JsonDocument templates = await PreviewAsync(boss, "mapper.templates", "t.name", "t.records", "t.units"))
+        {
+            var row = templates.RootElement.GetProperty("lines").EnumerateArray().Single(l => l.GetProperty("cells")[0].GetString() == "هزینه‌های گزارش");
+            Assert.Equal("۳", row.GetProperty("cells")[1].GetString()); // the records the boss sees (his unit and its sub-units)
+            Assert.Contains("مالی", row.GetProperty("cells")[2].GetString());
+        }
+
+        using (JsonDocument positions = await PreviewAsync(boss, "org.positions", "s.title", "s.holders", "s.vacant"))
+        {
+            var row = positions.RootElement.GetProperty("lines").EnumerateArray().Single(l => l.GetProperty("cells")[0].GetString() == "کارشناس مالی");
+            Assert.Equal("کاربر rfin", row.GetProperty("cells")[1].GetString());
+        }
+
+        // only reports, nothing on templates: the source is not listed and an ad-hoc run gives no rows
+        await using (AsyncServiceScope scope = app.Services.CreateAsyncScope())
+        {
+            IServiceProvider sp = scope.ServiceProvider;
+            long id = await sp.GetRequiredService<Borc.Users.Services.IUserAdministration>()
+                .CreateAsync(new Borc.Users.Services.UserInput("rreader", "خوانندهٔ گزارش", null, false, "Secret123"));
+            IRoleAdministration roles = sp.GetRequiredService<IRoleAdministration>();
+            IAssignmentAdministration assignments = sp.GetRequiredService<IAssignmentAdministration>();
+            ResourceOption reports = (await assignments.GetResourceOptionsAsync()).Single(r => r.Key == "Mapper.Reports");
+            int role = await roles.CreateRoleAsync(new RoleInput { Name = "Reports-only", IsActive = true });
+            await roles.SetPermissionsAsync(role, [new PermissionChange(reports.Id, WellKnownActions.View, PermissionEffect.Allow)]);
+            await assignments.AddUserRoleAsync(id.ToString(CultureInfo.InvariantCulture), new UserRoleInput { RoleId = role });
+        }
+
+        HttpClient reader = await app.SignInAsync("rreader", "Secret123");
+        string readerList = await (await reader.GetAsync("/Reports/New")).Content.ReadAsStringAsync();
+        Assert.DoesNotContain("source=mapper.templates", readerList);
+        Assert.DoesNotContain("source=mapper.users", readerList);
+        using JsonDocument nothing = await PreviewAsync(reader, "mapper.users", "u.name");
+        Assert.Equal(0, nothing.RootElement.GetProperty("lines").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task A_pie_compares_several_values_of_the_imports()
+    {
+        HttpClient boss = await app.SignInAsync("rboss", "Secret123");
+        string form = await (await boss.GetAsync("/Reports/Edit?source=mapper.imports")).Content.ReadAsStringAsync();
+        string layout = JsonSerializer.Serialize(new
+        {
+            blocks = new object[]
+            {
+                new { id = "p", kind = "Chart", span = 6, chart = "Pie", compareValues = true, series = new[] { "imp.valid:Sum", "imp.invalid:Sum" } },
+                new { id = "t", kind = "Table", span = 12 },
+            },
+        });
+        HttpResponseMessage preview = await boss.PostAsync("/Reports/Edit?handler=Preview", new FormUrlEncodedContent(
+        [
+            new("Source", "mapper.imports"), new("Columns", "imp.file"), new("Layout", layout),
+            new("__RequestVerificationToken", Token().Match(form).Groups[1].Value),
+        ]));
+        using JsonDocument shown = JsonDocument.Parse(await preview.Content.ReadAsStringAsync());
+        Assert.False(shown.RootElement.TryGetProperty("error", out _), shown.RootElement.ToString());
+        Assert.True(shown.RootElement.GetProperty("blocks").GetProperty("p").TryGetProperty("chart", out _));
+    }
+
+    [Fact]
     public async Task A_shared_report_reaches_its_audience_with_the_granted_scope()
     {
         // a user who may run reports but not make shared ones, in HR

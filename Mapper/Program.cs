@@ -79,12 +79,15 @@ builder.Services.AddAccessControl(o =>
     .AddAdminUi();
 builder.Services.AddHostedService<MapperAccessBootstrapper>(); // after AddAccessControl: needs the synced resources
 
-// Reports (MReporter module, schema rpt): Mapper's sources are the records of each template and the imports.
+// Reports (MReporter module, schema rpt): Mapper's sources are the records of each template and the imports, plus the
+// definitions and people (users, templates, fields, data sources, profiles, units, positions, assignments) in memory.
 builder.Services.AddMReporter()
     .AddSqlServerStore(connectionString)
     .AddCurrentUser<Borc.DataMapper.Web.Modules.Reports.MapperReportUser>()
     .AddDataProvider<Borc.DataMapper.Web.Modules.Reports.MapperReportData>()
     .AddOptionProvider<Borc.DataMapper.Web.Modules.Reports.MapperReportOptions>()
+    .AddDataProvider<Borc.DataMapper.Web.Modules.Reports.MapperDefinitionData>()
+    .AddOptionProvider<Borc.DataMapper.Web.Modules.Reports.MapperDefinitionData>()
     .AddOrgChart() // MReporter.OrgChart: audiences by unit/position, and the chart's units, positions and users in the report forms
     .AddUi(ui =>
     {

@@ -1,5 +1,6 @@
 using Borc.DataMapper.Domain.Common;
 using Borc.DataMapper.Domain.Imports;
+using Acl.Core.Abstractions;
 using Borc.DataMapper.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using MReporter.Core.Abstractions;
@@ -10,9 +11,10 @@ namespace Borc.DataMapper.Web.Modules.Reports;
 /// <summary>
 /// Mapper's report sources: the records of each template ("mapper.records:{template code}") and the imports
 /// ("mapper.imports"). A template's columns are its fields (by field key, stable across versions; title and type from the
-/// newest version that has the field) and the system columns every record has.
+/// newest version that has the field) and the system columns every record has. Also the definition sources
+/// (<see cref="DefinitionSources"/>): found for every run, listed for new reports only with View on their page.
 /// </summary>
-public sealed class MapperReportSources(BorcDataMapperDbContext db) : IReportSourceCatalog
+public sealed class MapperReportSources(BorcDataMapperDbContext db, IAccessService access) : IReportSourceCatalog
 {
     public const string RecordsPrefix = "mapper.records:";
     public const string ImportsKey = "mapper.imports";
@@ -44,8 +46,13 @@ public sealed class MapperReportSources(BorcDataMapperDbContext db) : IReportSou
 
     private Dictionary<string, ReportSourceInfo>? _byKey;
 
-    public async Task<IReadOnlyList<ReportSourceInfo>> GetSourcesAsync(CancellationToken cancellationToken = default) =>
-        (await LoadAsync(cancellationToken)).Values.OrderBy(s => s.Group).ThenBy(s => s.Title, StringComparer.CurrentCulture).ToList();
+    public async Task<IReadOnlyList<ReportSourceInfo>> GetSourcesAsync(CancellationToken cancellationToken = default)
+    {
+        var rights = await access.GetCurrentUserAccessAsync(cancellationToken);
+        return (await LoadAsync(cancellationToken)).Values
+            .Where(s => DefinitionSources.Find(s.Key) is not { } d || rights.IsAllowed(d.Resource, "View"))
+            .OrderBy(s => s.Group).ThenBy(s => s.Title, StringComparer.CurrentCulture).ToList();
+    }
 
     public async Task<ReportSourceInfo?> FindAsync(string sourceKey, CancellationToken cancellationToken = default) =>
         (await LoadAsync(cancellationToken)).GetValueOrDefault(sourceKey);
@@ -136,6 +143,9 @@ public sealed class MapperReportSources(BorcDataMapperDbContext db) : IReportSou
             new ReportColumn(Sys.Author, "آپلودکننده", ReportColumnType.List, IsSystem: true),
             new ReportColumn(Sys.CreatedAt, "زمان آپلود", ReportColumnType.DateTime, IsSystem: true),
         ], "سیستم");
+
+        foreach (var (source, _) in DefinitionSources.All)
+            result[source.Key] = source;
 
         return _byKey = result;
     }
