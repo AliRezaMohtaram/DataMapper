@@ -10,12 +10,14 @@
   Escape; `="latin"` writes Latin digits; `MX.jdate(input)` for script-built inputs). Used by OrgChart 0.2.3, Acl 0.5.3 and
   MReporter 0.1.5+; the record form keeps its own `jalali-picker.js`.
 - Desktop only (user decision): mobile/narrow layouts are not required; do not check or fix them.
-- Build: `dotnet build Mapper.sln`. Tests: `dotnet test Borc.Users.Tests` (cloud container: `DOTNET_ROLL_FORWARD=Major`).
+- Build: `dotnet build Mapper.sln`. Tests: `dotnet test Mapper.Tests` (cloud container: `DOTNET_ROLL_FORWARD=Major`).
 
 ## Users module (`Borc.Users`, `Borc.Users.Web`)
 
-Sign-in and account management, kept independent of the Mapper projects so it can be extracted later; see
-`Borc.Users/README.md`. Wiring in Mapper: `Program.cs` (`AddBorcUsers`, `AddBorcUsersUi`, `UseAuthentication`,
+Sign-in and account management — since 2026-10-15 in its own repository (github.com/AliRezaMohtaram/User, clone
+`../User`, moved out with its history; user decision, also used by MProcess). Mapper takes the packages `Borc.Users` and
+`Borc.Users.Web` (1.0.0) from `modules-feed/` like the other modules (`nuget.config` maps `Borc.Users*` there;
+`tools/update-modules.sh` packs the User clone too). Its tests (`Borc.Users.Tests`) and README live in that repository. Wiring in Mapper: `Program.cs` (`AddBorcUsers`, `AddBorcUsersUi`, `UseAuthentication`,
 `MapRazorPages`), sign-in required everywhere, `_Layout` (user chip, sign-out, change password, "کاربران" via Acl),
 `HttpCurrentUser` → `ICurrentUser` (Application) → `AuditStampInterceptor` fills `CreatedBy/UpdatedBy/DeletedBy`.
 User ids are `long`; other modules (OrgChart, Acl) store them as strings. Manual checklist: `docs/users-test-checklist.md`.

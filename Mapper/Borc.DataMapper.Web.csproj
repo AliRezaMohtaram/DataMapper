@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -16,7 +16,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Borc.DataMapper.Application\Borc.DataMapper.Application.csproj" />
 		<ProjectReference Include="..\Borc.DataMapper.Infrastructure\Borc.DataMapper.Infrastructure.csproj" />
-		<ProjectReference Include="..\Borc.Users.Web\Borc.Users.Web.csproj" />
+		<PackageReference Include="Borc.Users.Web" Version="1.0.0" />
 	</ItemGroup>
 	
 
