@@ -243,8 +243,16 @@
     </div>
 </section>
 
-<!-- ═════ BOTTOM ROW ═════ -->
-<section class="dash-row">
+<!-- ═════ BOTTOM ROW: the cards the user's permissions allow ═════ -->
+@{
+    bool showTemplates = Model.Rights.Templates || d.Templates.Count > 0;
+    bool showSources = Model.Rights.DataSources;
+    int cards = 1 + (showTemplates ? 1 : 0) + (showSources ? 1 : 0);
+    string rowColumns = cards switch { 1 => "minmax(0, 1fr)", 2 => (showTemplates ? "minmax(0, 1.6fr) minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))"), _ => "" };
+}
+<section class="dash-row" style="@(rowColumns.Length > 0 ? $"grid-template-columns:{rowColumns}" : null)">
+    @if (showTemplates)
+    {
     <article class="card rise" style="--i:7">
         <header class="card-head">
             <div class="card-title"><span class="card-ico"><svg class="ico"><use href="#i-template" /></svg></span>قالب‌های پرکاربرد</div>
@@ -252,7 +260,7 @@
         </header>
         @if (d.Templates.Count == 0)
         {
-            <div class="empty">هنوز قالبی ساخته نشده است.</div>
+            <div class="empty">@(Model.Rights.Templates ? "هنوز قالبی ساخته نشده است." : "قالبی برای ثبت داده ندارید.")</div>
         }
         else
         {
@@ -294,6 +302,10 @@
         }
     </article>
 
+    }
+
+    @if (showSources)
+    {
     <article class="card rise" style="--i:8">
         <header class="card-head">
             <div class="card-title"><span class="card-ico"><svg class="ico"><use href="#i-db" /></svg></span>منابع داده</div>
@@ -320,6 +332,8 @@
             </div>
         }
     </article>
+
+    }
 
     <article class="card rise" style="--i:9">
         <header class="card-head">

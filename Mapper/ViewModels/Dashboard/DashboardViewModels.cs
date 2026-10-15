@@ -10,8 +10,16 @@ using Borc.DataMapper.Web.ViewModels.Templates;
 
 namespace Borc.DataMapper.Web.ViewModels.Dashboard;
 
+/// <summary>Which pages the user may open: the cards and the activity follow them.</summary>
+public sealed record DashboardRights(bool Templates, bool DataSources, bool Imports)
+{
+    public static DashboardRights All { get; } = new(true, true, true);
+}
+
 public sealed record DashboardViewModel(DashboardDto Data)
 {
+    public DashboardRights Rights { get; init; } = DashboardRights.All;
+
     /// <summary>
     /// خط زمانی فعالیت‌ها از روی داده‌های همین صفحه ساخته می‌شود
     /// (ایمپورت‌های اخیر + تغییر قالب‌ها و منابع داده).
@@ -20,7 +28,7 @@ public sealed record DashboardViewModel(DashboardDto Data)
     {
         var items = new List<ActivityItem>();
 
-        foreach (var b in Data.RecentImports)
+        foreach (var b in Rights.Imports ? Data.RecentImports : [])
         {
             items.Add(b.Status switch
             {
@@ -39,13 +47,13 @@ public sealed record DashboardViewModel(DashboardDto Data)
             });
         }
 
-        foreach (var t in Data.Templates)
+        foreach (var t in Rights.Templates ? Data.Templates : [])
             items.Add(new ActivityItem("tone-violet", "i-template",
                 $"قالب «{t.Name}» به‌روزرسانی شد",
                 t.VersionNo is int v ? $"نسخه {v.ToPersianNumber()} · {t.Status.ToLabel()}" : t.Status.ToLabel(),
                 t.ChangedAt));
 
-        foreach (var d in Data.DataSources)
+        foreach (var d in Rights.DataSources ? Data.DataSources : [])
             items.Add(new ActivityItem("tone-info", DashboardUi.Icon(d.SourceType),
                 $"منبع داده «{d.Name}» به‌روزرسانی شد", d.SourceType.ToLabel(), d.ChangedAt));
 

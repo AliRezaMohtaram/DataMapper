@@ -79,6 +79,40 @@ public sealed partial class AccessLinksTests(MapperApp app) : IClassFixture<Mapp
         Assert.True(denied.Count == 0, $"{userName} sees links to pages they may not open: {string.Join(", ", denied)}");
     }
 
+    [Fact]
+    public async Task The_dashboard_lists_only_the_templates_and_data_sources_the_user_may_see()
+    {
+        await using (AsyncServiceScope scope = app.Services.CreateAsyncScope())
+        {
+            IServiceProvider sp = scope.ServiceProvider;
+            MediatR.ISender sender = sp.GetRequiredService<MediatR.ISender>();
+            await sender.Send(new Borc.DataMapper.Application.Templates.CreateTemplate.CreateTemplateCommand(null, "قالب داشبورد", null));
+            await sender.Send(new Borc.DataMapper.Application.DataSources.CreateDataSource.CreateDataSourceCommand(
+                null, "منبع داشبورد", Borc.DataMapper.Domain.DataSources.DataSourceType.StaticList, ItemsText: "A | الف"));
+
+            var users = sp.GetRequiredService<Borc.Users.Services.IUserAdministration>();
+            IRoleAdministration roles = sp.GetRequiredService<IRoleAdministration>();
+            IAssignmentAdministration assignments = sp.GetRequiredService<IAssignmentAdministration>();
+            var options = await assignments.GetResourceOptionsAsync();
+            await users.CreateAsync(new Borc.Users.Services.UserInput("dash-plain", "کاربر ساده", null, false, "Secret123"));
+            long designer = await users.CreateAsync(new Borc.Users.Services.UserInput("dash-designer", "طراح", null, false, "Secret123"));
+            int role = await roles.CreateRoleAsync(new RoleInput { Name = "Dash-designer", IsActive = true });
+            await roles.SetPermissionsAsync(role, new[] { "Mapper.Templates", "Mapper.DataSources" }
+                .Select(key => new PermissionChange(options.Single(r => r.Key == key).Id, WellKnownActions.View, PermissionEffect.Allow)).ToList());
+            await assignments.AddUserRoleAsync(designer.ToString(System.Globalization.CultureInfo.InvariantCulture), new UserRoleInput { RoleId = role });
+        }
+
+        // no permission on templates or data sources: neither is listed, nor in the activity
+        string mine = WebUtility.HtmlDecode(await (await (await app.SignInAsync("dash-plain", "Secret123")).GetAsync("/")).Content.ReadAsStringAsync());
+        Assert.DoesNotContain("قالب داشبورد", mine);
+        Assert.DoesNotContain("منبع داشبورد", mine);
+        Assert.DoesNotContain(">منابع داده</div>", mine); // the data sources card is not there at all
+
+        string theirs = WebUtility.HtmlDecode(await (await (await app.SignInAsync("dash-designer", "Secret123")).GetAsync("/")).Content.ReadAsStringAsync());
+        Assert.Contains("قالب داشبورد", theirs);
+        Assert.Contains("منبع داشبورد", theirs);
+    }
+
     [GeneratedRegex("href=\"(/[^\"#]*)\"")]
     private static partial Regex Href();
 }

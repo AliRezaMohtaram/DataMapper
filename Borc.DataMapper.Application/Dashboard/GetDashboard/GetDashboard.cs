@@ -1,6 +1,7 @@
 using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Application.Imports.ListImportBatches;
+using Borc.DataMapper.Application.Templates.Entry;
 using Borc.DataMapper.Domain.DataSources;
 using Borc.DataMapper.Domain.Imports;
 using Borc.DataMapper.Domain.Templates;
@@ -9,12 +10,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Borc.DataMapper.Application.Dashboard.GetDashboard;
 
-/// <summary>داده‌های صفحه داشبورد: شاخص‌ها، ایمپورت‌های اخیر، قالب‌های پرکاربرد و منابع داده.</summary>
+/// <summary>
+/// داده‌های صفحه داشبورد: شاخص‌ها، ایمپورت‌های اخیر، قالب‌های پرکاربرد و منابع داده — به اندازهٔ دسترسی کاربر
+/// (رکوردها و ایمپورت‌ها را فیلتر محدودهٔ داده محدود می‌کند؛ قالب‌ها و منابع داده را <see cref="Access"/>).
+/// </summary>
 public sealed record GetDashboardQuery(
+    DashboardAccess Access,
     int RecentImports = 6,
     int TopTemplates = 5,
     int RecentDataSources = 5
 ) : IRequest<Result<DashboardDto>>;
+
+/// <summary>
+/// What the user may open (Acl permissions, decided by the web host).
+/// AllTemplates: View on templates — every template; otherwise only the templates the user may enter data for or has
+/// visible records of. DataSources: View on data sources — otherwise none are listed.
+/// </summary>
+public sealed record DashboardAccess(bool AllTemplates, bool DataSources)
+{
+    public static DashboardAccess Everything { get; } = new(true, true);
+}
 
 public sealed record DashboardDto(
     DashboardKpis Kpis,
@@ -62,19 +77,22 @@ public sealed record DashboardDataSourceDto(
 public sealed class GetDashboardHandler : IRequestHandler<GetDashboardQuery, Result<DashboardDto>>
 {
     private readonly IAppDbContext _db;
+    private readonly ITemplateEntryPolicy _entry;
 
-    public GetDashboardHandler(IAppDbContext db)
+    public GetDashboardHandler(IAppDbContext db, ITemplateEntryPolicy entry)
     {
         _db = db;
+        _entry = entry;
     }
 
     public async Task<Result<DashboardDto>> Handle(GetDashboardQuery request, CancellationToken cancellationToken)
     {
-        var kpis = await GetKpisAsync(cancellationToken);
+        var templateIds = request.Access.AllTemplates ? null : await VisibleTemplateIdsAsync(cancellationToken);
+        var kpis = await GetKpisAsync(templateIds, cancellationToken);
         var imports = await GetRecentImportsAsync(request.RecentImports, cancellationToken);
-        var templates = await GetTopTemplatesAsync(request.TopTemplates, cancellationToken);
+        var templates = await GetTopTemplatesAsync(request.TopTemplates, templateIds, cancellationToken);
 
-        var dataSources = await _db.DataSources.AsNoTracking()
+        var dataSources = !request.Access.DataSources ? [] : await _db.DataSources.AsNoTracking()
             .OrderByDescending(d => d.UpdatedAt ?? d.CreatedAt)
             .Take(request.RecentDataSources)
             .Select(d => new DashboardDataSourceDto(
@@ -90,9 +108,22 @@ public sealed class GetDashboardHandler : IRequestHandler<GetDashboardQuery, Res
         return Result<DashboardDto>.Ok(new DashboardDto(kpis, imports, templates, dataSources));
     }
 
-    private async Task<DashboardKpis> GetKpisAsync(CancellationToken ct)
+    /// <summary>Without View on templates: the ones the user may enter data for, and the ones with records they see.</summary>
+    private async Task<IReadOnlySet<long>> VisibleTemplateIdsAsync(CancellationToken ct)
     {
-        var templateStatuses = await _db.Templates.AsNoTracking()
+        var allowed = await _entry.AllowedTemplateIdsAsync(ct);
+        if (allowed is null)
+            return (await _db.Templates.AsNoTracking().Select(t => t.Id).ToListAsync(ct)).ToHashSet();
+        var withRecords = await _db.DataRecords.AsNoTracking().Select(r => r.TemplateId).Distinct().ToListAsync(ct);
+        return allowed.Concat(withRecords).ToHashSet();
+    }
+
+    private IQueryable<Template> Templates(IReadOnlySet<long>? ids) =>
+        ids is null ? _db.Templates.AsNoTracking() : _db.Templates.AsNoTracking().Where(t => ids.Contains(t.Id));
+
+    private async Task<DashboardKpis> GetKpisAsync(IReadOnlySet<long>? templateIds, CancellationToken ct)
+    {
+        var templateStatuses = await Templates(templateIds)
             .GroupBy(t => t.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToListAsync(ct);
@@ -153,9 +184,9 @@ public sealed class GetDashboardHandler : IRequestHandler<GetDashboardQuery, Res
         .Take(take)
         .ToListAsync(ct);
 
-    private async Task<List<DashboardTemplateDto>> GetTopTemplatesAsync(int take, CancellationToken ct)
+    private async Task<List<DashboardTemplateDto>> GetTopTemplatesAsync(int take, IReadOnlySet<long>? visibleIds, CancellationToken ct)
     {
-        var templates = await _db.Templates.AsNoTracking()
+        var templates = await Templates(visibleIds)
             .Select(t => new
             {
                 t.Id,

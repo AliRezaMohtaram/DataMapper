@@ -52,7 +52,12 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
 - Controllers: `[RequirePermission]` — class = View; Create/Edit/Delete actions as named; Approve = publish/archive a
   template version, commit an import; template fields/layouts and new versions = Edit on Templates; DataSources has no
   class-level check so `Options` (used by record forms) only needs sign-in; `DataRecords.Save` checks Create or Edit in code.
-  The dashboard is open to every signed-in user (landing page).
+  The dashboard is open to every signed-in user (landing page). Its cards follow the user's permissions (user request):
+  `DashboardController` reads Acl (`DashboardRights`) and sends `GetDashboardQuery(DashboardAccess)` — templates card and
+  template KPIs: every template with View on `Mapper.Templates`, else only the templates the user may enter data for
+  (`ITemplateEntryPolicy`) or has visible records of (card hidden when none); data sources card only with View on
+  `Mapper.DataSources`; the activity feed shows template / data-source / import events only with View on each page.
+  Records and imports already follow the data scope (EF filters). Test: `AccessLinksTests.The_dashboard_lists_only_...`.
 - Views: links/forms to protected actions carry `acl-res`/`acl-act` (hidden when denied); `_Layout` filters the menu
   with `IAccessService` (UI hiding is cosmetic; the controllers enforce).
 - `MapperAccessBootstrapper` (first run only): role "مدیر Mapper" with every action on `Mapper`, given to
