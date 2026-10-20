@@ -8,7 +8,11 @@
 - Dates in the UI: Jalali calendar on every date text box (user request) — MX hook `input[data-jdate]` in mx.js/mx.css
   (wrapper `.jdate` + calendar button, one shared popup `.jdate-pop`, focus stays in the input: arrows/PageUp/PageDown/Enter/
   Escape; `="latin"` writes Latin digits; `MX.jdate(input)` for script-built inputs). Used by OrgChart 0.2.3, Acl 0.5.3 and
-  MReporter 0.1.5+; the record form keeps its own `jalali-picker.js`.
+  MReporter 0.1.5+. The record form uses it too (2026-10-20, user: "like MProcess"): `jalali-picker.js` keeps
+  `buildJalaliPicker(field, opts)` (wrap `.jdate-field` with `data-key`, `.value` in ISO yyyy-MM-dd[THH:mm], Persian
+  digits shown) but builds MX inputs — `input[data-jdate]` and, for date-time, `input[data-jtime]`; the old jp-* popup
+  and its theme.css rules are gone. mx.js/mx.css were brought in from MProcess (a superset: time picker `data-jtime`,
+  searchable select `data-pick`, «liquid-glass» preset).
 - Desktop only (user decision): mobile/narrow layouts are not required; do not check or fix them.
 - Build: `dotnet build Mapper.sln`. Tests: `dotnet test Mapper.Tests` (cloud container: `DOTNET_ROLL_FORWARD=Major`).
 

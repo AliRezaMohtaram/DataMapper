@@ -1977,96 +1977,14 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); transit
 .switch > input:focus-visible ~ .slider { box-shadow: 0 0 0 3px rgb(var(--sel) / .25); }
 
 /* ============================================================
-   JALALI DATE PICKER
+   DATE / DATE-TIME FIELDS OF THE RECORD FORM (jalali-picker.js on MX's input[data-jdate] / input[data-jtime];
+   the calendar and the clock popups are MX's own: .jdate-pop in mx.css)
    ============================================================ */
-.jdate-wrap {
-    position: relative;
-    display: flex;
-    align-items: stretch;
-    gap: 6px;
-    width: 100%;
-}
-.jdate-wrap .jdate-visible {
-    flex: 1;
-    min-width: 0;
-    direction: ltr;
-    text-align: center;
-    cursor: pointer;
-    padding-inline: 14px;
-    font-family: var(--mono);
-    letter-spacing: .04em;
-}
-.jdate-wrap .jdate-time {
-    width: auto;
-    min-width: 96px;
-    flex: none;
-    direction: ltr;
-    text-align: center;
-    font-family: var(--mono);
-}
-.jp-popup {
-    position: absolute;
-    top: calc(100% + 6px);
-    inset-inline-start: 0;
-    z-index: 60;
-    background: var(--surface-2);
-    border: 1px solid var(--line-strong);
-    border-radius: 12px;
-    padding: 12px;
-    box-shadow: 0 24px 48px -18px rgba(0,0,0,.7);
-    min-width: 268px;
-    direction: rtl;
-    animation: fadeUpIn .18s ease;
-}
-.jp-popup.hidden { display: none; }
-.jp-head {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 10px; gap: 8px;
-}
-.jp-head button {
-    background: transparent; border: 1px solid var(--line);
-    color: var(--muted); width: 28px; height: 28px;
-    border-radius: 8px; cursor: pointer; font-size: 14px;
-    display: grid; place-items: center;
-}
-.jp-head button:hover { color: var(--primary); border-color: var(--primary); }
-.jp-title { font-weight: 600; font-size: 13.5px; color: var(--text); }
-.jp-weekdays, .jp-days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-}
-.jp-weekdays { margin-bottom: 4px; }
-.jp-weekdays span {
-    text-align: center; font-size: 11px;
-    color: var(--faint); padding: 4px 0;
-}
-.jp-days button {
-    aspect-ratio: 1;
-    border: 0; background: transparent;
-    color: var(--text); border-radius: 6px;
-    cursor: pointer; font-size: 12px;
-    font-family: inherit;
-}
-.jp-days button:hover { background: rgb(var(--sel) / .12); }
-.jp-days button.other { color: var(--faint); opacity: .55; }
-.jp-days button.today { border: 1px solid rgb(var(--sel) / .55); }
-.jp-days button.selected {
-    background: rgb(var(--sel) / .85);
-    color: var(--text-inverse);
-    font-weight: 700;
-}
-.jp-foot {
-    display: flex; justify-content: space-between;
-    margin-top: 10px; padding-top: 8px;
-    border-top: 1px solid var(--line);
-}
-.jp-foot button {
-    background: transparent; border: 0;
-    color: var(--primary); font-size: 12px;
-    cursor: pointer; padding: 4px 10px; border-radius: 6px;
-}
-.jp-foot button:hover { background: rgb(var(--sel) / .1); }
+.jdate-field { display: flex; align-items: stretch; gap: 6px; width: 100%; min-width: 0; }
+.jdate-field > .jdate { flex: 1; min-width: 0; }
+.jdate-field.with-time > .jdate:last-child { flex: 0 0 7.5rem; }
+.jdate-field .input { font-family: var(--mono); letter-spacing: .04em; }
+.lf-field .jdate-field.has-error { border-color: transparent !important; box-shadow: none !important; } /* the inputs inside show the error */
 
 /* ============================================================
    SEARCHABLE COMBOBOX (Dynamic Data)
@@ -2214,7 +2132,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); transit
 .has-error input,
 .has-error select,
 .has-error textarea,
-.has-error .jdate-visible,
+.has-error .jdate-field .input,
 .has-error .jdate-time,
 .has-error .combo-visible {
     border-color: var(--danger) !important;
@@ -2223,7 +2141,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); transit
 }
 
 .has-error .combo-visible:focus,
-.has-error .jdate-visible:focus {
+.has-error .jdate-field .input:focus {
     border-color: var(--danger) !important;
     box-shadow: 0 0 0 3px var(--danger-soft) !important;
 }
@@ -2239,7 +2157,7 @@ body { background:var(--bg); color:var(--text); font-family:var(--sans); transit
 .lf-field .has-error input,
 .lf-field .has-error select,
 .lf-field .has-error textarea,
-.lf-field .has-error .jdate-visible,
+.lf-field .has-error .jdate-field .input,
 .lf-field .has-error .combo-visible {
     border-color: rgb(220, 7, 7) !important;
     box-shadow: 0 0 0 3px var(--danger-soft) !important;

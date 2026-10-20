@@ -1,7 +1,6 @@
-/* jalali-picker.js — تقویم جلالی برای فیلدهای تاریخ و تاریخ‌وساعت (برگرفته از script.js نمونه)
-   توابع سراسری: Jalali, buildJalaliPicker(field, opts)
-   مقدار داخلی کنترل به‌صورت ISO میلادی (yyyy-MM-dd یا yyyy-MM-ddTHH:mm) است؛ کاربر تاریخ شمسی می‌بیند.
-   استایل‌ها (.jdate-wrap, .jp-popup, ...) در theme.css نمونه هستند. */
+/* jalali-picker.js — کنترل تاریخ و تاریخ‌وساعت فرم ثبت رکورد (توابع سراسری: Jalali, buildJalaliPicker(field, opts))
+   مقدار کنترل ISO میلادی است و کاربر تاریخ شمسی می‌بیند. خودِ تقویم و ساعت از MX است (mx.js: input[data-jdate],
+   input[data-jtime])؛ تقویم قدیمی (jp-*) کنار گذاشته شد. */
 const Jalali = (() => {
     const div = (a, b) => ~~(a / b);
     const mod = (a, b) => a - ~~(a / b) * b;
@@ -70,190 +69,89 @@ const Jalali = (() => {
 const JM_NAMES = ["فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"];
 
 /* ================================================================
-   سازندهٔ کنترل تقویم جلالی — مقدار داخلی به‌صورت ISO میلادی ذخیره می‌شود
-   (سازگار با Oracle DATE / TIMESTAMP)
+   سازندهٔ کنترل تاریخ (و ساعت) فرم ثبت رکورد — روی تقویم MX (همان تقویم MProcess)
+   - کادر تاریخ input[data-jdate] است: تایپ مستقیم (۱۴۰۵/۰۷/۲۴ یا 1405/7/24)، دکمهٔ تقویم، کلیدهای جهت،
+     PageUp/PageDown، Enter، Escape؛ تاریخ‌وساعت یک کادر ساعت input[data-jtime] هم کنارش دارد.
+   - مقدار کنترل (wrap.value) مثل قبل ISO میلادی است: yyyy-MM-dd یا yyyy-MM-ddTHH:mm (سازگار با Oracle DATE /
+     TIMESTAMP)؛ متنی که تاریخ درستی نیست همان‌طور برمی‌گردد تا اعتبارسنجی خطا بدهد.
    ================================================================ */
 function buildJalaliPicker(field, opts = {}) {
+    const two = n => String(n).padStart(2, "0");
+    const latin = s => String(s ?? "").replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).trim();
+
     const wrap = document.createElement("div");
-    wrap.className = "jdate-wrap lf-control";
+    wrap.className = "jdate-field lf-control" + (opts.withTime ? " with-time" : "");
     wrap.dataset.key = field.key;
     if (opts.required) wrap.dataset.req = "1";
 
-    const visible = document.createElement("input");
-    visible.type = "text";
-    visible.className = "jdate-visible";
-    visible.placeholder = opts.placeholder || "۱۴۰۳/۰۷/۰۸";
-    visible.readOnly = true;
-    visible.autocomplete = "off";
+    const date = document.createElement("input");
+    date.type = "text";
+    date.className = "input ltr";
+    date.dataset.jdate = "";
+    date.inputMode = "numeric";
+    date.autocomplete = "off";
+    date.placeholder = opts.placeholder || "۱۴۰۵/۰۱/۰۱";
+    date.setAttribute("aria-label", field.label || field.title || field.key);
+    wrap.appendChild(date);
 
-    const hidden = document.createElement("input");
-    hidden.type = "hidden";
-
-    let timeInput = null;
+    let time = null;
     if (opts.withTime) {
-        timeInput = document.createElement("input");
-        timeInput.type = "time";
-        timeInput.className = "jdate-time";
+        time = document.createElement("input");
+        time.type = "text";
+        time.className = "input ltr nums";
+        time.dataset.jtime = "";
+        time.inputMode = "numeric";
+        time.autocomplete = "off";
+        time.placeholder = "08:00";
+        time.setAttribute("aria-label", "ساعت");
+        wrap.appendChild(time);
     }
 
-    const popup = document.createElement("div");
-    popup.className = "jp-popup hidden";
+    /** Jalali text (1405/07/24, Persian digits) → ISO Gregorian, or null. */
+    function toIso(text) {
+        const m = latin(text).match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+        if (!m) return null;
+        const jy = +m[1], jm = +m[2], jd = +m[3];
+        if (jy >= 1700) return `${jy}-${two(jm)}-${two(jd)}`; // already Gregorian
+        if (!Jalali.isValid(jy, jm, jd)) return null;
+        const g = Jalali.toGregorian(jy, jm, jd);
+        return `${g.gy}-${two(g.gm)}-${two(g.gd)}`;
+    }
 
-    let currentJ = { jy: 1403, jm: 7, jd: 1 };
-
-    function refreshVisible() {
-        if (!hidden.value) { visible.value = ""; return; }
-        const m = hidden.value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-        if (!m) { visible.value = hidden.value; return; }
+    function toJalali(iso) {
+        const m = String(iso ?? "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!m) return String(iso ?? "");
         try {
             const j = Jalali.toJalaali(+m[1], +m[2], +m[3]);
-            visible.value = `${j.jy}/${String(j.jm).padStart(2, "0")}/${String(j.jd).padStart(2, "0")}`;
-            currentJ = j;
-        } catch (_) { visible.value = hidden.value; }
+            return `${j.jy}/${two(j.jm)}/${two(j.jd)}`.replace(/\d/g, d => "۰۱۲۳۴۵۶۷۸۹"[d]); // as MX's calendar writes it
+        } catch (_) { return String(iso); }
     }
 
     Object.defineProperty(wrap, "value", {
-        get() { return hidden.value; },
+        get() {
+            const text = date.value.trim();
+            if (!text) return "";
+            const iso = toIso(text);
+            if (!iso) return text; // not a date: validation reports it
+            const t = time ? latin(time.value).match(/^(\d{1,2})[:.](\d{2})$/) : null;
+            return t ? `${iso}T${two(+t[1])}:${t[2]}` : iso;
+        },
         set(v) {
-            hidden.value = v == null ? "" : String(v);
-            if (timeInput) {
-                const tm = hidden.value.match(/T(\d{2}:\d{2})/);
-                timeInput.value = tm ? tm[1] : "";
+            const text = v == null ? "" : String(v);
+            date.value = text ? toJalali(text) : "";
+            if (time) {
+                const tm = text.match(/T(\d{2}:\d{2})/);
+                time.value = tm ? tm[1] : "";
             }
-            refreshVisible();
         }
     });
     Object.defineProperty(wrap, "placeholder", {
-        get() { return visible.placeholder; },
-        set(v) { visible.placeholder = v; }
+        get() { return date.placeholder; },
+        set(v) { if (v) date.placeholder = v; }
     });
 
-    function commit(g, timeStr) {
-        let iso = `${g.gy}-${String(g.gm).padStart(2, "0")}-${String(g.gd).padStart(2, "0")}`;
-        if (timeInput && timeStr) iso += "T" + timeStr;
-        hidden.value = iso;
-        refreshVisible();
-        wrap.dispatchEvent(new Event("change", { bubbles: true }));
-        wrap.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-
-    function renderDays() {
-        const { jy, jm } = currentJ;
-        const monthLen = Jalali.monthLength(jy, jm);
-        const firstG = Jalali.toGregorian(jy, jm, 1);
-        const firstDate = new Date(firstG.gy, firstG.gm - 1, firstG.gd);
-        const startCol = (firstDate.getDay() + 1) % 7; // شنبه = 0
-
-        const now = new Date();
-        const todayJ = Jalali.toJalaali(now.getFullYear(), now.getMonth() + 1, now.getDate());
-
-        let selJ = null;
-        if (hidden.value) {
-            const m = hidden.value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-            if (m) try { selJ = Jalali.toJalaali(+m[1], +m[2], +m[3]); } catch (_) {}
-        }
-
-        let html = "";
-        const pm = jm === 1 ? 12 : jm - 1, py = jm === 1 ? jy - 1 : jy;
-        const pl = Jalali.monthLength(py, pm);
-        for (let i = 0; i < startCol; i++) {
-            const d = pl - startCol + 1 + i;
-            html += `<button type="button" class="other" data-jy="${py}" data-jm="${pm}" data-jd="${d}">${d}</button>`;
-        }
-        for (let d = 1; d <= monthLen; d++) {
-            const cls = [
-                selJ && selJ.jy === jy && selJ.jm === jm && selJ.jd === d ? "selected" : "",
-                todayJ.jy === jy && todayJ.jm === jm && todayJ.jd === d ? "today" : ""
-            ].filter(Boolean).join(" ");
-            html += `<button type="button" class="${cls}" data-jy="${jy}" data-jm="${jm}" data-jd="${d}">${d}</button>`;
-        }
-        const rem = (7 - ((startCol + monthLen) % 7)) % 7;
-        const nm = jm === 12 ? 1 : jm + 1, ny = jm === 12 ? jy + 1 : jy;
-        for (let d = 1; d <= rem; d++) {
-            html += `<button type="button" class="other" data-jy="${ny}" data-jm="${nm}" data-jd="${d}">${d}</button>`;
-        }
-
-        popup.innerHTML = `
-            <div class="jp-head">
-                <button type="button" data-nav="prev">‹</button>
-                <span class="jp-title">${JM_NAMES[jm - 1]} ${jy}</span>
-                <button type="button" data-nav="next">›</button>
-            </div>
-            <div class="jp-weekdays"><span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span></div>
-            <div class="jp-days">${html}</div>
-            <div class="jp-foot">
-                <button type="button" data-act="today">امروز</button>
-                <button type="button" data-act="clear">پاک کردن</button>
-            </div>`;
-
-        popup.querySelectorAll("[data-nav]").forEach(b => b.onclick = e => {
-            e.stopPropagation();
-            const dir = b.dataset.nav === "next" ? 1 : -1;
-            let nm2 = currentJ.jm + dir, ny2 = currentJ.jy;
-            if (nm2 < 1) { nm2 = 12; ny2--; }
-            if (nm2 > 12) { nm2 = 1; ny2++; }
-            currentJ = { jy: ny2, jm: nm2, jd: 1 };
-            renderDays();
-        });
-        popup.querySelectorAll(".jp-days button").forEach(b => b.onclick = e => {
-            e.stopPropagation();
-            const g = Jalali.toGregorian(+b.dataset.jy, +b.dataset.jm, +b.dataset.jd);
-            commit(g, timeInput ? timeInput.value : null);
-            close();
-        });
-        popup.querySelector('[data-act="today"]').onclick = e => {
-            e.stopPropagation();
-            const d = new Date();
-            commit({ gy: d.getFullYear(), gm: d.getMonth() + 1, gd: d.getDate() }, timeInput ? (timeInput.value || "00:00") : null);
-            close();
-        };
-        popup.querySelector('[data-act="clear"]').onclick = e => {
-            e.stopPropagation();
-            hidden.value = "";
-            if (timeInput) timeInput.value = "";
-            refreshVisible();
-            close();
-            wrap.dispatchEvent(new Event("change", { bubbles: true }));
-            wrap.dispatchEvent(new Event("input", { bubbles: true }));
-        };
-    }
-
-    function open() {
-        if (hidden.value) {
-            const m = hidden.value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-            if (m) try { currentJ = Jalali.toJalaali(+m[1], +m[2], +m[3]); } catch (_) {}
-        } else {
-            const d = new Date();
-            currentJ = Jalali.toJalaali(d.getFullYear(), d.getMonth() + 1, d.getDate());
-        }
-        renderDays();
-        popup.classList.remove("hidden");
-    }
-    function close() { popup.classList.add("hidden"); }
-
-    visible.addEventListener("click", open);
-    if (timeInput) timeInput.addEventListener("change", () => {
-        if (!hidden.value) return;
-        const m = hidden.value.match(/^(\d{4}-\d{2}-\d{2})/);
-        if (m) {
-            hidden.value = m[1] + (timeInput.value ? "T" + timeInput.value : "");
-            wrap.dispatchEvent(new Event("change", { bubbles: true }));
-            wrap.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-    });
-    // بستن با کلیک بیرون (فقط یک بار در سطح document ثبت می‌شود)
-    if (!buildJalaliPicker._docBound) {
-        buildJalaliPicker._docBound = true;
-        document.addEventListener("mousedown", e => {
-            document.querySelectorAll(".jdate-wrap").forEach(w => {
-                if (!w.contains(e.target)) w.querySelector(".jp-popup")?.classList.add("hidden");
-            });
-        });
-    }
-
-    wrap.appendChild(visible);
-    if (timeInput) wrap.appendChild(timeInput);
-    wrap.appendChild(hidden);
-    wrap.appendChild(popup);
+    // MX wraps an input in its calendar/clock (needs a parent: the wrap); later forms are enhanced by MX itself too.
+    if (window.MX?.jdate) MX.jdate(date);
+    if (time && window.MX?.jtime) MX.jtime(time);
     return wrap;
 }
