@@ -63,10 +63,9 @@
         })();
     </script>
 
-    @* theme.css: کامپوننت‌های Viewهای قدیمی · mx.css: سیستم طراحی جدید · mx-legacy.css: پل بین این دو *@
-    <link rel="stylesheet" href="~/css/theme.css" asp-append-version="true" />
+    @* mx.css: the design system; record-form.css: the form a template layout draws (record entry, layout designer) *@
     <link rel="stylesheet" href="~/css/mx.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/mx-legacy.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/record-form.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>

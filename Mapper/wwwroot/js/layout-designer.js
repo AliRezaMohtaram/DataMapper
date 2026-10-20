@@ -92,7 +92,7 @@ function validateFieldValue(field, value) {
     function buildControl(field, block) {
         /* ۰) فیلد متصل به منبع دادهٔ «لیست ثابت» → لیست کشویی (field.dataOptions = [{value, label}]) */
         if (Array.isArray(field.dataOptions) && block.widget !== "radio") {
-            const sel = el("select", "lf-control", `<option value="">— انتخاب کنید —</option>` +
+            const sel = el("select", "select lf-control", `<option value="">— انتخاب کنید —</option>` +
                 field.dataOptions.map(o => `<option value="${esc(o.value)}">${esc(o.label || o.value)}</option>`).join(""));
             sel.dataset.key = field.key;
             if (block.required) sel.dataset.req = "1";
@@ -120,9 +120,10 @@ function validateFieldValue(field, value) {
         /* ۳) بقیهٔ حالت‌ها — بدون تغییر */
         const w = widgetOf(field, block);
         let c;
-        if (w === "textarea") { c = el("textarea"); c.rows = 4; }
+        // MX controls (input / select / textarea); record-form.css only lays them out
+        if (w === "textarea") { c = el("textarea", "textarea"); c.rows = 4; }
         else if (w === "select") {
-            c = el("select", null, `<option value="">— انتخاب کنید —</option>` +
+            c = el("select", "select", `<option value="">— انتخاب کنید —</option>` +
                 (block.options || []).map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join(""));
         } else if (w === "radio") {
             c = el("div", "lf-radio");
@@ -135,7 +136,7 @@ function validateFieldValue(field, value) {
                 set(v) { c.querySelectorAll("input").forEach(r => { r.checked = r.value === String(v); }); }
             });
         } else {
-            c = el("input");
+            c = el("input", w === "number" ? "input ltr nums" : "input");
             c.type = { number: "number", date: "date", datetime: "datetime-local" }[w] || "text";
             if (w === "number") c.step = dbTypeOf(field) === "INTEGER" ? "1" : "any";
         }

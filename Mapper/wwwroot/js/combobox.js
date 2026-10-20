@@ -17,7 +17,7 @@
 
         const visible = document.createElement("input");
         visible.type = "text";
-        visible.className = "combo-visible";
+        visible.className = "input combo-visible";
         visible.placeholder = opts.placeholder || "— جستجو و انتخاب —";
         visible.autocomplete = "off";
         visible.spellcheck = false;

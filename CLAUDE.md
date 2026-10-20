@@ -3,7 +3,10 @@
 - Talk to the user in Persian; code, identifiers, comments and commit messages in English.
 - .NET 9, EF Core 9 (SQL Server). Mapper's own schema changes are hand-written scripts in `Scripts/`.
 - UI: MX design system (`Mapper/wwwroot/css/mx.css`, `js/mx.js`); modal-first forms (`data-modal`, `X-MX-Modal`,
-  `ModalResults`). Do not build on `theme.css` / `mx-legacy.css`.
+  `ModalResults`). `theme.css` and `mx-legacy.css` were removed (2026-10-20): the form a template layout draws (lf-*),
+  the data-source combobox (combo-*) and the record form's date fields are styled by `css/record-form.css` (MX tokens;
+  linked by `_Layout`), and their controls carry MX classes (`input`/`select`/`textarea`, set in layout-designer.js and
+  combobox.js). `ui.js` only forwards to MX (toast, confirm modal).
 - The user runs browser tests; Claude runs automated tests and writes manual checklists under `docs/`.
 - Dates in the UI: Jalali calendar on every date text box (user request) — MX hook `input[data-jdate]` in mx.js/mx.css
   (wrapper `.jdate` + calendar button, one shared popup `.jdate-pop`, focus stays in the input: arrows/PageUp/PageDown/Enter/
@@ -11,7 +14,8 @@
   MReporter 0.1.5+. The record form uses it too (2026-10-20, user: "like MProcess"): `jalali-picker.js` keeps
   `buildJalaliPicker(field, opts)` (wrap `.jdate-field` with `data-key`, `.value` in ISO yyyy-MM-dd[THH:mm], Persian
   digits shown) but builds MX inputs — `input[data-jdate]` and, for date-time, `input[data-jtime]`; the old jp-* popup
-  and its theme.css rules are gone. mx.js/mx.css were brought in from MProcess (a superset: time picker `data-jtime`,
+  and its theme.css rules are gone. The record page sends each field's `dataType`; record-form.js uses it for date /
+  datetime only (before, no type reached the form, so dates were plain text boxes). mx.js/mx.css were brought in from MProcess (a superset: time picker `data-jtime`,
   searchable select `data-pick`, «liquid-glass» preset).
 - Desktop only (user decision): mobile/narrow layouts are not required; do not check or fix them.
 - Build: `dotnet build Mapper.sln`. Tests: `dotnet test Mapper.Tests` (cloud container: `DOTNET_ROLL_FORWARD=Major`).
@@ -134,9 +138,8 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   The form layout designer (`TemplateLayouts/Designer`) is on MX too (user request): its `ld-*` rules moved from theme.css
   to `wwwroot/css/layout-designer.css` (MX tokens, linked by the view), the page is one MX bar (title, version badge,
   save state as an MX badge, actions, back), and `layout-designer.js` writes MX controls (btn btn-*, field/label/input/
-  select/textarea, `toggle` switch). theme.css still styles the form a layout draws (`lf-*`), the combobox, the Jalali
-  picker and the old modals/toasts used by the record form. The unused `TemplateLayouts/Detail` view was removed;
-  `wwwroot/js/layout-designer (1).js` is an unreferenced old copy.
+  select/textarea, `toggle` switch). The form a layout draws is styled by `record-form.css`. The unused `TemplateLayouts/Detail` view was removed,
+  and so were the unreferenced `font.css`, `modal.css`, `script.js`, `layout.js` and `layout-designer (1).js` (2026-10-20).
 - Every table with row actions (Mapper, Users, OrgChart, Acl, MReporter — user rule): the actions are the LAST column (left
   in RTL), its header and cells carry `col-sticky` so they stay in view while a wide table scrolls. OrgChart/Acl ship a copy
   of mx.css/mx.js for their standalone layouts (`wwwroot/mx/`): keep them in sync with Mapper's (copied for 0.2.4/0.5.4).

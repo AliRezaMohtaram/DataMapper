@@ -7,30 +7,11 @@ function escapeHtml(value) {
     return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[ch]));
 }
 
-function showToast(message, type = "info", duration = 3800) {
-    // MX toast (mx.js) when the new layout is present
-    if (window.MX) {
-        const tone = { error: "danger", danger: "danger", success: "success", warning: "warning" }[type] || "info";
-        MX.toast(message, tone);
-        return;
-    }
-    let container = $byId("toastContainer");
-    if (!container) {
-        container = document.createElement("div");
-        container.id = "toastContainer";
-        container.className = "toast-container";
-        container.setAttribute("aria-live", "polite");
-        document.body.appendChild(container);
-    }
-    const toast = document.createElement("div");
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
-    container.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add("show"));
-    setTimeout(() => {
-        toast.classList.remove("show");
-        setTimeout(() => toast.remove(), 250);
-    }, duration);
+function showToast(message, type = "info") {
+    // MX toast (mx.js is on every page)
+    const tone = { error: "danger", danger: "danger", success: "success", warning: "warning" }[type] || "info";
+    if (window.MX) MX.toast(message, tone);
+    else window.alert(message);
 }
 
 /* مودال تأیید/اطلاع روی partial «_ConfirmModal». Promise<boolean> برمی‌گرداند؛

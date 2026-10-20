@@ -44,7 +44,8 @@
         const fields = (PAGE.fields || []).map(f => ({
             key: f.key,
             label: f.label,
-            type: f.type,
+            // only dates take their type from the field (Jalali calendar, + clock for date-time); the rest as before
+            type: f.dataType === "date" || f.dataType === "datetime" ? f.dataType : f.type,
             required: f.required,
             dbType: f.dbType,
             length: f.length,

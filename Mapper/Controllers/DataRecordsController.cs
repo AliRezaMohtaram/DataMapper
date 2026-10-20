@@ -341,6 +341,8 @@ public sealed class DataRecordsController : Controller
                 key = f.Key,
                 label = f.Label,
                 //type = f.DataType.ToString().ToLowerInvariant(),
+                // date / datetime: the form draws MX's calendar (and clock) for these (record-form.js)
+                dataType = f.DataType.ToString().ToLowerInvariant(),
                 required = f.IsRequired,
                 dbType = f.DbType,
                 length = f.Length,
