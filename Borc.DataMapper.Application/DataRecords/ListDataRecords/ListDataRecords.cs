@@ -14,6 +14,8 @@ namespace Borc.DataMapper.Application.DataRecords.ListDataRecords;
 /// وگرنه نسخهٔ آخرین رکورد ثبت‌شده.
 /// RecordIds: exactly these records in this order (one page already chosen by the advanced filter); the other filters
 /// and paging are then not applied and the caller sets the total.
+/// TemplateId without TemplateVersionId: the records of every version of the template (user request: see the rows of
+/// all versions); columns = the fields of all its versions (keys are kept across versions), newest version's order first.
 /// </summary>
 public sealed record ListDataRecordsQuery(
     string? Search = null,
@@ -22,17 +24,22 @@ public sealed record ListDataRecordsQuery(
     long? ImportBatchId = null,
     int Page = 1,
     int PageSize = 20,
-    IReadOnlyList<long>? RecordIds = null
+    IReadOnlyList<long>? RecordIds = null,
+    long? TemplateId = null
 ) : IRequest<Result<DataRecordListDto>>
 {
     public const int MaxPageSize = 100;
 }
 
-/// <param name="TemplateVersionId">نسخه‌ای که نمایش داده می‌شود؛ null وقتی هنوز رکوردی نیست.</param>
+/// <param name="TemplateVersionId">نسخه‌ای که نمایش داده می‌شود؛ null وقتی هنوز رکوردی نیست یا همهٔ نسخه‌ها.</param>
+/// <param name="TemplateId">The template of the version shown (or of all versions).</param>
+/// <param name="AllVersions">The records of every version of <paramref name="TemplateId"/>.</param>
 public sealed record DataRecordListDto(
     long? TemplateVersionId,
     IReadOnlyList<RecordColumnDto> Columns,
-    PagedResult<DataRecordListItemDto> Page);
+    PagedResult<DataRecordListItemDto> Page,
+    long? TemplateId = null,
+    bool AllVersions = false);
 
 public sealed record RecordColumnDto(string Key, string Label, FieldDataType DataType);
 
@@ -69,37 +76,48 @@ public sealed class ListDataRecordsHandler
         var pageSize = Math.Clamp(request.PageSize, 1, ListDataRecordsQuery.MaxPageSize);
 
         var versionId = request.TemplateVersionId;
+        var allOf = versionId is null ? request.TemplateId : null;
 
-        if (versionId is null && request.ImportBatchId.HasValue)
+        if (allOf is null && versionId is null && request.ImportBatchId.HasValue)
             versionId = await _db.ImportBatches.AsNoTracking()
                 .Where(b => b.Id == request.ImportBatchId.Value)
                 .Select(b => (long?)b.TemplateVersionId)
                 .FirstOrDefaultAsync(cancellationToken);
 
-        versionId ??= await _db.DataRecords.AsNoTracking()
-            .OrderByDescending(r => r.CreatedAt)
-            .ThenByDescending(r => r.Id)
-            .Select(r => (long?)r.TemplateVersionId)
-            .FirstOrDefaultAsync(cancellationToken);
+        if (allOf is null)
+            versionId ??= await _db.DataRecords.AsNoTracking()
+                .OrderByDescending(r => r.CreatedAt)
+                .ThenByDescending(r => r.Id)
+                .Select(r => (long?)r.TemplateVersionId)
+                .FirstOrDefaultAsync(cancellationToken);
 
-        if (versionId is null)
+        if (versionId is null && allOf is null)
             return Result<DataRecordListDto>.Ok(new DataRecordListDto(
                 null, Array.Empty<RecordColumnDto>(),
                 new PagedResult<DataRecordListItemDto>(Array.Empty<DataRecordListItemDto>(), 1, pageSize, 0)));
 
-        var fields = await _db.TemplateFields.AsNoTracking()
-            .Where(f => f.TemplateVersionId == versionId.Value)
-            .OrderBy(f => f.SortOrder)
+        // one version's fields; for all versions every field key once, from the newest version that has it
+        var fields = (await (
+                from f in _db.TemplateFields.AsNoTracking()
+                join fv in _db.TemplateVersions on f.TemplateVersionId equals fv.Id
+                where allOf != null ? fv.TemplateId == allOf.Value : f.TemplateVersionId == versionId!.Value
+                select new { f.FieldKey, f.Label, f.DataType, f.DataSourceId, f.SortOrder, f.Id, fv.VersionNo })
+            .ToListAsync(cancellationToken))
+            .GroupBy(f => f.FieldKey, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.OrderByDescending(f => f.VersionNo).First())
+            .OrderByDescending(f => f.VersionNo)
+            .ThenBy(f => f.SortOrder)
             .ThenBy(f => f.Id)
-            .Select(f => new { f.FieldKey, f.Label, f.DataType, f.DataSourceId })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         var query =
             from r in _db.DataRecords.AsNoTracking()
             join v in _db.TemplateVersions on r.TemplateVersionId equals v.Id
             join t in _db.Templates on r.TemplateId equals t.Id
-            where r.TemplateVersionId == versionId.Value
             select new { r, v, t };
+        query = allOf is { } templateId
+            ? query.Where(x => x.r.TemplateId == templateId)
+            : query.Where(x => x.r.TemplateVersionId == versionId!.Value);
 
         var ids = request.RecordIds;
         if (ids is not null)
@@ -189,7 +207,9 @@ public sealed class ListDataRecordsHandler
             .ToList();
 
         return Result<DataRecordListDto>.Ok(new DataRecordListDto(
-            versionId, columns, new PagedResult<DataRecordListItemDto>(items, page, pageSize, total)));
+            versionId, columns, new PagedResult<DataRecordListItemDto>(items, page, pageSize, total),
+            allOf ?? await _db.TemplateVersions.AsNoTracking().Where(v => v.Id == versionId).Select(v => (long?)v.TemplateId).FirstOrDefaultAsync(cancellationToken),
+            allOf is not null));
     }
 
     private static Dictionary<string, string?> Parse(string json)

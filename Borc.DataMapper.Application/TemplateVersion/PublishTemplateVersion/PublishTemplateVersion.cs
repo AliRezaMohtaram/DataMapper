@@ -1,4 +1,4 @@
-﻿using Borc.DataMapper.Application.Abstractions.Persistence;
+using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Domain.Templates;
 using MediatR;
@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Borc.DataMapper.Application.TemplateVersions.PublishTemplateVersion;
 
 /// <summary>
-/// انتشار نسخه پیش‌نویس. همزمان نسخه منتشرشده قبلیِ همان قالب بایگانی می‌شود
-/// (هر لحظه فقط یک نسخه منتشرشده).
+/// انتشار نسخه پیش‌نویس، یا انتشار دوبارهٔ نسخهٔ بایگانی‌شده‌ای که قبلاً منتشر شده بود (برگشت سریع به نسخهٔ قبل).
+/// همزمان نسخه منتشرشده قبلیِ همان قالب بایگانی می‌شود (هر لحظه فقط یک نسخه منتشرشده).
 /// </summary>
 public sealed record PublishTemplateVersionCommand(long Id) : IRequest<Result>;
 
@@ -32,8 +32,9 @@ public sealed class PublishTemplateVersionHandler
         if (version is null)
             return Result.Failure("نسخه موردنظر پیدا نشد.");
 
-        if (version.Status != TemplateVersionStatus.Draft)
-            return Result.Failure("فقط نسخه پیش‌نویس قابل انتشار است.");
+        bool again = version.CanRepublish;
+        if (version.Status != TemplateVersionStatus.Draft && !again)
+            return Result.Failure("فقط نسخهٔ پیش‌نویس، یا نسخهٔ بایگانی‌شده‌ای که قبلاً منتشر شده، قابل انتشار است.");
 
         var hasFields = await _db.TemplateFields
             .AnyAsync(f => f.TemplateVersionId == version.Id, cancellationToken);
@@ -50,11 +51,15 @@ public sealed class PublishTemplateVersionHandler
         foreach (var p in previous)
             p.Archive();
 
-        version.Publish();
+        if (again)
+            version.Republish();
+        else
+            version.Publish();
 
         // هر دو تغییر در یک SaveChanges (یک تراکنش) ذخیره می‌شوند.
         await _db.SaveChangesAsync(cancellationToken);
 
-        return Result.Ok($"نسخه {version.VersionNo} منتشر شد.");
+        string archived = previous.Count == 0 ? "" : $"؛ نسخهٔ {string.Join("، ", previous.Select(p => p.VersionNo))} بایگانی شد";
+        return Result.Ok(again ? $"نسخه {version.VersionNo} دوباره منتشر شد{archived}." : $"نسخه {version.VersionNo} منتشر شد{archived}.");
     }
 }

@@ -1,4 +1,4 @@
-﻿using Borc.DataMapper.Domain.Common;
+using Borc.DataMapper.Domain.Common;
 using System;
 
 namespace Borc.DataMapper.Domain.Templates
@@ -51,6 +51,14 @@ namespace Borc.DataMapper.Domain.Templates
         /// گذارهای مجاز: Draft→Active/Archived، Active→Inactive/Archived، Inactive→Active/Archived.
         /// Archived پایانی است.
         /// </summary>
+        /// <summary>
+        /// New data (records, copies, imports) only for a template that is not «غیرفعال» or «بایگانی» (user decision,
+        /// 2026-10-20: deactivating a template stops data entry, as having no published version does).
+        /// </summary>
+        public bool AcceptsData => AcceptsDataIn(Status);
+
+        public static bool AcceptsDataIn(TemplateStatus status) => status is not (TemplateStatus.Inactive or TemplateStatus.Archived);
+
         public bool CanChangeStatusTo(TemplateStatus target) => (Status, target) switch
         {
             (TemplateStatus.Draft, TemplateStatus.Active) => true,

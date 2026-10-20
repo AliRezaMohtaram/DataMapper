@@ -56,7 +56,7 @@ public sealed class CreateDataRecordHandler
         // فقط اعضای واحدهای مجاز قالب؛ رکورد واحد همان سمت را می‌گیرد
         var entry = await _entry.DecideAsync(version.TemplateId, cancellationToken);
         if (!entry.Allowed)
-            return Result<SaveRecordOutcome>.Failure(TemplateEntryPolicy.DeniedMessage);
+            return Result<SaveRecordOutcome>.Failure(entry.DeniedText);
 
         var fields = await RecordDataBuilder.LoadFieldsAsync(_db, version.Id, cancellationToken);
 

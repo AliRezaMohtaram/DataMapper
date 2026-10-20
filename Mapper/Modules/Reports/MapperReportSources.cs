@@ -79,6 +79,24 @@ public sealed class MapperReportSources(BorcDataMapperDbContext db, IAccessServi
         return found is null ? null : (RecordsPrefix + found.Code, found.VersionNo);
     }
 
+    /// <summary>The records source of a template (all its versions), or null.</summary>
+    public async Task<string?> TemplateSourceAsync(long templateId, CancellationToken cancellationToken = default) =>
+        await db.Templates.AsNoTracking().Where(t => t.Id == templateId).Select(t => RecordsPrefix + t.Code).FirstOrDefaultAsync(cancellationToken);
+
+    /// <summary>The field keys of all versions of a template: each once, newest version's form order first.</summary>
+    public async Task<IReadOnlyList<string>> TemplateFieldKeysAsync(long templateId, CancellationToken cancellationToken = default) =>
+        (await (
+                from f in db.TemplateFields.AsNoTracking()
+                join v in db.TemplateVersions on f.TemplateVersionId equals v.Id
+                where v.TemplateId == templateId
+                select new { f.FieldKey, v.VersionNo, f.SortOrder, f.Id })
+            .ToListAsync(cancellationToken))
+            .GroupBy(f => f.FieldKey, StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.OrderByDescending(f => f.VersionNo).First())
+            .OrderByDescending(f => f.VersionNo).ThenBy(f => f.SortOrder).ThenBy(f => f.Id)
+            .Select(f => f.FieldKey)
+            .ToList();
+
     /// <summary>The field keys of one template version, in form order.</summary>
     public async Task<IReadOnlyList<string>> VersionFieldKeysAsync(long versionId, CancellationToken cancellationToken = default) =>
         await db.TemplateFields.AsNoTracking()

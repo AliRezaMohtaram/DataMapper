@@ -33,7 +33,7 @@ Lost admin password: `Users:Bootstrap:ResetPassword: true` (+ `Bootstrap:Passwor
 
 ## OrgChart and Acl modules
 
-From github.com/AliRezaMohtaram/organization (OrgChart 0.2.4), /Acl (0.5.4) and /MReporter (0.1.15) as NuGet packages **committed in this
+From github.com/AliRezaMohtaram/organization (OrgChart 0.2.5), /Acl (0.5.5) and /MReporter (0.1.16) as NuGet packages **committed in this
 repository** (`modules-feed/`, user's choice: a pull and a build must be enough on their machine). `nuget.config` maps
 `OrgChart.*`/`Acl.*` to that folder only — nuget.org has unrelated packages with the same names (e.g. Acl.Core 3.x).
 To ship a module change: bump its version in its `Directory.Build.props` (NuGet caches by version), run
@@ -142,7 +142,7 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   and so were the unreferenced `font.css`, `modal.css`, `script.js`, `layout.js` and `layout-designer (1).js` (2026-10-20).
 - Every table with row actions (Mapper, Users, OrgChart, Acl, MReporter — user rule): the actions are the LAST column (left
   in RTL), its header and cells carry `col-sticky` so they stay in view while a wide table scrolls. OrgChart/Acl ship a copy
-  of mx.css/mx.js for their standalone layouts (`wwwroot/mx/`): keep them in sync with Mapper's (copied for 0.2.4/0.5.4).
+  of mx.css/mx.js for their standalone layouts (`wwwroot/mx/`): keep them in sync with Mapper's (copied for 0.2.5/0.5.5).
 - Record form = MX component `record-form` (`wwwroot/js/record-form.js`) on the partial `_RecordForm` (root `.modal`):
   opened in a modal from the grid (row click via `tr[data-row-modal]`, edit/copy icons), the detail page and the list
   toolbar; `Form.cshtml` shows the same partial as a page with the recent records. It loads its dependencies itself when
@@ -164,7 +164,7 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
   the app running: seed → sign-ins → visibility per user → upload → remove → seed again.
 
 - Reporting = module MReporter (github.com/AliRezaMohtaram/MReporter, clone /home/user/mreporter; packages MReporter.Core,
-  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.15) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
+  .EFCore, .Sql, .AspNetCore, .Razor, .OrgChart (0.1.16) in `modules-feed/`, also packed by `tools/update-modules.sh`; schema `rpt` migrated at startup by
   `ModuleDatabaseMigrator`). Mapper side: `Mapper/Modules/Reports` — `MapperReportSources` (IReportSourceCatalog: one source
   per template "mapper.records:{code}" with its fields by key across versions + system columns `sys.version/unit/source/
   author/createdAt/editor/updatedAt`; default audience = template's allowed units; "mapper.imports"), `MapperReportData`
@@ -240,3 +240,33 @@ To ship a module change: bump its version in its `Directory.Build.props` (NuGet 
 - Tests: `Mapper.Tests` (WebApplicationFactory, every DbContext on its own SQLite connection, startup migrations off;
   `DataScopeTests` for the unit filter).
   Manual checklist: `docs/modules-test-checklist.md`.
+
+## 2026-10-20 (user's list)
+
+- Time picker (mx.js `data-jtime`, user: "like Material design, in our MX style"): a clock dial — large hour : minute on
+  top (click to switch), hours in two rings (1–12 outside, 13–00 inside), minutes every 5 (dragging the hand takes any
+  minute); hour → minutes → closes; keyboard as before. Same mx.js/mx.css in MProcess, OrgChart and Acl (`wwwroot/mx`).
+  The page's outside-click check ignores targets the dial replaced (`isConnected`).
+- A template «غیرفعال» or «بایگانی» takes no new data (user: as if it had no published version): `Template.AcceptsData` /
+  `AcceptsDataIn(status)`; `TemplateEntryPolicy.DecideAsync` refuses first with `InactiveMessage` (`EntryDecision.Message`,
+  `DeniedText`) — record create and import upload; `CommitImportBatch` refuses too; `GetImportLookupsQuery(ForEntry)`
+  leaves them out (`ImportVersionOption.AcceptsData/TemplateId`); the record form (new / copy) redirects with the message
+  (`RecordFormDto.TemplateAcceptsData`); the version page, its grid (copy icon) and the dashboard hide the entry links.
+  Editing existing records stays as it was. Tests: `TemplateLifecycleTests`.
+- An archived version that was published before can be published again (user: back to the previous version quickly when
+  a new one is wrong): `TemplateVersion.CanRepublish` / `Republish()`; `PublishTemplateVersionCommand` takes it and archives
+  the current one (message names it); «انتشار دوباره» on the version page. An archived draft never comes back.
+- «داده‌های ثبت‌شده» is master/detail by template (user): `ListRecordsOverviewQuery` groups by template (versions with
+  their counts, `RecordVersionCountDto`, optional `TemplateId`); a row opens `/DataRecords/Version?templateId=` = the
+  records of every version (`ListDataRecordsQuery.TemplateId`: columns = every field key of the template once, newest
+  version's order first; `DataRecordListDto.TemplateId/AllVersions`), chips «همهٔ نسخه‌ها» + each version
+  (`?templateVersionId=`), a «نسخه» column, rows of versions no longer published open their page (`EditableVersions`);
+  the advanced filter and the Excel export work for all versions too (`ListFilters` without the version condition;
+  `MapperReportSources.TemplateSourceAsync/TemplateFieldKeysAsync`; export adds «نسخه»).
+- Theme «Liquid Glass» in Mapper's theme drawer (styles came with mx.css), also in the modules' standalone layouts.
+- Module releases: Acl 0.5.5 (roles list as the other tables: card, count, whole row → permissions, icon buttons; own
+  `acl-*` icons; `tr[data-acl-href]`), OrgChart 0.2.5 (MX copy), MReporter 0.1.16 (band designer: sub-reports and
+  elements that follow the page width — see MReporter's CLAUDE.md item 23). Test: `ReportPagesTests.A_sub_report_prints_…`.
+- The old organization branch `claude/elegant-bohr-qnybnq` (merged into main) still has to be deleted on GitHub (the
+  push was not allowed from here).
+

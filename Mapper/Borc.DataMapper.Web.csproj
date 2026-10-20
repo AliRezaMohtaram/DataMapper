@@ -21,17 +21,17 @@
 	
 
 	<ItemGroup>
-		<PackageReference Include="OrgChart.AspNetCore" Version="0.2.4" />
-		<PackageReference Include="OrgChart.EFCore" Version="0.2.4" />
-		<PackageReference Include="OrgChart.Razor" Version="0.2.4" />
-		<PackageReference Include="OrgChart.Acl" Version="0.2.4" />
-		<PackageReference Include="Acl.AspNetCore" Version="0.5.4" />
-		<PackageReference Include="Acl.EFCore" Version="0.5.4" />
-		<PackageReference Include="Acl.Razor" Version="0.5.4" />
-		<PackageReference Include="MReporter.EFCore" Version="0.1.15" />
-		<PackageReference Include="MReporter.Sql" Version="0.1.15" />
-		<PackageReference Include="MReporter.Razor" Version="0.1.15" />
-		<PackageReference Include="MReporter.OrgChart" Version="0.1.15" />
+		<PackageReference Include="OrgChart.AspNetCore" Version="0.2.5" />
+		<PackageReference Include="OrgChart.EFCore" Version="0.2.5" />
+		<PackageReference Include="OrgChart.Razor" Version="0.2.5" />
+		<PackageReference Include="OrgChart.Acl" Version="0.2.5" />
+		<PackageReference Include="Acl.AspNetCore" Version="0.5.5" />
+		<PackageReference Include="Acl.EFCore" Version="0.5.5" />
+		<PackageReference Include="Acl.Razor" Version="0.5.5" />
+		<PackageReference Include="MReporter.EFCore" Version="0.1.16" />
+		<PackageReference Include="MReporter.Sql" Version="0.1.16" />
+		<PackageReference Include="MReporter.Razor" Version="0.1.16" />
+		<PackageReference Include="MReporter.OrgChart" Version="0.1.16" />
 	</ItemGroup>
 
 	<ItemGroup>

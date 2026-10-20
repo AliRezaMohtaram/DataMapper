@@ -18,6 +18,10 @@
         <thead>
             <tr>
                 <th>#</th>
+                @if (Model.ShowVersion)
+                {
+                    <th>نسخه</th>
+                }
                 @foreach (var c in Model.Columns)
                 {
                     <th>@c.Label</th>
@@ -34,9 +38,15 @@
         <tbody>
             @foreach (var r in Model.Items)
             {
-                <tr data-row-modal="@(canEdit ? Url.Action("Edit", "DataRecords", new { id = r.Id }) : null)"
-                    data-row-href="@(canEdit ? null : Url.Action("Detail", "DataRecords", new { id = r.Id }))">
+                // a record of a version that is no longer published opens its page (it cannot be edited)
+                bool editable = canEdit && (Model.EditableVersions is null || Model.EditableVersions.Contains(r.TemplateVersionId));
+                <tr data-row-modal="@(editable ? Url.Action("Edit", "DataRecords", new { id = r.Id }) : null)"
+                    data-row-href="@(editable ? null : Url.Action("Detail", "DataRecords", new { id = r.Id }))">
                     <td><a acl-res="Mapper.DataRecords" acl-act="View" class="code" asp-controller="DataRecords" asp-action="Detail" asp-route-id="@r.Id">@r.Id</a></td>
+                    @if (Model.ShowVersion)
+                    {
+                        <td class="n"><span class="tag @(Model.EditableVersions?.Contains(r.TemplateVersionId) == true ? "tone-success" : "")">@r.VersionNo.ToPersianNumber()</span></td>
+                    }
                     @foreach (var c in Model.Columns)
                     {
                         var value = r.Values.TryGetValue(c.Key, out var v) ? v : null;
@@ -47,7 +57,7 @@
                             }
                             else if (IsLtr(c.DataType) || value.IsDateText(c.DataType))
                             {
-                                <span class="ltr nums">@value.ToRecordDisplay(c.DataType)</span>
+                                <span class="ltr n">@value.ToRecordDisplay(c.DataType)</span>
                             }
                             else
                             {
@@ -83,8 +93,14 @@
                     <td class="col-sticky">
                         <div class="row-actions">
                             <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-controller="DataRecords" asp-action="Detail" asp-route-id="@r.Id" title="مشاهده" aria-label="مشاهدهٔ رکورد @r.Id"><svg class="ico"><use href="#i-eye" /></svg></a>
-                            <a acl-res="Mapper.DataRecords" acl-act="Edit" class="icon-btn sm" asp-controller="DataRecords" asp-action="Edit" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
-                            <a acl-res="Mapper.DataRecords" acl-act="Create" class="icon-btn sm" asp-controller="DataRecords" asp-action="Create" asp-route-copyFrom="@r.Id" data-modal title="رونوشت: رکورد جدید با همین مقدارها" aria-label="رونوشت رکورد @r.Id"><svg class="ico"><use href="#i-copy" /></svg></a>
+                            @if (editable)
+                            {
+                                <a acl-res="Mapper.DataRecords" acl-act="Edit" class="icon-btn sm" asp-controller="DataRecords" asp-action="Edit" asp-route-id="@r.Id" data-modal title="ویرایش" aria-label="ویرایش رکورد @r.Id"><svg class="ico"><use href="#i-edit" /></svg></a>
+                            }
+                            @if (Model.CanCopy)
+                            {
+                                <a acl-res="Mapper.DataRecords" acl-act="Create" class="icon-btn sm" asp-controller="DataRecords" asp-action="Create" asp-route-copyFrom="@r.Id" data-modal title="رونوشت: رکورد جدید با همین مقدارها" aria-label="رونوشت رکورد @r.Id"><svg class="ico"><use href="#i-copy" /></svg></a>
+                            }
                             @if (!Model.Compact)
                             {
                                 <button class="icon-btn sm danger" type="button" data-delete-id="@r.Id" data-delete-name="رکورد @r.Id" title="حذف" aria-label="حذف رکورد @r.Id"><svg class="ico"><use href="#i-trash" /></svg></button>

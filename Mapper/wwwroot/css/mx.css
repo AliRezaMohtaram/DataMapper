@@ -20,6 +20,11 @@
   src: url("../font/Vazir.woff2") format("woff2");
   font-display: swap;
 }
+@font-face {
+    font-family: "Yekan";
+    src: url("../font/YekanBakh.woff") format("woff");
+    font-display: swap;
+}
 
 /* ================================================================
    1. PRESETS — palette families (dark + light halves)
@@ -159,7 +164,7 @@
   --info:rgb(var(--inf));     --info-soft:rgb(var(--inf) / var(--tint));
   --violet:rgb(var(--vio));   --violet-soft:rgb(var(--vio) / var(--tint));
 
-  --font:"Vazir", "Vazirmatn", Tahoma, sans-serif;
+  --font:"Yekan", "Vazirmatn", Tahoma, sans-serif;
   /* Latin glyphs in mono, Persian glyphs fall back to Vazir */
   --mono:"Cascadia Mono", "JetBrains Mono", Consolas, "Vazir", monospace;
 
@@ -1337,12 +1342,25 @@ details.adv > .adv-body { padding:.9rem; }
 .jdate-day.is-active { background:var(--surface-2); box-shadow:inset 0 0 0 1px var(--primary); }
 .jdate-day.is-chosen { background:var(--primary); color:var(--on-primary); font-weight:800; }
 .jdate-foot { display:flex; align-items:center; gap:.4rem; margin-top:.5rem; padding-top:.5rem; border-top:1px solid var(--line-soft); }
-/* time picker (input[data-jtime], mx.js): same popup, hours and 5-minute steps */
-.jtime-pop { width:16rem; }
-.jtime-label { margin:.1rem .15rem .3rem; font-size:.72rem; font-weight:700; color:var(--faint); }
-.jtime-grid { display:grid; gap:.15rem; direction:ltr; }
-.jtime-hours { grid-template-columns:repeat(6, 1fr); margin-bottom:.5rem; }
-.jtime-minutes { grid-template-columns:repeat(6, 1fr); }
+/* time picker (input[data-jtime], mx.js): large hour : minute on top, a clock dial below (hours in two rings) */
+.jtime-pop { width:auto; padding:.75rem .85rem .6rem; }
+.jtime-head { display:flex; align-items:center; justify-content:center; gap:.2rem; direction:ltr; margin-bottom:.7rem; }
+.jtime-part { min-width:4.2rem; padding:.3rem .55rem; border:0; border-radius:var(--radius); background:var(--surface-2);
+  color:var(--muted); font:inherit; font-size:2.1rem; font-weight:800; line-height:1.15; cursor:pointer; transition:background .15s, color .15s; }
+.jtime-part:hover { color:var(--text-strong); }
+.jtime-part.is-on { background:var(--primary-soft); color:var(--primary); }
+.jtime-colon { font-size:2rem; font-weight:800; color:var(--faint); }
+.jtime-face { position:relative; margin:0 auto; border-radius:50%; background:var(--surface-2); direction:ltr;
+  touch-action:none; user-select:none; cursor:pointer; box-shadow:inset 0 0 0 1px var(--line); }
+.jtime-center { position:absolute; left:50%; top:50%; width:8px; height:8px; margin:-4px 0 0 -4px; border-radius:50%; background:var(--primary); z-index:2; }
+.jtime-hand { position:absolute; left:50%; bottom:50%; width:2px; margin-left:-1px; background:var(--primary); transform-origin:50% 100%; z-index:1; pointer-events:none; }
+.jtime-knob { position:absolute; left:50%; top:0; width:2.15rem; height:2.15rem; transform:translate(-50%, -50%); border-radius:50%; background:var(--primary); opacity:.9; }
+.jtime-knob.is-between::after { content:""; position:absolute; left:50%; top:50%; width:6px; height:6px; margin:-3px 0 0 -3px; border-radius:50%; background:var(--on-primary); }
+.jtime-num { position:absolute; width:2.15rem; height:2.15rem; transform:translate(-50%, -50%); display:grid; place-items:center; border-radius:50%;
+  font-size:.86rem; font-weight:700; color:var(--text); z-index:2; pointer-events:none; }
+.jtime-num.is-inner { font-size:.72rem; font-weight:600; color:var(--muted); }
+.jtime-num.is-chosen { color:var(--on-primary); }
+.jtime-hint { margin-top:.55rem; text-align:center; font-size:.72rem; color:var(--faint); }
 
 /* searchable picker (select[data-pick], mx.js): a text box over a hidden select, one shared popup */
 .pick { position:relative; display:block; min-width:0; }

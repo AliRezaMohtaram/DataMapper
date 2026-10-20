@@ -5,9 +5,13 @@ using Microsoft.EntityFrameworkCore;
 namespace Borc.DataMapper.Application.Templates.Entry;
 
 /// <param name="OrgUnitKey">Unit the new record/import gets (the user's unit that the template allows).</param>
-public sealed record EntryDecision(bool Allowed, string? OrgUnitKey)
+/// <param name="Message">Why it was denied (null: the user's unit is not one of the template's).</param>
+public sealed record EntryDecision(bool Allowed, string? OrgUnitKey, string? Message = null)
 {
     public static EntryDecision Denied { get; } = new(false, null);
+
+    /// <summary>The message to show for a denial.</summary>
+    public string DeniedText => Message ?? TemplateEntryPolicy.DeniedMessage;
 }
 
 /// <summary>
@@ -28,8 +32,17 @@ public sealed class TemplateEntryPolicy(IAppDbContext db, ICurrentUserUnits unit
 {
     public const string DeniedMessage = "واحد سازمانی شما جزو واحدهای مجاز این قالب نیست؛ ثبت داده و ایمپورت با آن ممکن نیست.";
 
+    public const string InactiveMessage = "این قالب غیرفعال یا بایگانی است؛ ثبت داده و ایمپورت با آن ممکن نیست.";
+
     public async Task<EntryDecision> DecideAsync(long templateId, CancellationToken cancellationToken = default)
     {
+        Domain.Templates.TemplateStatus? status = await db.Templates.AsNoTracking()
+            .Where(t => t.Id == templateId).Select(t => (Domain.Templates.TemplateStatus?)t.Status).FirstOrDefaultAsync(cancellationToken);
+        if (status is { } s && !Domain.Templates.Template.AcceptsDataIn(s))
+        {
+            return new EntryDecision(false, null, InactiveMessage);
+        }
+
         IReadOnlyList<string> held = await units.HeldUnitKeysAsync(cancellationToken);
         List<string> allowed = await db.TemplateOrgUnits.AsNoTracking()
             .Where(u => u.TemplateId == templateId)

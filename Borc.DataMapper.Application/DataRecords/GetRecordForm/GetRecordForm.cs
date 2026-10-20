@@ -27,7 +27,8 @@ public sealed record RecordFormDto(
     string? LayoutJson,
     IReadOnlyList<RecordFormFieldDto> Fields,
     IReadOnlyDictionary<string, string?> Values,
-    IReadOnlyDictionary<string, string> Labels);
+    IReadOnlyDictionary<string, string> Labels,
+    bool TemplateAcceptsData = true);
 
 public sealed record RecordFormFieldDto(
     string Key,
@@ -92,11 +93,12 @@ public sealed class GetRecordFormHandler
                     ? "نسخهٔ این رکورد دیگر منتشرشده نیست؛ ویرایش داده ممکن نیست."
                     : "ورود داده فقط برای نسخهٔ منتشرشده ممکن است.");
 
-        var templateName = await _db.Templates
+        var template = await _db.Templates
             .AsNoTracking()
             .Where(t => t.Id == version.TemplateId)
-            .Select(t => t.Name)
+            .Select(t => new { t.Name, t.Status })
             .FirstOrDefaultAsync(cancellationToken);
+        var templateName = template?.Name;
 
         var layoutJson = await _db.TemplateLayouts
             .AsNoTracking()
@@ -157,6 +159,7 @@ public sealed class GetRecordFormHandler
 
         return Result<RecordFormDto>.Ok(new RecordFormDto(
             version.Id, version.TemplateId, templateName ?? string.Empty, version.VersionNo,
-            version.Status, request.RecordId, layoutJson, dtos, values, labels));
+            version.Status, request.RecordId, layoutJson, dtos, values, labels,
+            template is null || Domain.Templates.Template.AcceptsDataIn(template.Status)));
     }
 }

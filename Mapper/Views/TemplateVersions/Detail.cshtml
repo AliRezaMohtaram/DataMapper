@@ -149,6 +149,18 @@
                         </button>
                     }
 
+                    @if (isArchived && Model.PublishedAt.HasValue)
+                    {
+                        @* back to this version quickly when a newer one turns out wrong (user request) *@
+                        <form acl-res="Mapper.Templates" acl-act="Approve" id="republishForm" asp-action="Publish" method="post" hidden>
+                            <input type="hidden" name="id" value="@Model.Id" />
+                        </form>
+                        <button type="button" class="btn btn-primary" data-confirm-target="republishForm" data-confirm-title="انتشار دوبارهٔ نسخه"
+                                data-confirm-message="این نسخه دوباره نسخهٔ جاری قالب می‌شود و نسخهٔ منتشرشدهٔ فعلی بایگانی می‌شود (رکوردهای هر دو نسخه می‌مانند؛ بعداً می‌توانید همان نسخه را دوباره منتشر کنید). ادامه می‌دهید؟">
+                            <svg class="ico"><use href="#i-refresh" /></svg>انتشار دوباره
+                        </button>
+                    }
+
                     @if (!isArchived)
                     {
                         <a acl-res="Mapper.Templates" acl-act="Edit" class="btn btn-ghost" asp-controller="TemplateLayouts" asp-action="Designer" asp-route-versionId="@Model.Id"><svg class="ico"><use href="#i-layout" /></svg>طراح چیدمان فرم</a>
@@ -160,7 +172,7 @@
                             <input type="hidden" name="id" value="@Model.Id" />
                         </form>
                         <button type="button" class="btn btn-ghost" data-confirm-target="archiveForm" data-confirm-title="بایگانی نسخه"
-                                data-confirm-message="بایگانی نسخه غیرقابل بازگشت است. ادامه می‌دهید؟">
+                                data-confirm-message="@(isDraft ? "بایگانی نسخهٔ پیش‌نویس غیرقابل بازگشت است. ادامه می‌دهید؟" : "با بایگانی، ثبت داده با این نسخه متوقف می‌شود؛ بعداً می‌توانید آن را دوباره منتشر کنید. ادامه می‌دهید؟")">
                             <svg class="ico"><use href="#i-download" /></svg>بایگانی
                         </button>
                     }

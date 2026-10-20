@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Acl.AspNetCore.Authorization;
 using Acl.Core.Model;
 using Borc.DataMapper.Web.Modules;
@@ -68,7 +68,8 @@ public sealed class DataRecordsController : Controller
     [HttpGet]
     [RequirePermission(MapperResources.DataRecords, WellKnownActions.Export)]
     public async Task<IActionResult> Export(
-        long templateVersionId,
+        long? templateVersionId,
+        long? templateId,
         string? search,
         RecordSource? source,
         long? importBatchId,
@@ -76,20 +77,29 @@ public sealed class DataRecordsController : Controller
         [FromServices] Modules.Reports.ListFilters filters,
         CancellationToken cancellationToken = default)
     {
-        var (request, title, error) = await filters.RecordsExportAsync(templateVersionId, q, search, source, importBatchId, cancellationToken);
+        if (templateVersionId is null && templateId is null)
+            return NotFound();
+        var (request, title, error) = await filters.RecordsExportAsync(templateVersionId, templateId, q, search, source, importBatchId, cancellationToken);
         if (request is null)
             return error is null
                 ? NotFound()
-                : RedirectToAction(nameof(Version), new { templateVersionId, source, importBatchId, q }); // the page shows why
+                : RedirectToAction(nameof(Version), new { templateVersionId, templateId, source, importBatchId, q }); // the page shows why
 
-        return new MReporter.Razor.Export.ReportExcelResult(request, title, [Modules.Reports.MapperReportSources.Sys.Version]); // the title names the version
+        // one version: the title names it; all versions: a «نسخه» column
+        return templateVersionId is null
+            ? new MReporter.Razor.Export.ReportExcelResult(request, title)
+            : new MReporter.Razor.Export.ReportExcelResult(request, title, [Modules.Reports.MapperReportSources.Sys.Version]);
     }
 
-    /// <summary>رکوردهای یک نسخهٔ قالب به‌صورت جدول (ستون‌ها = فیلدها)؛ ثبت، ویرایش، رونوشت و حذف.</summary>
+    /// <summary>
+    /// رکوردهای یک قالب به‌صورت جدول (ستون‌ها = فیلدها)؛ ثبت، ویرایش، رونوشت و حذف. یک نسخه (templateVersionId)، یا
+    /// همهٔ نسخه‌های قالب (templateId بدون نسخه؛ ستون‌ها = فیلدهای همهٔ نسخه‌ها + «نسخه»). Chips: «همهٔ نسخه‌ها» + هر نسخه.
+    /// </summary>
     [HttpGet]
     public async Task<IActionResult> Version(
         string? search,
         long? templateVersionId,
+        long? templateId,
         RecordSource? source,
         long? importBatchId,
         string? q,
@@ -98,23 +108,26 @@ public sealed class DataRecordsController : Controller
         int pageSize = 20,
         CancellationToken cancellationToken = default)
     {
-        var query = new ListDataRecordsQuery(search, templateVersionId, source, importBatchId, page, pageSize);
+        var allVersions = templateVersionId is null && templateId is not null && importBatchId is null;
+        var query = new ListDataRecordsQuery(search, templateVersionId, source, importBatchId, page, pageSize,
+            TemplateId: allVersions ? templateId : null);
 
-        // which version: the asked one, else the default (filtered import's or latest record's)
+        // which version: the asked one, else (not all versions) the default (filtered import's or latest record's)
         var versionId = templateVersionId;
-        if (versionId is null)
+        if (versionId is null && !allVersions)
             versionId = (await _sender.Send(query with { Page = 1, PageSize = 1 }, cancellationToken)).Data?.TemplateVersionId;
 
         // the advanced filter (and the old search text) go through MReporter with the user's visibility
         Modules.Reports.FilteredPage? filtered = null;
         string? sourceKey = null;
-        if (versionId is { } vid)
+        if (versionId is not null || allVersions)
         {
-            (filtered, sourceKey) = await filters.RecordsAsync(vid, q, search, source, importBatchId, Math.Max(1, page), Math.Clamp(pageSize, 1, ListDataRecordsQuery.MaxPageSize), cancellationToken);
+            (filtered, sourceKey) = await filters.RecordsAsync(versionId, allVersions ? templateId : null, q, search, source, importBatchId,
+                Math.Max(1, page), Math.Clamp(pageSize, 1, ListDataRecordsQuery.MaxPageSize), cancellationToken);
             if (filtered.Error is not null)
                 ModelState.AddModelError(string.Empty, filtered.Error);
             else if (filtered.Ids is not null)
-                query = query with { TemplateVersionId = vid, RecordIds = filtered.Ids };
+                query = query with { TemplateVersionId = versionId, RecordIds = filtered.Ids };
             query = query with { Search = null };
         }
 
@@ -137,9 +150,17 @@ public sealed class DataRecordsController : Controller
                 query, new(Array.Empty<DataRecordListItemDto>(), 1, pageSize, 0), Array.Empty<RecordColumnDto>(), versions));
         }
 
+        // the template's versions with visible records: the chips above the table
+        long? shownTemplate = result.Data.TemplateId;
+        RecordVersionSummaryDto? summary = shownTemplate is { } tid
+            ? (await _sender.Send(new ListRecordsOverviewQuery(TemplateId: tid, PageSize: 1), cancellationToken)).Data?.Items.FirstOrDefault()
+            : null;
+        string? templateName = summary?.TemplateName ?? result.Data.Page.Items.FirstOrDefault()?.TemplateName;
+
         // بدون انتخاب، نسخهٔ پیش‌فرض (ایمپورت فیلترشده یا آخرین رکورد) نمایش داده می‌شود
         return View("Version", new DataRecordIndexViewModel(
-            query with { TemplateVersionId = result.Data.TemplateVersionId }, result.Data.Page, result.Data.Columns, versions));
+            query with { TemplateVersionId = result.Data.TemplateVersionId, TemplateId = shownTemplate }, result.Data.Page, result.Data.Columns, versions,
+            shownTemplate, templateName, summary?.Versions ?? Array.Empty<RecordVersionCountDto>(), result.Data.AllVersions));
     }
 
     // ---------- ورود دستی ----------
@@ -182,6 +203,13 @@ public sealed class DataRecordsController : Controller
         {
             TempData["Error"] = form.Message ?? "فرم ورود داده ساخته نشد.";
             return RedirectToAction(nameof(Create));
+        }
+
+        // a template that is «غیرفعال» / «بایگانی» takes no new records (nor copies)
+        if (!form.Data.TemplateAcceptsData)
+        {
+            TempData["Error"] = Borc.DataMapper.Application.Templates.Entry.TemplateEntryPolicy.InactiveMessage;
+            return copyFrom.HasValue ? RedirectToAction(nameof(Detail), new { id = copyFrom }) : RedirectToAction(nameof(Create));
         }
 
         var data = form.Data with { RecordId = null };
@@ -293,7 +321,7 @@ public sealed class DataRecordsController : Controller
     {
         var lookups = await _sender.Send(new GetImportLookupsQuery(ForEntry: false), ct);
 
-        return lookups.Data?.Versions.Select(v => new VersionFilterOption(v.Id, v.Label)).ToList()
+        return lookups.Data?.Versions.Select(v => new VersionFilterOption(v.Id, v.Label, v.AcceptsData, v.TemplateId)).ToList()
                ?? new List<VersionFilterOption>();
     }
 

@@ -19,10 +19,15 @@ public sealed record FilteredPage(IReadOnlyList<long>? Ids, int Total, string? Q
 public sealed class ListFilters(IReportRunner runner, MapperReportSources sources)
 {
     /// <summary>Records of one template version; null ids = no filter, list as usual.</summary>
+    public Task<(FilteredPage Page, string? SourceKey)> RecordsAsync(
+        long versionId, string? q, string? search, RecordSource? source, long? importBatchId, int page, int pageSize, CancellationToken ct) =>
+        RecordsAsync(versionId, null, q, search, source, importBatchId, page, pageSize, ct);
+
+    /// <summary>Records of one template version, or (versionId null) of every version of a template.</summary>
     public async Task<(FilteredPage Page, string? SourceKey)> RecordsAsync(
-        long versionId, string? q, string? search, RecordSource? source, long? importBatchId, int page, int pageSize, CancellationToken ct)
+        long? versionId, long? templateId, string? q, string? search, RecordSource? source, long? importBatchId, int page, int pageSize, CancellationToken ct)
     {
-        var built = await BuildRecordsAsync(versionId, q, search, source, importBatchId, ct);
+        var built = await BuildRecordsAsync(versionId, templateId, q, search, source, importBatchId, ct);
         if (built is null)
             return (new FilteredPage(null, 0, null, null), null);
 
@@ -40,32 +45,49 @@ public sealed class ListFilters(IReportRunner runner, MapperReportSources source
     /// system columns. Null request = the version is unknown; Error = the filter cannot be applied.
     /// </summary>
     public async Task<(RunRequest? Request, string Title, string? Error)> RecordsExportAsync(
-        long versionId, string? q, string? search, RecordSource? source, long? importBatchId, CancellationToken ct)
+        long? versionId, long? templateId, string? q, string? search, RecordSource? source, long? importBatchId, CancellationToken ct)
     {
-        var built = await BuildRecordsAsync(versionId, q, search, source, importBatchId, ct);
+        var built = await BuildRecordsAsync(versionId, templateId, q, search, source, importBatchId, ct);
         if (built is null)
             return (null, string.Empty, null);
 
         var (sourceKey, versionNo, info, run, _, _, error) = built.Value;
-        string title = $"{info?.Title} - نسخهٔ {versionNo.ToString(CultureInfo.InvariantCulture)}";
+        string title = versionId is null
+            ? $"{info?.Title} - همهٔ نسخه‌ها"
+            : $"{info?.Title} - نسخهٔ {versionNo.ToString(CultureInfo.InvariantCulture)}";
         if (error is not null)
             return (null, title, error);
 
-        run.Columns = [.. await sources.VersionFieldKeysAsync(versionId, ct),
+        IReadOnlyList<string> fields = versionId is { } one
+            ? await sources.VersionFieldKeysAsync(one, ct)
+            : [.. await sources.TemplateFieldKeysAsync(templateId!.Value, ct), MapperReportSources.Sys.Version];
+        run.Columns = [.. fields,
             MapperReportSources.Sys.Unit, MapperReportSources.Sys.Author, MapperReportSources.Sys.CreatedAt,
             MapperReportSources.Sys.Editor, MapperReportSources.Sys.UpdatedAt, MapperReportSources.Sys.Source, MapperReportSources.Sys.Import];
         return (RunRequest.AdHoc(sourceKey, run), title, null);
     }
 
-    /// <summary>The records query of a version page: the user's filter (Filtered = there is one) inside the page's own conditions.</summary>
+    /// <summary>
+    /// The records query of a records page: the user's filter (Filtered = there is one) inside the page's own
+    /// conditions — one version, or (versionId null) every version of the template (no version condition).
+    /// </summary>
     private async Task<(string SourceKey, int VersionNo, ReportSourceInfo? Info, ReportQuery Run, string? Json, bool Filtered, string? Error)?> BuildRecordsAsync(
-        long versionId, string? q, string? search, RecordSource? source, long? importBatchId, CancellationToken ct)
+        long? versionId, long? templateId, string? q, string? search, RecordSource? source, long? importBatchId, CancellationToken ct)
     {
-        var target = await sources.VersionAsync(versionId, ct);
-        if (target is null)
+        string sourceKey;
+        int versionNo = 0;
+        if (versionId is { } vid)
+        {
+            var target = await sources.VersionAsync(vid, ct);
+            if (target is null)
+                return null;
+            (sourceKey, versionNo) = target.Value;
+        }
+        else if (templateId is { } tid && await sources.TemplateSourceAsync(tid, ct) is { } key)
+            sourceKey = key;
+        else
             return null;
 
-        var (sourceKey, versionNo) = target.Value;
         var info = await sources.FindAsync(sourceKey, ct);
         var query = Parse(q, search, info, out string? parseError);
         if (parseError is not null)
@@ -73,7 +95,11 @@ public sealed class ListFilters(IReportRunner runner, MapperReportSources source
 
         string? json = query is null ? null : ReportQueryJson.Serialize(query);
         var run = query ?? new ReportQuery();
-        run.Filter = new FilterGroup { Conditions = [Condition(MapperReportSources.Sys.Version, versionNo.ToString(CultureInfo.InvariantCulture))], Groups = [run.Filter] };
+        run.Filter = new FilterGroup
+        {
+            Conditions = versionId is null ? [] : [Condition(MapperReportSources.Sys.Version, versionNo.ToString(CultureInfo.InvariantCulture))],
+            Groups = [run.Filter],
+        };
         if (source is { } s)
             run.Filter.Conditions.Add(Condition(MapperReportSources.Sys.Source, s == RecordSource.Import ? "import" : "manual"));
         if (importBatchId is { } batch)

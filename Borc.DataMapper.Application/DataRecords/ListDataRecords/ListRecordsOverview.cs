@@ -7,23 +7,28 @@ using Microsoft.EntityFrameworkCore;
 namespace Borc.DataMapper.Application.DataRecords.ListDataRecords;
 
 /// <summary>
-/// Main "recorded data" page, master/detail: one row per template version that has records the user may see
-/// (record count, imported count, units, last change and who made it). The records themselves (detail) are on the
-/// version page. Search matches the template name or record values; counts then cover the matching records.
+/// Main "recorded data" page, master/detail (user request: template, then its versions): one row per template that has
+/// records the user may see (record count, imported count, its versions with their counts, units, last change and who
+/// made it). The records themselves (detail) are on the records page, for one version or all of them. Search matches
+/// the template name or record values; counts then cover the matching records.
 /// </summary>
+/// <param name="TemplateId">Only this template (its row gives the version chips of the records page).</param>
 public sealed record ListRecordsOverviewQuery(
     string? Search = null,
     long? TemplateVersionId = null,
     RecordSource? Source = null,
     int Page = 1,
-    int PageSize = 20
+    int PageSize = 20,
+    long? TemplateId = null
 ) : IRequest<Result<PagedResult<RecordVersionSummaryDto>>>
 {
     public const int MaxPageSize = 100;
 }
 
+/// <param name="TemplateVersionId">The version with the latest change (opened from the row's version chip).</param>
 /// <param name="LastChangedAt">Latest creation or edit among the records.</param>
 /// <param name="LastChangedBy">Who created or edited that record last.</param>
+/// <param name="Versions">The template's versions that have such records, newest first.</param>
 public sealed record RecordVersionSummaryDto(
     long TemplateId,
     string TemplateName,
@@ -33,7 +38,10 @@ public sealed record RecordVersionSummaryDto(
     int ImportedCount,
     DateTime LastChangedAt,
     long? LastChangedBy,
-    IReadOnlyList<string?> OrgUnitKeys);
+    IReadOnlyList<string?> OrgUnitKeys,
+    IReadOnlyList<RecordVersionCountDto>? Versions = null);
+
+public sealed record RecordVersionCountDto(long TemplateVersionId, int VersionNo, int RecordCount);
 
 public sealed class ListRecordsOverviewHandler
     : IRequestHandler<ListRecordsOverviewQuery, Result<PagedResult<RecordVersionSummaryDto>>>
@@ -58,6 +66,9 @@ public sealed class ListRecordsOverviewHandler
         if (request.TemplateVersionId.HasValue)
             records = records.Where(r => r.TemplateVersionId == request.TemplateVersionId.Value);
 
+        if (request.TemplateId.HasValue)
+            records = records.Where(r => r.TemplateId == request.TemplateId.Value);
+
         if (request.Source.HasValue)
             records = records.Where(r => r.SourceType == request.Source.Value);
 
@@ -70,10 +81,10 @@ public sealed class ListRecordsOverviewHandler
         }
 
         var groups = records
-            .GroupBy(r => r.TemplateVersionId)
+            .GroupBy(r => r.TemplateId)
             .Select(g => new
             {
-                VersionId = g.Key,
+                TemplateId = g.Key,
                 Count = g.Count(),
                 Imported = g.Count(r => r.SourceType == RecordSource.Import),
                 LastAt = g.Max(r => r.UpdatedAt ?? r.CreatedAt)
@@ -83,47 +94,59 @@ public sealed class ListRecordsOverviewHandler
 
         var pageRows = await groups
             .OrderByDescending(x => x.LastAt)
-            .ThenByDescending(x => x.VersionId)
+            .ThenByDescending(x => x.TemplateId)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        var ids = pageRows.Select(x => x.VersionId).ToList();
+        var ids = pageRows.Select(x => x.TemplateId).ToList();
 
-        var versions = await (
-                from v in _db.TemplateVersions.AsNoTracking()
-                join t in _db.Templates on v.TemplateId equals t.Id
-                where ids.Contains(v.Id)
-                select new { v.Id, v.VersionNo, TemplateId = t.Id, t.Name })
-            .ToDictionaryAsync(x => x.Id, cancellationToken);
+        var names = await _db.Templates.AsNoTracking()
+            .Where(t => ids.Contains(t.Id))
+            .ToDictionaryAsync(t => t.Id, t => t.Name, cancellationToken);
 
-        // who made the latest change in each version
-        var lastBy = await records
-            .Where(r => ids.Contains(r.TemplateVersionId))
-            .GroupBy(r => r.TemplateVersionId)
+        // each template's versions that have such records, with their counts
+        var perVersion = (await (
+                from r in records
+                where ids.Contains(r.TemplateId)
+                group r by new { r.TemplateId, r.TemplateVersionId } into g
+                select new { g.Key.TemplateId, g.Key.TemplateVersionId, Count = g.Count() })
+            .ToListAsync(cancellationToken));
+        var versionNos = await _db.TemplateVersions.AsNoTracking()
+            .Where(v => ids.Contains(v.TemplateId))
+            .ToDictionaryAsync(v => v.Id, v => v.VersionNo, cancellationToken);
+        var versionsOf = perVersion
+            .Select(x => new { x.TemplateId, Dto = new RecordVersionCountDto(x.TemplateVersionId, versionNos.GetValueOrDefault(x.TemplateVersionId), x.Count) })
+            .ToLookup(x => x.TemplateId, x => x.Dto);
+
+        // the latest change in each template: which version and who made it
+        var last = await records
+            .Where(r => ids.Contains(r.TemplateId))
+            .GroupBy(r => r.TemplateId)
             .Select(g => g
                 .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt)
                 .ThenByDescending(r => r.Id)
-                .Select(r => new { r.TemplateVersionId, By = r.UpdatedAt != null ? r.UpdatedBy : r.CreatedBy })
+                .Select(r => new { r.TemplateId, r.TemplateVersionId, By = r.UpdatedAt != null ? r.UpdatedBy : r.CreatedBy })
                 .First())
-            .ToDictionaryAsync(x => x.TemplateVersionId, x => x.By, cancellationToken);
+            .ToDictionaryAsync(x => x.TemplateId, cancellationToken);
 
         var units = (await records
-                .Where(r => ids.Contains(r.TemplateVersionId))
-                .Select(r => new { r.TemplateVersionId, r.OrgUnitKey })
+                .Where(r => ids.Contains(r.TemplateId))
+                .Select(r => new { r.TemplateId, r.OrgUnitKey })
                 .Distinct()
                 .ToListAsync(cancellationToken))
-            .ToLookup(x => x.TemplateVersionId, x => x.OrgUnitKey);
+            .ToLookup(x => x.TemplateId, x => x.OrgUnitKey);
 
         var items = pageRows
-            .Where(x => versions.ContainsKey(x.VersionId))
+            .Where(x => names.ContainsKey(x.TemplateId) && last.ContainsKey(x.TemplateId))
             .Select(x =>
             {
-                var v = versions[x.VersionId];
+                var latest = last[x.TemplateId];
                 return new RecordVersionSummaryDto(
-                    v.TemplateId, v.Name, v.Id, v.VersionNo, x.Count, x.Imported, x.LastAt,
-                    lastBy.GetValueOrDefault(x.VersionId),
-                    units[x.VersionId].OrderBy(k => k is null).ThenBy(k => k, StringComparer.Ordinal).ToList());
+                    x.TemplateId, names[x.TemplateId], latest.TemplateVersionId, versionNos.GetValueOrDefault(latest.TemplateVersionId),
+                    x.Count, x.Imported, x.LastAt, latest.By,
+                    units[x.TemplateId].OrderBy(k => k is null).ThenBy(k => k, StringComparer.Ordinal).ToList(),
+                    versionsOf[x.TemplateId].OrderByDescending(v => v.VersionNo).ToList());
             })
             .ToList();
 

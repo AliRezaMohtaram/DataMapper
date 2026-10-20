@@ -1014,7 +1014,7 @@
 
     document.addEventListener("pointerdown", e => {
         if (picker.el && !picker.el.hidden && !picker.el.contains(e.target) && !e.target.closest?.(".jdate")) closePicker();
-        if (clock.el && !clock.el.hidden && !clock.el.contains(e.target) && !e.target.closest?.(".jdate")) closeClock();
+        if (clock.el && !clock.el.hidden && e.target.isConnected && !clock.el.contains(e.target) && !e.target.closest?.(".jdate")) closeClock();
     });
     window.addEventListener("resize", () => { closePicker(); closeClock(); });
     window.addEventListener("scroll", () => {
@@ -1024,15 +1024,19 @@
 
     /* =====================================================
        TIME PICKER  (input[data-jtime])
-       Like the date picker: the input stays a text box ("8:30", "۸:۳۰" are fine, written back as 08:30 on blur); a
-       clock button and a click open one shared popup with the hours (00–23) and the minutes (every 5). Picking an
-       hour keeps the minute; picking a minute closes. Arrows move the minute by 5 (Up/Down: an hour), Enter closes,
-       Escape closes without the modal around it.
+       A clock dial in MX's style: the input stays a text box ("8:30", "۸:۳۰" are fine, written back as 08:30 on
+       blur); a clock button and a click open one shared popup with the time in large digits (hour / minute, click
+       to switch) and a dial. Hours: outer ring 1–12, inner ring 13–00; minutes every 5, any minute by dragging the
+       hand. Picking the hour goes on to the minutes; picking the minute closes. Arrows move the minute by 5
+       (Up/Down: an hour), Enter closes, Escape closes without the modal around it.
        ===================================================== */
 
     const ICO_CLOCK = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>';
-    const clock = { el: null, input: null };
+    const clock = { el: null, input: null, mode: "hour", drag: false };
     const two = n => String(n).padStart(2, "0");
+
+    /* dial geometry (px): size, outer and inner ring radius */
+    const DIAL = 224, OUTER = 88, INNER = 58;
 
     /** "8", "8:30", "۰۸:۳۰" → minutes of the day, or null. */
     function parseTime(text) {
@@ -1043,6 +1047,10 @@
 
     const formatTime = mins => `${two(Math.floor(mins / 60))}:${two(mins % 60)}`;
 
+    /** Where a number sits on the dial: angle in degrees (0 = top, clockwise) and radius. */
+    const hourSpot = h => ({ angle: (h % 12) * 30, radius: h === 0 || h > 12 ? INNER : OUTER });
+    const minuteSpot = m => ({ angle: m * 6, radius: OUTER });
+
     function clockEl() {
         if (clock.el) return clock.el;
         const el = document.createElement("div");
@@ -1050,13 +1058,31 @@
         el.setAttribute("role", "dialog");
         el.setAttribute("aria-label", "انتخاب ساعت");
         el.hidden = true;
-        el.addEventListener("pointerdown", e => e.preventDefault()); // keep the focus on the input
+        el.addEventListener("pointerdown", e => {
+            e.preventDefault(); // keep the focus on the input
+            const face = e.target.closest(".jtime-face");
+            if (!face || !clock.input) return;
+            clock.drag = true;
+            clock.start = { x: e.clientX, y: e.clientY };
+            face.setPointerCapture?.(e.pointerId);
+            pickAt(face, e, false);
+        });
+        el.addEventListener("pointermove", e => {
+            if (!clock.drag) return;
+            const face = el.querySelector(".jtime-face");
+            if (face) pickAt(face, e, false);
+        });
+        el.addEventListener("pointerup", e => {
+            if (!clock.drag) return;
+            clock.drag = false;
+            const face = el.querySelector(".jtime-face");
+            if (face) pickAt(face, e, true);
+        });
+        el.addEventListener("pointercancel", () => { clock.drag = false; });
         el.addEventListener("click", e => {
             const b = e.target.closest("button");
             if (!b || !clock.input) return;
-            const now = parseTime(clock.input.value);
-            if (b.dataset.hour) setTime(+b.dataset.hour * 60 + (now === null ? 0 : now % 60), false);
-            else if (b.dataset.minute) setTime((now === null ? 8 * 60 : Math.floor(now / 60) * 60) + +b.dataset.minute, true);
+            if (b.dataset.mode) { clock.mode = b.dataset.mode; renderClock(); }
             else if (b.hasAttribute("data-now")) { const d = new Date(); setTime(d.getHours() * 60 + d.getMinutes(), true); }
             else if (b.hasAttribute("data-clear")) { clock.input.value = ""; fire(clock.input); closeClock(); }
         });
@@ -1065,22 +1091,71 @@
         return el;
     }
 
+    /** The value under the pointer on the dial; on release, the hour goes on to the minutes and the minute closes. */
+    function pickAt(face, e, release) {
+        const r = face.getBoundingClientRect();
+        const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+        let angle = Math.atan2(dx, -dy) * 180 / Math.PI;
+        if (angle < 0) angle += 360;
+        const scale = r.width / DIAL, dist = Math.hypot(dx, dy) / scale;
+        const now = parseTime(clock.input.value);
+        const h = now === null ? 8 : Math.floor(now / 60), m = now === null ? 0 : now % 60;
+        if (clock.mode === "hour") {
+            const step = Math.round(angle / 30) % 12;
+            const inner = dist < (OUTER + INNER) / 2;
+            const hour = inner ? (step === 0 ? 0 : step + 12) : (step === 0 ? 12 : step);
+            setTime(hour * 60 + m, false);
+            if (release) { clock.mode = "minute"; renderClock(); }
+        } else {
+            // a tap snaps to 5 minutes, a drag takes any minute
+            const tap = release && clock.start && Math.hypot(e.clientX - clock.start.x, e.clientY - clock.start.y) < 6;
+            const minute = (tap ? Math.round(angle / 30) * 5 : Math.round(angle / 6)) % 60;
+            setTime(h * 60 + minute, release);
+        }
+    }
+
     function renderClock() {
         const el = clockEl();
         const now = parseTime(clock.input.value);
         const h = now === null ? -1 : Math.floor(now / 60), m = now === null ? -1 : now % 60;
-        let html = `<div class="jtime-label">ساعت</div><div class="jtime-grid jtime-hours">`;
-        for (let i = 0; i < 24; i++)
-            html += `<button type="button" tabindex="-1" class="jdate-day${i === h ? " is-chosen" : ""}" data-hour="${i}">${fa(two(i))}</button>`;
-        html += `</div><div class="jtime-label">دقیقه</div><div class="jtime-grid jtime-minutes">`;
-        for (let i = 0; i < 60; i += 5)
-            html += `<button type="button" tabindex="-1" class="jdate-day${i === m ? " is-chosen" : m >= 0 && m > i && m < i + 5 ? " is-active" : ""}" data-minute="${i}">${fa(two(i))}</button>`;
-        html += `</div><div class="jdate-foot">
-            <button type="button" class="btn btn-ghost btn-sm" data-now>اکنون</button>
-            <span class="spacer"></span>
-            <button type="button" class="btn btn-quiet btn-sm" data-clear>پاک کردن</button>
-        </div>`;
-        el.innerHTML = html;
+        const hourMode = clock.mode === "hour";
+        const place = ({ angle, radius }) => {
+            const rad = angle * Math.PI / 180;
+            return `left:${(DIAL / 2 + radius * Math.sin(rad)).toFixed(1)}px;top:${(DIAL / 2 - radius * Math.cos(rad)).toFixed(1)}px`;
+        };
+
+        let numbers = "";
+        if (hourMode) {
+            for (let i = 1; i <= 12; i++)
+                numbers += `<span class="jtime-num${i === h ? " is-chosen" : ""}" style="${place(hourSpot(i))}">${fa(i)}</span>`;
+            for (let i = 13; i <= 24; i++) {
+                const v = i % 24;
+                numbers += `<span class="jtime-num is-inner${v === h ? " is-chosen" : ""}" style="${place(hourSpot(v))}">${fa(two(v))}</span>`;
+            }
+        } else {
+            for (let i = 0; i < 60; i += 5)
+                numbers += `<span class="jtime-num${i === m ? " is-chosen" : ""}" style="${place(minuteSpot(i))}">${fa(two(i))}</span>`;
+        }
+
+        const chosen = hourMode ? (h < 0 ? null : hourSpot(h)) : (m < 0 ? null : minuteSpot(m));
+        const hand = chosen
+            ? `<span class="jtime-hand" style="height:${chosen.radius}px;transform:rotate(${chosen.angle}deg)"><span class="jtime-knob${!hourMode && m % 5 ? " is-between" : ""}"></span></span>`
+            : "";
+
+        el.innerHTML = `<div class="jtime-head">
+                <button type="button" tabindex="-1" class="jtime-part${hourMode ? " is-on" : ""}" data-mode="hour" aria-label="ساعت">${h < 0 ? "--" : fa(two(h))}</button>
+                <span class="jtime-colon">:</span>
+                <button type="button" tabindex="-1" class="jtime-part${hourMode ? "" : " is-on"}" data-mode="minute" aria-label="دقیقه">${m < 0 ? "--" : fa(two(m))}</button>
+            </div>
+            <div class="jtime-face" style="width:${DIAL}px;height:${DIAL}px">
+                <span class="jtime-center"></span>${hand}${numbers}
+            </div>
+            <div class="jtime-hint">${hourMode ? "ساعت را انتخاب کنید (حلقهٔ داخل: ۱۳ تا ۰۰)" : "دقیقه را انتخاب کنید یا عقربه را بکشید"}</div>
+            <div class="jdate-foot">
+                <button type="button" class="btn btn-ghost btn-sm" data-now>اکنون</button>
+                <span class="spacer"></span>
+                <button type="button" class="btn btn-quiet btn-sm" data-clear>پاک کردن</button>
+            </div>`;
     }
 
     function placeClock() {
@@ -1095,6 +1170,7 @@
     function openClock(input) {
         if (input.disabled || input.readOnly) return;
         clock.input = input;
+        clock.mode = "hour";
         renderClock();
         clock.el.hidden = false;
         input.setAttribute("aria-expanded", "true");

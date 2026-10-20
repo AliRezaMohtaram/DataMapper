@@ -1,4 +1,4 @@
-﻿using Borc.DataMapper.Domain.Common;
+using Borc.DataMapper.Domain.Common;
 
 namespace Borc.DataMapper.Domain.Templates;
 
@@ -54,6 +54,24 @@ public sealed class TemplateVersion : EntityBase
     {
         if (Status != TemplateVersionStatus.Draft)
             throw new InvalidOperationException("فقط نسخه پیش‌نویس قابل انتشار است.");
+
+        Status = TemplateVersionStatus.Published;
+        IsPublished = true;
+        PublishedAt = DateTime.UtcNow;
+        PublishedBy = userId;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// An archived version that was published before can be published again (user decision, 2026-10-20: when a new
+    /// version turns out wrong, the previous one must come back quickly). Its fields stay as they were.
+    /// </summary>
+    public bool CanRepublish => Status == TemplateVersionStatus.Archived && PublishedAt.HasValue;
+
+    public void Republish(long? userId = null)
+    {
+        if (!CanRepublish)
+            throw new InvalidOperationException("فقط نسخهٔ بایگانی‌شده‌ای که قبلاً منتشر شده دوباره منتشر می‌شود.");
 
         Status = TemplateVersionStatus.Published;
         IsPublished = true;

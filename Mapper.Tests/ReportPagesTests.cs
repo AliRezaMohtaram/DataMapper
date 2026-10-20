@@ -320,6 +320,57 @@ public sealed partial class ReportDataTests
     }
 
     [Fact]
+    public async Task A_sub_report_prints_the_rows_of_each_group_in_the_band()
+    {
+        HttpClient boss = await app.SignInAsync("rboss", "Secret123");
+        async Task<string> SaveAsync(string title, string? grouping, params string[] columns)
+        {
+            string form = await (await boss.GetAsync("/Reports/Edit?source=" + Uri.EscapeDataString(_source))).Content.ReadAsStringAsync();
+            var fields = new List<KeyValuePair<string, string>> { new("Source", _source), new("Title", title), new("Kind", "Personal") };
+            fields.AddRange(columns.Select(c => new KeyValuePair<string, string>("Columns", c)));
+            if (grouping is not null)
+                fields.Add(new("Grouping", grouping));
+            fields.Add(new("__RequestVerificationToken", Token().Match(form).Groups[1].Value));
+            string url = (await boss.PostAsync("/Reports/Edit", new FormUrlEncodedContent(fields))).Headers.Location!.OriginalString;
+            return url[(url.IndexOf('=') + 1)..];
+        }
+
+        string detail = await SaveAsync("ریز مبلغ‌ها", null, "F004", "F002");
+        string master = await SaveAsync("گروه‌ها با زیرگزارش", JsonSerializer.Serialize(new { groupBy = new[] { new { column = "F004" } } }), "F004", "F002");
+
+        // the designer offers the other report and its columns
+        string designer = await TextAsync(await boss.GetAsync("/Reports/PrintDesign?id=" + master));
+        Assert.Contains($"\"reports\":[{{\"id\":{detail},", designer);
+
+        string layout = JsonSerializer.Serialize(new
+        {
+            paper = "A4",
+            bands = new object[]
+            {
+                new
+                {
+                    kind = "GroupHeader", level = 1, height = 14, elements = new object[]
+                    {
+                        new { kind = "Field", column = "F004", x = 0, y = 0, width = 60, height = 6 },
+                        new { kind = "SubReport", reportId = int.Parse(detail), linkColumn = "F004", column = "F004", maxRows = 5, x = 0, y = 7, width = 120, height = 6, fontSize = 8 },
+                    },
+                },
+            },
+        });
+        HttpResponseMessage design = await boss.PostAsync("/Reports/PrintDesign?id=" + master, new FormUrlEncodedContent(
+        [
+            new("Id", master), new("Print", layout), new("__RequestVerificationToken", Token().Match(designer).Groups[1].Value),
+        ]));
+        Assert.Contains("\"ok\":true", await design.Content.ReadAsStringAsync());
+
+        string printed = await TextAsync(await boss.GetAsync("/Reports/Print?id=" + master));
+        Assert.Contains("pb-sub", printed);
+        Assert.Contains("<table><thead><tr>", printed);
+        Assert.DoesNotMatch("<div class=\"pb-sub-error\">", printed);
+        Assert.Contains("<td class=\"pb-num\"", printed); // the amounts of each group, from the other report
+    }
+
+    [Fact]
     public async Task Definitions_and_people_are_report_sources_for_those_who_may_see_them()
     {
         HttpClient boss = await app.SignInAsync("rboss", "Secret123");

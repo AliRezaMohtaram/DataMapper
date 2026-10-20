@@ -3,7 +3,8 @@
 @using Borc.DataMapper.Domain.Records
 @inject OrgChart.Core.Chart.IOrgChartReader Chart
 @inject Borc.DataMapper.Web.Modules.UserNames UserNames
-@* Master: one row per template version with records. Detail (the records) = DataRecords/Version. *@
+@* Master: one row per template with records (its versions as chips). Detail (the records of one version or of all
+   versions) = DataRecords/Version (?templateId= for all versions, ?templateVersionId= for one). *@
 @{
     ViewData["Title"] = "داده‌های ثبت‌شده";
 
@@ -25,7 +26,7 @@
     var pageSizes = new[] { 10, 20, 50, 100 };
     var hasFilter = !string.IsNullOrWhiteSpace(filter.Search) || filter.TemplateVersionId.HasValue || filter.Source.HasValue;
 
-    ViewData["Subtitle"] = $"{result.TotalCount.ToPersianNumber()} قالب و نسخه" + (hasFilter ? " با فیلتر فعلی" : "");
+    ViewData["Subtitle"] = $"{result.TotalCount.ToPersianNumber()} قالب" + (hasFilter ? " با فیلتر فعلی" : "");
 }
 
 @section TopbarActions {
@@ -44,7 +45,7 @@
     <header class="card-head">
         <div class="card-title">
             <span class="card-ico"><svg class="ico"><use href="#i-rows" /></svg></span>
-            <div>داده‌های ثبت‌شده<div class="card-sub">هر ردیف یک قالب و نسخه است — برای دیدن رکوردهای آن و ثبت یا ویرایش، روی ردیف کلیک کنید.</div></div>
+            <div>داده‌های ثبت‌شده<div class="card-sub">هر ردیف یک قالب است — کلیک روی ردیف رکوردهای همهٔ نسخه‌هایش را نشان می‌دهد؛ برچسب هر نسخه فقط رکوردهای همان نسخه را.</div></div>
         </div>
     </header>
 
@@ -92,14 +93,23 @@
     {
         <div class="tbl-wrap">
             <table class="tbl">
-                <thead><tr><th>قالب</th><th>نسخه</th><th>رکوردها</th><th>واحدهای سازمانی</th><th>آخرین تغییر</th><th class="col-sticky"></th></tr></thead>
+                <thead><tr><th>قالب</th><th>نسخه‌ها</th><th>رکوردها</th><th>واحدهای سازمانی</th><th>آخرین تغییر</th><th class="col-sticky"></th></tr></thead>
                 <tbody>
                     @foreach (var r in result.Items)
                     {
-                        <tr data-row-href="@Url.Action("Version", new { templateVersionId = r.TemplateVersionId, search = filter.Search, source = filter.Source })" style="cursor:pointer" title="رکوردهای @r.TemplateName">
-                            <td><a acl-res="Mapper.DataRecords" acl-act="View" class="cell-main" asp-action="Version" asp-route-templateVersionId="@r.TemplateVersionId" asp-route-search="@filter.Search" asp-route-source="@filter.Source">@r.TemplateName</a></td>
-                            <td class="nums">نسخهٔ @r.VersionNo.ToPersianNumber()</td>
-                            <td class="nums">
+                        var versions = r.Versions ?? [];
+                        <tr data-row-href="@Url.Action("Version", new { templateId = r.TemplateId, search = filter.Search, source = filter.Source })" style="cursor:pointer" title="رکوردهای همهٔ نسخه‌های @r.TemplateName">
+                            <td><a acl-res="Mapper.DataRecords" acl-act="View" class="cell-main" asp-action="Version" asp-route-templateId="@r.TemplateId" asp-route-search="@filter.Search" asp-route-source="@filter.Source">@r.TemplateName</a></td>
+                            <td>
+                                <div class="ver-chips">
+                                    @foreach (var v in versions)
+                                    {
+                                        <a acl-res="Mapper.DataRecords" acl-act="View" class="tag tone-primary n" asp-action="Version" asp-route-templateVersionId="@v.TemplateVersionId" asp-route-search="@filter.Search" asp-route-source="@filter.Source"
+                                           title="فقط رکوردهای نسخهٔ @v.VersionNo.ToPersianNumber()">نسخهٔ @v.VersionNo.ToPersianNumber() · @v.RecordCount.ToPersianNumber()</a>
+                                    }
+                                </div>
+                            </td>
+                            <td class="n">
                                 <span class="cell-main">@r.RecordCount.ToPersianNumber()</span>
                                 @if (r.ImportedCount > 0)
                                 {
@@ -122,7 +132,7 @@
                             </td>
                             <td class="col-sticky">
                                 <div class="row-actions">
-                                    <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-action="Version" asp-route-templateVersionId="@r.TemplateVersionId" title="رکوردها" aria-label="رکوردهای @r.TemplateName"><svg class="ico"><use href="#i-eye" /></svg></a>
+                                    <a acl-res="Mapper.DataRecords" acl-act="View" class="icon-btn sm primary" asp-action="Version" asp-route-templateId="@r.TemplateId" title="رکوردهای همهٔ نسخه‌ها" aria-label="رکوردهای @r.TemplateName"><svg class="ico"><use href="#i-eye" /></svg></a>
                                 </div>
                             </td>
                         </tr>

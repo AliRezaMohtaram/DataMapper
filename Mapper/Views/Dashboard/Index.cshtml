@@ -288,7 +288,7 @@
                                 <td class="col-sticky">
                                     <div class="row-actions">
                                         <a acl-res="Mapper.Templates" acl-act="View" class="icon-btn sm primary" asp-controller="Templates" asp-action="Detail" asp-route-id="@t.Id" title="جزئیات"><svg class="ico"><use href="#i-eye" /></svg></a>
-                                        @if (t.VersionId is long vid)
+                                        @if (t.VersionId is long vid && Borc.DataMapper.Domain.Templates.Template.AcceptsDataIn(t.Status))
                                         {
                                             <a acl-res="Mapper.DataRecords" acl-act="Create" class="icon-btn sm" asp-controller="DataRecords" asp-action="Create" asp-route-versionId="@vid" title="ثبت رکورد"><svg class="ico"><use href="#i-plus" /></svg></a>
                                         }

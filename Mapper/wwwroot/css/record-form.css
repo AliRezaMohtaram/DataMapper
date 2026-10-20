@@ -100,3 +100,9 @@ textarea.lf-control { min-height: 5rem; resize: vertical; }
   transition: border-color .18s ease, box-shadow .18s ease;
 }
 .lf-radio.has-error .lf-radio-item { border-color: rgb(var(--err) / .6); }
+
+/* ── Recorded data: version chips (overview rows, records page tabs: «همهٔ نسخه‌ها» + each version) ── */
+.ver-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.ver-chips .tag { text-decoration: none; }
+.ver-tabs { padding: .75rem 1rem 0; flex-wrap: wrap; }
+.ver-tabs .fchip b { margin-inline-start: .3rem; font-weight: 800; }

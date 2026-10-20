@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using Borc.DataMapper.Application.Abstractions.Files;
 using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Application.Common.Results;
@@ -52,7 +52,7 @@ public sealed class UploadImportBatchHandler
 
         var entry = await _entry.DecideAsync(version.TemplateId, cancellationToken);
         if (!entry.Allowed)
-            return Result<long>.Failure(TemplateEntryPolicy.DeniedMessage);
+            return Result<long>.Failure(entry.DeniedText);
 
         if (request.Content.Length == 0)
             return Result<long>.Failure("فایل خالی است.");

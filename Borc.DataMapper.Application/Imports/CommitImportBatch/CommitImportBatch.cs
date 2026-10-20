@@ -1,4 +1,4 @@
-﻿using Borc.DataMapper.Application.Abstractions.Imports;
+using Borc.DataMapper.Application.Abstractions.Imports;
 using Borc.DataMapper.Application.Abstractions.Persistence;
 using Borc.DataMapper.Application.Common.Results;
 using Borc.DataMapper.Application.Imports.Common;
@@ -47,6 +47,10 @@ public sealed class CommitImportBatchHandler
 
         if (version is null || version.Status != TemplateVersionStatus.Published)
             return Result.Failure("نسخهٔ این ایمپورت دیگر منتشرشده نیست؛ ثبت نهایی ممکن نیست.");
+
+        if (!await _db.Templates.AnyAsync(t => t.Id == version.TemplateId
+                && t.Status != Domain.Templates.TemplateStatus.Inactive && t.Status != Domain.Templates.TemplateStatus.Archived, cancellationToken))
+            return Result.Failure(Templates.Entry.TemplateEntryPolicy.InactiveMessage);
 
         batch.StartCommit();
         await _db.SaveChangesAsync(cancellationToken);
